@@ -1,10 +1,12 @@
 import { getTenantId } from './tenant'
 import type {
   EntityRisk,
+  GraphData,
   GraphEntityRecord,
   ImportResult,
   Overview,
   PropagationResult,
+  RiskRow,
   ScenarioType,
 } from './types'
 
@@ -26,6 +28,21 @@ async function handle<T>(res: Response): Promise<T> {
 
 export const api = {
   overview: () => fetch(`${BASE}/overview`, { headers: headers(false) }).then(handle<Overview>),
+
+  graph: () => fetch(`${BASE}/graph`, { headers: headers(false) }).then(handle<GraphData>),
+
+  riskEntities: () => fetch(`${BASE}/risks/entities`, { headers: headers(false) }).then(handle<RiskRow[]>),
+
+  entity: (id: string) =>
+    fetch(`${BASE}/entities/${id}`, { headers: headers(false) }).then(handle<GraphEntityRecord>),
+
+  dependencies: (id: string) =>
+    fetch(`${BASE}/entities/${id}/dependencies`, { headers: headers(false) }).then(
+      handle<{ target: GraphEntityRecord; relationType: string; confidence: number; status: string }[]>,
+    ),
+
+  dependents: (id: string) =>
+    fetch(`${BASE}/entities/${id}/dependents`, { headers: headers(false) }).then(handle<GraphEntityRecord[]>),
 
   searchEntity: (name: string, type: string) =>
     fetch(`${BASE}/entities/search?name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`, {

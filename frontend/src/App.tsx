@@ -3,10 +3,17 @@ import { RotateCcw } from 'lucide-react'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { Simulation } from './pages/Simulation'
+import { GraphExplorer } from './pages/GraphExplorer'
+import { RiskCenter } from './pages/RiskCenter'
+import { Assets } from './pages/Assets'
 import { getTenantId, resetTenant } from './lib/tenant'
 
 const TITLES: Record<string, string> = {
   '/': 'Overview',
+  '/graph': 'Graph Explorer',
+  '/assets': 'Assets',
+  '/dependencies': 'Dependencies',
+  '/risks': 'Risk Center',
   '/simulations': 'What-If Simulation',
 }
 
@@ -37,6 +44,10 @@ export default function App() {
     >
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/graph" element={<GraphExplorer />} />
+        <Route path="/dependencies" element={<GraphExplorer />} />
+        <Route path="/assets" element={<Assets />} />
+        <Route path="/risks" element={<RiskCenter />} />
         <Route path="/simulations" element={<Simulation />} />
       </Routes>
     </Layout>

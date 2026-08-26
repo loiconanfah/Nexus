@@ -17,6 +17,12 @@ public interface IGraphRepository
     /// <summary>Lit une entité active par identifiant (filtrée par tenant).</summary>
     Task<GraphEntityRecord?> GetEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
+    /// <summary>Liste les entités actives du tenant (pour l'explorateur / listes).</summary>
+    Task<IReadOnlyList<GraphEntityRecord>> GetEntitiesAsync(Guid tenantId, int limit = 2000, CancellationToken ct = default);
+
+    /// <summary>Liste les relations actives du tenant (arêtes du graphe).</summary>
+    Task<IReadOnlyList<GraphEdgeRecord>> GetRelationsAsync(Guid tenantId, int limit = 5000, CancellationToken ct = default);
+
     /// <summary>
     /// Renvoie les dépendances directes sortantes d'une entité (relations de
     /// dépendance de l'ontologie uniquement). Base du Dependency Engine (Phase 3).

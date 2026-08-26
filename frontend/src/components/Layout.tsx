@@ -7,11 +7,11 @@ import {
 
 const NAV = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, ready: true },
+  { to: '/graph', label: 'Graph', icon: Network, ready: true },
+  { to: '/assets', label: 'Assets', icon: Boxes, ready: true },
+  { to: '/dependencies', label: 'Dependencies', icon: GitBranch, ready: true },
+  { to: '/risks', label: 'Risks', icon: AlertTriangle, ready: true },
   { to: '/simulations', label: 'Simulations', icon: Zap, ready: true },
-  { to: '/graph', label: 'Graph', icon: Network, ready: false },
-  { to: '/assets', label: 'Assets', icon: Boxes, ready: false },
-  { to: '/dependencies', label: 'Dependencies', icon: GitBranch, ready: false },
-  { to: '/risks', label: 'Risks', icon: AlertTriangle, ready: false },
   { to: '/ai', label: 'AI Analyst', icon: Sparkles, ready: false },
   { to: '/reports', label: 'Reports', icon: ScrollText, ready: false },
 ]

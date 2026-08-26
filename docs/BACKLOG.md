@@ -25,13 +25,13 @@ Cet ordre ne doit pas être sauté.
 | 11 | Normalization | 2 | ✅ |
 | 12 | Entity resolution | 2 | ✅ (exact + alias ; fuzzy full-text dispo) |
 | 13 | Graph creation | 2 | ✅ (via pipeline d'ingestion) |
-| 14 | Graph explorer (UI) | 4 | ⬜ |
+| 14 | Graph explorer (UI) | 4 | ✅ (XYFlow + dagre) |
 | 15 | Dependency engine | 3 | ✅ (directes/blast/SPOF ; cycles à venir) |
 | 16 | Criticality engine | 3 | ✅ |
 | 17 | Risk engine | 3 | ✅ (explicable + configurable) |
-| 18 | Risk dashboard | 4 | ⬜ |
+| 18 | Risk dashboard | 4 | ✅ (Dashboard + Risk Center) |
 | 19 | What-if engine | 3 | ✅ (Propagation Engine) |
-| 20 | Simulation visualization | 4 | ⬜ |
+| 20 | Simulation visualization | 4 | ✅ (cascade par profondeur) |
 | 21 | Document ingestion | 5 | ⬜ |
 | 22 | Vector search | 5 | ⬜ |
 | 23 | AI analyst | 5 | ⬜ |
@@ -75,12 +75,14 @@ Validée de bout en bout : build 0/0, 34 tests verts (dont 2 d'intégration Post
 - Validé : 49 tests verts (10 unitaires risque + intégration propagation/SPOF/risk sur topologie live). Voir [RISK_ENGINE.md](RISK_ENGINE.md), [SIMULATION_ENGINE.md](SIMULATION_ENGINE.md).
 - Reste (post-MVP) : cycles, concentration fournisseurs, Human Dependency (KNOWS/MAINTAINS), Scenario Engine multi-événements.
 
-### Phase 4 — UI Analytics *(J18-J23)*
-- App React (Vite, Tailwind, shadcn/ui).
-- Dashboard (Organization Health Score, risques, SPOF, concentration…).
-- Graph Explorer (XYFlow) : zoom/pan/search/filtres/expand, path finding, affichage confiance/preuve.
-- Risk Center (filtres/tri).
-- Simulation UI (« WHAT IF? ») + animation de propagation.
+### Phase 4 — UI Analytics *(J18-J23)* ✅
+- App React (Vite, Tailwind v4, thème enterprise dark), consommant l'API REST.
+- Dashboard (Organization Health Score, tuiles, SPOF, composition) + import du jeu de démo.
+- Graph Explorer (XYFlow + dagre) : zoom/pan/recherche/filtre par type, panneau de détail (dépendances/dépendants/confiance).
+- Risk Center (bandes, filtres type, tri, badges SPOF) + Assets (inventaire).
+- Simulation « WHAT IF? » : cascade par profondeur, impact par type, risque explicable.
+- Vérifié dans le navigateur de bout en bout (import démo → SPOF → simulation).
+- Reste (post-MVP) : path finding A→B, expand incrémental, animation de propagation.
 
 ### Phase 5 — Documents & AI Analyst *(J24-J28)*
 - Ingestion documentaire → chunking → embeddings (pgvector).

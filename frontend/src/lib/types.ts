@@ -75,6 +75,32 @@ export interface PropagationResult {
   affected: BlastNode[]
 }
 
+export interface GraphEdge {
+  id: string
+  source: string
+  target: string
+  type: string
+  confidence: number
+  status: string
+}
+
+export interface GraphData {
+  nodes: GraphEntityRecord[]
+  edges: GraphEdge[]
+}
+
+export interface RiskRow {
+  id: string
+  name: string
+  entityType: string
+  score: number
+  band: RiskBand
+  effectiveCriticality: number
+  directDependents: number
+  blastRadius: number
+  hasRedundancy: boolean
+}
+
 export interface ImportResult {
   recordsRead: number
   entitiesCreated: number

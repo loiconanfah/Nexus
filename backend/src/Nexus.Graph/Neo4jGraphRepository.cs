@@ -126,6 +126,43 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             r["status"].As<string>())).ToList();
     }
 
+    public async Task<IReadOnlyList<GraphEntityRecord>> GetEntitiesAsync(Guid tenantId, int limit = 2000, CancellationToken ct = default)
+    {
+        var take = Math.Clamp(limit, 1, 20000);
+        var cypher = $$"""
+            MATCH (n:Entity { tenantId: $t })
+            WHERE n.validUntil IS NULL
+            RETURN n.id AS id, n.tenantId AS tenantId, n.entityType AS entityType, n.name AS name,
+                   n.criticality AS criticality, n.aliases AS aliases, n.description AS description,
+                   n.sourceSystem AS sourceSystem
+            LIMIT {{take}}
+            """;
+
+        var records = await connection.ReadAsync(cypher, new { t = tenantId.ToString() }, ct);
+        return records.Select(GraphRecordMapper.MapEntity).ToList();
+    }
+
+    public async Task<IReadOnlyList<GraphEdgeRecord>> GetRelationsAsync(Guid tenantId, int limit = 5000, CancellationToken ct = default)
+    {
+        var take = Math.Clamp(limit, 1, 50000);
+        var cypher = $$"""
+            MATCH (s:Entity { tenantId: $t })-[r]->(tg:Entity { tenantId: $t })
+            WHERE r.validUntil IS NULL
+            RETURN r.id AS id, s.id AS source, tg.id AS target, type(r) AS type,
+                   r.confidence AS confidence, r.status AS status
+            LIMIT {{take}}
+            """;
+
+        var records = await connection.ReadAsync(cypher, new { t = tenantId.ToString() }, ct);
+        return records.Select(r => new GraphEdgeRecord(
+            Guid.Parse(r["id"].As<string>()),
+            Guid.Parse(r["source"].As<string>()),
+            Guid.Parse(r["target"].As<string>()),
+            r["type"].As<string>(),
+            r["confidence"].As<double>(),
+            r["status"].As<string>())).ToList();
+    }
+
     /// <summary>Contrôle qu'un label/type provient bien du registre d'ontologie avant interpolation.</summary>
     private static string SafeLabel(string name, Func<string, bool> isKnown)
     {

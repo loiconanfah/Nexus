@@ -21,3 +21,12 @@ public sealed record DirectDependencyRecord(
     string RelationType,
     double Confidence,
     string Status);
+
+/// <summary>Arête du graphe (projection pour l'export/visualisation).</summary>
+public sealed record GraphEdgeRecord(
+    Guid Id,
+    Guid Source,
+    Guid Target,
+    string Type,
+    double Confidence,
+    string Status);

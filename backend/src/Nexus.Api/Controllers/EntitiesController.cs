@@ -16,6 +16,14 @@ public sealed class EntitiesController(
     IEntityResolver resolver,
     RiskAnalyzer riskAnalyzer) : NexusController(tenantProvider)
 {
+    /// <summary>Liste les entités du tenant.</summary>
+    [HttpGet]
+    public async Task<IActionResult> List(CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        return Ok(await repository.GetEntitiesAsync(tenant, ct: ct));
+    }
+
     /// <summary>Résout une entité par nom exact (+ type), ou renvoie des suggestions floues.</summary>
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string name, [FromQuery] string type, CancellationToken ct)
