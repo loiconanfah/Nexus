@@ -1,0 +1,43 @@
+# === .NET ===
+bin/
+obj/
+*.user
+*.suo
+.vs/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+TestResults/
+*.trx
+coverage/
+*.coverage
+*.coveragexml
+
+# === Node / Frontend ===
+node_modules/
+dist/
+.vite/
+*.local
+.eslintcache
+
+# === Secrets / Env (article 45/72 : jamais de secret dans Git) ===
+.env
+.env.*
+!.env.example
+*.pfx
+*.key
+appsettings.*.local.json
+secrets.json
+
+# === Docker / data volumes ===
+deploy/data/
+*.pid
+
+# === IDE ===
+.idea/
+*.swp
+.DS_Store
+
+# === Logs ===
+logs/
+*.log

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+    <PackageReference Include="Microsoft.OpenApi" Version="2.12.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Nexus.Application\Nexus.Application.csproj" />
+    <ProjectReference Include="..\Nexus.Infrastructure\Nexus.Infrastructure.csproj" />
+    <ProjectReference Include="..\Nexus.Graph\Nexus.Graph.csproj" />
+    <ProjectReference Include="..\Nexus.Risk\Nexus.Risk.csproj" />
+    <ProjectReference Include="..\Nexus.AI\Nexus.AI.csproj" />
+    <ProjectReference Include="..\Nexus.Ingestion\Nexus.Ingestion.csproj" />
+    <ProjectReference Include="..\Nexus.Connectors\Nexus.Connectors.csproj" />
+    <ProjectReference Include="..\Nexus.Security\Nexus.Security.csproj" />
+    <ProjectReference Include="..\Nexus.Observability\Nexus.Observability.csproj" />
+  </ItemGroup>
+
+</Project>

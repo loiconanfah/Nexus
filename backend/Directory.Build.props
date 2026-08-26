@@ -1,0 +1,17 @@
+<Project>
+  <!-- Conventions communes à tous les projets NEXUS (article 72/73 du master prompt) -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <Deterministic>true</Deterministic>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <Company>NEXUS</Company>
+    <Product>NEXUS — Operational Dependency Intelligence Platform</Product>
+    <Authors>NEXUS</Authors>
+  </PropertyGroup>
+</Project>
