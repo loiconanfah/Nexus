@@ -14,12 +14,12 @@ Cet ordre ne doit pas être sauté.
 |---|---|---|---|
 | 1 | Repository | 0 | ✅ |
 | 2 | Architecture | 0 | ✅ |
-| 3 | Domain | 1 | ⬜ |
-| 4 | PostgreSQL | 1 | ⬜ |
-| 5 | Neo4j | 1 | ⬜ |
-| 6 | Ontology | 0/1 | 🟡 (doc ✅, code ⬜) |
-| 7 | Asset model | 1 | ⬜ |
-| 8 | Relationship model | 1 | ⬜ |
+| 3 | Domain | 1 | ✅ |
+| 4 | PostgreSQL | 1 | 🟡 (DbContext + migration ✅ ; apply en base à faire quand Docker up) |
+| 5 | Neo4j | 1 | 🟡 (client + repo + contraintes ✅ ; apply en base à faire quand Docker up) |
+| 6 | Ontology | 0/1 | ✅ (doc + code) |
+| 7 | Asset model | 1 | ✅ |
+| 8 | Relationship model | 1 | ✅ |
 | 9 | CSV importer | 2 | ⬜ |
 | 10 | Excel importer | 2 | ⬜ |
 | 11 | Normalization | 2 | ⬜ |
@@ -50,7 +50,7 @@ Cet ordre ne doit pas être sauté.
 ### Phase 0 — Architecture Foundation *(J1-J2)* ✅
 Repo, solution .NET modulaire qui compile, docs (ARCHITECTURE / ONTOLOGY / DOMAIN_MODEL / SECURITY / DEPLOYMENT), docker-compose (PostgreSQL+pgvector, Neo4j+GDS, Azurite), modèles DB initiaux, ADR, backlog.
 
-### Phase 1 — Domain & Data Foundation *(J3-J6)*
+### Phase 1 — Domain & Data Foundation *(J3-J6)* 🟡 en cours
 - `Nexus.Core` : `Result<T>`, erreurs, primitives.
 - `Nexus.Domain` : registre d'ontologie (types d'entités/relations), value objects (Confidence, Criticality), invariants.
 - `Nexus.Infrastructure` : DbContext EF Core + migration initiale (tables de `02_schema.sql`).

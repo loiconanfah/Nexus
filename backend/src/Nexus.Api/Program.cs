@@ -1,23 +1,30 @@
+using Nexus.Graph;
+using Nexus.Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// --- Modules NEXUS ---
+// PostgreSQL (plan de contrôle + pgvector).
+var postgres = builder.Configuration.GetConnectionString("Postgres")
+    ?? throw new InvalidOperationException("La chaîne de connexion 'Postgres' est requise.");
+builder.Services.AddNexusInfrastructure(postgres);
+
+// Neo4j (knowledge graph).
+builder.Services.AddNexusGraph(options =>
+    builder.Configuration.GetSection(Neo4jOptions.SectionName).Bind(options));
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
