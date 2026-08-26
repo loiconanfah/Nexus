@@ -33,6 +33,13 @@ builder.Services.AddControllers().AddJsonOptions(o =>
     o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 
+// Réponses d'erreur normalisées (RFC 9457) sans fuite de détails en production.
+builder.Services.AddProblemDetails();
+
+// Limite de taille des imports de fichiers (anti-abus).
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+    o.MultipartBodyLengthLimit = 25 * 1024 * 1024);   // 25 Mo
+
 // --- Sécurité : rate limiting par IP (article 45) ---
 builder.Services.AddRateLimiter(options =>
 {
@@ -67,6 +74,9 @@ if (app.Configuration.GetValue<bool>("Nexus:RunMigrationsOnStartup"))
     await scope.ServiceProvider.GetRequiredService<Nexus.Infrastructure.Persistence.NexusDbContext>().Database.MigrateAsync();
     await scope.ServiceProvider.GetRequiredService<Nexus.Graph.GraphSchemaInitializer>().InitializeAsync();
 }
+
+// Gestion globale des exceptions → ProblemDetails (pas de stack trace en prod).
+app.UseExceptionHandler();
 
 // En-têtes de sécurité (OWASP, article 45).
 app.Use(async (ctx, next) =>
