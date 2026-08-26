@@ -1,0 +1,75 @@
+# NEXUS — stack complète containerisée (déploiement démo / POC).
+# Démarrage :  docker compose -f docker-compose.prod.yml up -d --build
+# Puis ouvrir : http://localhost:8088
+#
+# La stack se suffit à elle-même : l'API applique migrations + contraintes au
+# démarrage. Chaque visiteur obtient son tenant et peut importer le jeu de démo
+# depuis l'Overview.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nexus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus_dev_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-nexus}
+    volumes:
+      - nexus_pg:/var/lib/postgresql/data
+      - ./database/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexus} -d ${POSTGRES_DB:-nexus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5-community
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-nexus_dev_pwd}
+      NEO4J_PLUGINS: '["graph-data-science","apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: gds.*,apoc.*
+      NEO4J_server_memory_heap_max__size: 1G
+    volumes:
+      - nexus_neo4j:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-nexus};Username=${POSTGRES_USER:-nexus};Password=${POSTGRES_PASSWORD:-nexus_dev_pwd}"
+      Nexus__Neo4j__Uri: "bolt://neo4j:7687"
+      Nexus__Neo4j__User: "${NEO4J_USER:-neo4j}"
+      Nexus__Neo4j__Password: "${NEO4J_PASSWORD:-nexus_dev_pwd}"
+      Nexus__RunMigrationsOnStartup: "true"
+      # IA optionnelle : renseigner pour activer la reformulation LLM.
+      Nexus__AI__Endpoint: "${NEXUS_AI_ENDPOINT:-}"
+      Nexus__AI__ApiKey: "${NEXUS_AI_APIKEY:-}"
+      ASPNETCORE_ENVIRONMENT: "Production"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    depends_on:
+      - api
+
+volumes:
+  nexus_pg:
+  nexus_neo4j:

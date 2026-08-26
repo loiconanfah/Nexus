@@ -1,5 +1,6 @@
 ﻿using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Nexus.AI;
 using Nexus.Api.Tenancy;
 using Nexus.Graph;
@@ -58,6 +59,14 @@ builder.Services.AddNexusAI(options =>
     builder.Configuration.GetSection(AiOptions.SectionName).Bind(options));
 
 var app = builder.Build();
+
+// Migrations + contraintes de graphe au démarrage (déploiement conteneur).
+if (app.Configuration.GetValue<bool>("Nexus:RunMigrationsOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<Nexus.Infrastructure.Persistence.NexusDbContext>().Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<Nexus.Graph.GraphSchemaInitializer>().InitializeAsync();
+}
 
 // En-têtes de sécurité (OWASP, article 45).
 app.Use(async (ctx, next) =>

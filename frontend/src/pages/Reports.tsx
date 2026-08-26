@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Printer } from 'lucide-react'
 import { api } from '../lib/api'
-import type { ExecutiveReport, ReportRiskItem } from '../lib/types'
+import type { ReportRiskItem } from '../lib/types'
 import { Spinner } from '../components/ui'
 
 const BAND: Record<string, string> = {
