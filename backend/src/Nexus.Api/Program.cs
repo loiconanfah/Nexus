@@ -1,6 +1,7 @@
 using Nexus.Graph;
 using Nexus.Infrastructure;
 using Nexus.Ingestion;
+using Nexus.Risk;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,9 @@ builder.Services.AddNexusGraph(options =>
 
 // Moteur d'ingestion (connecteurs, normalisation, pipeline).
 builder.Services.AddNexusIngestion();
+
+// Moteurs déterministes (risque, criticité, propagation, SPOF).
+builder.Services.AddNexusRisk();
 
 var app = builder.Build();
 

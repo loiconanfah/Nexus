@@ -26,11 +26,11 @@ Cet ordre ne doit pas être sauté.
 | 12 | Entity resolution | 2 | ✅ (exact + alias ; fuzzy full-text dispo) |
 | 13 | Graph creation | 2 | ✅ (via pipeline d'ingestion) |
 | 14 | Graph explorer (UI) | 4 | ⬜ |
-| 15 | Dependency engine | 3 | ⬜ |
-| 16 | Criticality engine | 3 | ⬜ |
-| 17 | Risk engine | 3 | ⬜ |
+| 15 | Dependency engine | 3 | ✅ (directes/blast/SPOF ; cycles à venir) |
+| 16 | Criticality engine | 3 | ✅ |
+| 17 | Risk engine | 3 | ✅ (explicable + configurable) |
 | 18 | Risk dashboard | 4 | ⬜ |
-| 19 | What-if engine | 3 | ⬜ |
+| 19 | What-if engine | 3 | ✅ (Propagation Engine) |
 | 20 | Simulation visualization | 4 | ⬜ |
 | 21 | Document ingestion | 5 | ⬜ |
 | 22 | Vector search | 5 | ⬜ |
@@ -66,12 +66,14 @@ Validée de bout en bout : build 0/0, 34 tests verts (dont 2 d'intégration Post
 - KPI **Time To First Graph** exposé dans `ImportResult`.
 - Validé : 38 tests verts dont un test d'intégration d'import Excel de bout en bout. Voir [CONNECTORS.md](CONNECTORS.md).
 
-### Phase 3 — Moteurs déterministes *(J12-J17)*
-- Dependency Engine : dépendances directes/indirectes, profondeur, cycles, SPOF, concentration.
-- Criticality Engine : profil configurable par tenant.
-- Risk Engine : `RiskScore` 0-100 explicable, pondérations depuis `risk_profile` (jamais hardcodé).
-- What-If / Propagation Engine : simulation de défaillance, cascade d'impacts.
-- Tests des moteurs (cas déterministes vérifiables).
+### Phase 3 — Moteurs déterministes *(J12-J17)* ✅
+- Dependency Engine : dépendants directs, **blast radius** transitif, redondance, candidats SPOF (`IDependencyQueries`).
+- Criticality Engine : criticité effective (déclarée ∨ structurelle).
+- Risk Engine : `RiskScore` 0-100 **explicable**, pondérations/seuils configurables (jamais hardcodé) + `RiskAnalyzer`.
+- Propagation Engine (What-If) : simulation de défaillance, cascade d'impacts par type + impact opérationnel.
+- SPOF Analyzer (article 27).
+- Validé : 49 tests verts (10 unitaires risque + intégration propagation/SPOF/risk sur topologie live). Voir [RISK_ENGINE.md](RISK_ENGINE.md), [SIMULATION_ENGINE.md](SIMULATION_ENGINE.md).
+- Reste (post-MVP) : cycles, concentration fournisseurs, Human Dependency (KNOWS/MAINTAINS), Scenario Engine multi-événements.
 
 ### Phase 4 — UI Analytics *(J18-J23)*
 - App React (Vite, Tailwind, shadcn/ui).

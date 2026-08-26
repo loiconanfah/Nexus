@@ -96,15 +96,12 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
         var records = await connection.ReadAsync(cypher,
             new { id = id.ToString(), tenantId = tenantId.ToString() }, ct);
 
-        return records.Count == 0 ? null : MapEntity(records[0]);
+        return records.Count == 0 ? null : GraphRecordMapper.MapEntity(records[0]);
     }
 
     public async Task<IReadOnlyList<DirectDependencyRecord>> GetDirectDependenciesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
     {
-        var depTypes = RelationType.All
-            .Where(r => r.IsDependencyRelation)
-            .Select(r => r.Name)
-            .ToArray();
+        var depTypes = RelationType.DependencyTraversalTypes.ToArray();
 
         const string cypher = """
             MATCH (s:Entity { id: $id, tenantId: $tenantId })-[r]->(t:Entity)
@@ -123,27 +120,10 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
         }, ct);
 
         return records.Select(r => new DirectDependencyRecord(
-            MapEntity(r),
+            GraphRecordMapper.MapEntity(r),
             r["relType"].As<string>(),
             r["confidence"].As<double>(),
             r["status"].As<string>())).ToList();
-    }
-
-    private static GraphEntityRecord MapEntity(IRecord r)
-    {
-        var aliases = r["aliases"] is null
-            ? []
-            : r["aliases"].As<List<object>>().Select(a => a.ToString() ?? string.Empty).ToList();
-
-        return new GraphEntityRecord(
-            Guid.Parse(r["id"].As<string>()),
-            Guid.Parse(r["tenantId"].As<string>()),
-            r["entityType"].As<string>(),
-            r["name"].As<string>(),
-            Convert.ToInt32(r["criticality"].As<long>()),
-            aliases,
-            r["description"]?.As<string>(),
-            r["sourceSystem"]?.As<string>());
     }
 
     /// <summary>Contrôle qu'un label/type provient bien du registre d'ontologie avant interpolation.</summary>

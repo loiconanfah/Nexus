@@ -106,6 +106,8 @@ lenexus/
 | [ONTOLOGY.md](docs/ONTOLOGY.md) | Ontologie NEXUS : entités, relations, confidence |
 | [DOMAIN_MODEL.md](docs/DOMAIN_MODEL.md) | Modèle de données PostgreSQL + Neo4j |
 | [CONNECTORS.md](docs/CONNECTORS.md) | Framework de connecteurs, pipeline d'ingestion |
+| [RISK_ENGINE.md](docs/RISK_ENGINE.md) | Risk & Criticality Engines (explicable, configurable) |
+| [SIMULATION_ENGINE.md](docs/SIMULATION_ENGINE.md) | Dependency, Propagation (What-If) & SPOF |
 | [SECURITY.md](docs/SECURITY.md) | Zero Trust, RBAC, secrets, OWASP |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | SaaS / Private Cloud / On-Prem, CI-CD |
 | [BACKLOG.md](docs/BACKLOG.md) | Backlog 30 jours + critères d'acceptation |

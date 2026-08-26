@@ -11,27 +11,40 @@ public sealed class RelationType : IEquatable<RelationType>
 {
     private static readonly Dictionary<string, RelationType> Registry = new(StringComparer.OrdinalIgnoreCase);
 
-    private RelationType(string name, bool isDependency = false, bool propagates = false)
+    private RelationType(string name, bool isDependency = false, bool propagates = false, bool carriesDependency = false)
     {
         Name = name;
         IsDependencyRelation = isDependency;
         Propagates = propagates;
+        CarriesDependency = carriesDependency;
         Registry[name] = this;
     }
 
     public string Name { get; }
 
-    /// <summary>Vrai si la relation exprime une dépendance opérationnelle traversée par le Dependency Engine.</summary>
+    /// <summary>Vrai si la relation exprime une dépendance opérationnelle (au sens large, humaine incluse).</summary>
     public bool IsDependencyRelation { get; }
 
     /// <summary>Vrai si la relation propage un impact lors d'une simulation (Propagation Engine).</summary>
     public bool Propagates { get; }
 
+    /// <summary>
+    /// Vrai si la relation signifie « la source dépend de la cible » : la source
+    /// cesse de fonctionner si la cible tombe. C'est l'ensemble EXACT traversé par
+    /// le Dependency/Propagation Engine (article 13). Exclut les relations à
+    /// direction inverse (KNOWS/MAINTAINS), traitées par le Human Dependency Engine.
+    /// </summary>
+    public bool CarriesDependency { get; }
+
+    /// <summary>Noms des relations traversées par le moteur de dépendances/propagation.</summary>
+    public static IReadOnlyList<string> DependencyTraversalTypes =>
+        All.Where(r => r.CarriesDependency).Select(r => r.Name).ToArray();
+
     // Relation pivot
-    public static readonly RelationType DependsOn = new("DEPENDS_ON", isDependency: true, propagates: true);
+    public static readonly RelationType DependsOn = new("DEPENDS_ON", isDependency: true, propagates: true, carriesDependency: true);
 
     // Hébergement / exécution
-    public static readonly RelationType RunsOn = new("RUNS_ON", isDependency: true, propagates: true);
+    public static readonly RelationType RunsOn = new("RUNS_ON", isDependency: true, propagates: true, carriesDependency: true);
     public static readonly RelationType Hosts = new("HOSTS", propagates: true);
 
     // Connectivité
@@ -40,9 +53,9 @@ public sealed class RelationType : IEquatable<RelationType>
     public static readonly RelationType ConnectedTo = new("CONNECTED_TO");
 
     // Usage / support
-    public static readonly RelationType Uses = new("USES", isDependency: true, propagates: true);
+    public static readonly RelationType Uses = new("USES", isDependency: true, propagates: true, carriesDependency: true);
     public static readonly RelationType Supports = new("SUPPORTS", propagates: true);
-    public static readonly RelationType Requires = new("REQUIRES", isDependency: true, propagates: true);
+    public static readonly RelationType Requires = new("REQUIRES", isDependency: true, propagates: true, carriesDependency: true);
 
     // Données
     public static readonly RelationType Stores = new("STORES");
@@ -54,7 +67,7 @@ public sealed class RelationType : IEquatable<RelationType>
     public static readonly RelationType OperatedBy = new("OPERATED_BY");
 
     // Fournisseurs / contrats
-    public static readonly RelationType SuppliedBy = new("SUPPLIED_BY", isDependency: true, propagates: true);
+    public static readonly RelationType SuppliedBy = new("SUPPLIED_BY", isDependency: true, propagates: true, carriesDependency: true);
     public static readonly RelationType ContractedBy = new("CONTRACTED_BY");
 
     // Localisation / composition
@@ -69,7 +82,7 @@ public sealed class RelationType : IEquatable<RelationType>
 
     // Sécurité
     public static readonly RelationType Protects = new("PROTECTS");
-    public static readonly RelationType Authenticates = new("AUTHENTICATES", isDependency: true, propagates: true);
+    public static readonly RelationType Authenticates = new("AUTHENTICATES", isDependency: true, propagates: true, carriesDependency: true);
 
     // Résilience / cycle de vie
     public static readonly RelationType ReplacedBy = new("REPLACED_BY");

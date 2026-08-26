@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddSingleton<INeo4jConnection, Neo4jConnection>();
         services.AddScoped<IGraphRepository, Neo4jGraphRepository>();
         services.AddScoped<IEntityResolver, Neo4jEntityResolver>();
+        services.AddScoped<IDependencyQueries, Neo4jDependencyQueries>();
         services.AddScoped<GraphSchemaInitializer>();
 
         return services;
