@@ -1,0 +1,54 @@
+@import 'tailwindcss';
+
+/*
+  NEXUS — thème enterprise sobre, dense, dark-first (article 33).
+  Palette : ardoise profonde + accents ambre/rouge pour le risque.
+*/
+@theme {
+  --color-bg: #0b0e14;
+  --color-surface: #131722;
+  --color-surface-2: #1a2030;
+  --color-border: #232a3b;
+  --color-text: #c7ced9;
+  --color-text-muted: #7a8496;
+  --color-text-strong: #f2f5fa;
+
+  --color-brand: #4f8cff;
+  --color-brand-soft: #1e3a6b;
+
+  --color-low: #3fb27f;
+  --color-moderate: #c8b040;
+  --color-elevated: #e08a3c;
+  --color-high: #e0603c;
+  --color-critical: #e0455e;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
+}
+
+/* Barre de défilement discrète */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}

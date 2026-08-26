@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<IGraphRepository, Neo4jGraphRepository>();
         services.AddScoped<IEntityResolver, Neo4jEntityResolver>();
         services.AddScoped<IDependencyQueries, Neo4jDependencyQueries>();
+        services.AddScoped<IGraphStats, Neo4jGraphStats>();
         services.AddScoped<GraphSchemaInitializer>();
 
         return services;
