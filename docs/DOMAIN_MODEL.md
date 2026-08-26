@@ -2,7 +2,7 @@
 
 Version : 1.0 (Phase 0)
 
-NEXUS répartit ses données sur **deux moteurs de stockage** complémentaires. Ce document décrit le modèle initial ; le schéma PostgreSQL de référence est dans [`database/postgres/init/`](../database/postgres/init), les contraintes Neo4j dans [`database/neo4j/`](../database/neo4j).
+NEXUS répartit ses données sur **deux moteurs de stockage** complémentaires. Ce document décrit le modèle initial. Le schéma PostgreSQL est produit par les migrations EF Core (`Nexus.Infrastructure/Persistence/Migrations`) ; une version SQL **de référence** est dans [`database/postgres/reference/`](../database/postgres/reference), les extensions auto-exécutées dans [`database/postgres/init/`](../database/postgres/init), les contraintes Neo4j dans [`database/neo4j/`](../database/neo4j).
 
 ---
 
@@ -92,7 +92,7 @@ La réponse combine : le `status`/`confidence` de la relation + l'entrée `data_
 
 ## 5. Migrations & seed
 
-- Le schéma PostgreSQL est **géré par EF Core Migrations** dans `Nexus.Infrastructure` ; le SQL de `database/postgres/init` sert de référence lisible et de bootstrap.
+- Le schéma PostgreSQL est **géré exclusivement par EF Core Migrations** dans `Nexus.Infrastructure` (autorité unique). Le SQL de `database/postgres/reference/02_schema.reference.sql` sert de **référence lisible uniquement** (non exécuté). Seul `database/postgres/init/01_extensions.sql` est auto-exécuté par le conteneur (extensions), et les migrations recréent aussi ces extensions (idempotent).
 - Les contraintes Neo4j sont appliquées au démarrage par `Nexus.Graph` (idempotent, `IF NOT EXISTS`).
 - `Nexus.Seed` générera le dataset de démonstration (article 52-53) — voir [BACKLOG.md](BACKLOG.md).
 
