@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Nexus.Application.Lineage;
 using Nexus.Infrastructure.Persistence;
 
 namespace Nexus.Infrastructure;
@@ -17,6 +18,8 @@ public static class DependencyInjection
             options
                 .UseNpgsql(connectionString, npgsql => npgsql.UseVector())
                 .UseSnakeCaseNamingConvention());
+
+        services.AddScoped<ILineageWriter, EfLineageWriter>();
 
         return services;
     }

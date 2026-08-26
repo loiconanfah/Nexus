@@ -5,6 +5,11 @@
     <ProjectReference Include="..\Nexus.Domain\Nexus.Domain.csproj" />
     <ProjectReference Include="..\Nexus.Core\Nexus.Core.csproj" />
     <ProjectReference Include="..\Nexus.Connectors\Nexus.Connectors.csproj" />
+    <ProjectReference Include="..\Nexus.Graph\Nexus.Graph.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.11" />
   </ItemGroup>
 
   <PropertyGroup>

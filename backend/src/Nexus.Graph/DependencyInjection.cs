@@ -12,6 +12,7 @@ public static class DependencyInjection
         // Le driver Neo4j est thread-safe et coûteux : connexion en singleton.
         services.AddSingleton<INeo4jConnection, Neo4jConnection>();
         services.AddScoped<IGraphRepository, Neo4jGraphRepository>();
+        services.AddScoped<IEntityResolver, Neo4jEntityResolver>();
         services.AddScoped<GraphSchemaInitializer>();
 
         return services;

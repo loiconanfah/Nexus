@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\src\Nexus.Graph\Nexus.Graph.csproj" />
     <ProjectReference Include="..\..\src\Nexus.Core\Nexus.Core.csproj" />
     <ProjectReference Include="..\..\src\Nexus.Infrastructure\Nexus.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Nexus.Connectors\Nexus.Connectors.csproj" />
+    <ProjectReference Include="..\..\src\Nexus.Ingestion\Nexus.Ingestion.csproj" />
   </ItemGroup>
 
 </Project>

@@ -20,11 +20,11 @@ Cet ordre ne doit pas être sauté.
 | 6 | Ontology | 0/1 | ✅ (doc + code) |
 | 7 | Asset model | 1 | ✅ |
 | 8 | Relationship model | 1 | ✅ |
-| 9 | CSV importer | 2 | ⬜ |
-| 10 | Excel importer | 2 | ⬜ |
-| 11 | Normalization | 2 | ⬜ |
-| 12 | Entity resolution | 2 | ⬜ |
-| 13 | Graph creation | 2 | ⬜ |
+| 9 | CSV importer | 2 | ✅ |
+| 10 | Excel importer | 2 | ✅ |
+| 11 | Normalization | 2 | ✅ |
+| 12 | Entity resolution | 2 | ✅ (exact + alias ; fuzzy full-text dispo) |
+| 13 | Graph creation | 2 | ✅ (via pipeline d'ingestion) |
 | 14 | Graph explorer (UI) | 4 | ⬜ |
 | 15 | Dependency engine | 3 | ⬜ |
 | 16 | Criticality engine | 3 | ⬜ |
@@ -58,12 +58,13 @@ Validée de bout en bout : build 0/0, 34 tests verts (dont 2 d'intégration Post
 - `Nexus.Graph` : client Neo4j, application des contraintes, CRUD entités/relations.
 - Tests unitaires domaine + tests d'intégration PostgreSQL/Neo4j (conteneurs).
 
-### Phase 2 — Ingestion CSV/Excel *(J7-J11)*
-- Framework `IConnector` (`Nexus.Connectors`).
-- Connecteurs CSV & Excel (read-only).
-- Normalisation → ontologie ; Entity Resolution (exact + fuzzy `pg_trgm` + alias).
-- Écriture du graphe + `data_lineage` + confidence/status.
-- KPI **Time To First Graph**.
+### Phase 2 — Ingestion CSV/Excel *(J7-J11)* ✅
+- Framework `IConnector` (`Nexus.Connectors`) — voir [ADR-0009](adr/ADR-0009-connector-responsibility-boundary.md).
+- Connecteurs CSV & Excel (read-only, streaming).
+- Normalisation → ontologie ; Entity Resolution (exact + alias ; fuzzy full-text Neo4j).
+- Écriture du graphe + `data_lineage` + confidence/status, id de relation déterministe (idempotent).
+- KPI **Time To First Graph** exposé dans `ImportResult`.
+- Validé : 38 tests verts dont un test d'intégration d'import Excel de bout en bout. Voir [CONNECTORS.md](CONNECTORS.md).
 
 ### Phase 3 — Moteurs déterministes *(J12-J17)*
 - Dependency Engine : dépendances directes/indirectes, profondeur, cycles, SPOF, concentration.

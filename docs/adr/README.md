@@ -12,5 +12,6 @@ Chaque décision structurante est consignée ici (article 71) au format : **cont
 | [ADR-0006](ADR-0006-confidence-and-lineage.md) | Confidence Engine + data lineage sur chaque relation | Accepté |
 | [ADR-0007](ADR-0007-deterministic-first-ai-overlay.md) | Déterministe d'abord, IA en surcouche | Accepté |
 | [ADR-0008](ADR-0008-read-only-first.md) | Intégrations read-only par défaut | Accepté |
+| [ADR-0009](ADR-0009-connector-responsibility-boundary.md) | Connecteurs « fins » : extraction seule, mapping centralisé | Accepté |
 
 **Statuts possibles** : Proposé · Accepté · Déprécié · Remplacé par ADR-XXXX.

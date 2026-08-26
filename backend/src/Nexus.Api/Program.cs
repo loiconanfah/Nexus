@@ -1,5 +1,6 @@
 using Nexus.Graph;
 using Nexus.Infrastructure;
+using Nexus.Ingestion;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,9 @@ builder.Services.AddNexusInfrastructure(postgres);
 // Neo4j (knowledge graph).
 builder.Services.AddNexusGraph(options =>
     builder.Configuration.GetSection(Neo4jOptions.SectionName).Bind(options));
+
+// Moteur d'ingestion (connecteurs, normalisation, pipeline).
+builder.Services.AddNexusIngestion();
 
 var app = builder.Build();
 
