@@ -37,11 +37,11 @@ Cet ordre ne doit pas être sauté.
 | 23 | AI analyst | 5 | ✅ (orchestrateur ancré, LLM optionnel) |
 | 24 | Evidence / citations | 5 | ✅ |
 | 25 | Microsoft connector | 6 (post-MVP) | ⬜ |
-| 26 | Security hardening | 6 | ⬜ |
-| 27 | Observability | 6 | ⬜ |
-| 28 | Testing | continu | ⬜ |
-| 29 | Documentation | continu | 🟡 |
-| 30 | Enterprise demo | 6 | ⬜ |
+| 26 | Security hardening | 6 | 🟡 (headers + rate limiting ✅ ; Entra ID réel à venir) |
+| 27 | Observability | 6 | ✅ (Serilog + OpenTelemetry) |
+| 28 | Testing | continu | 🟡 (49 tests, dont intégration live) |
+| 29 | Documentation | continu | ✅ |
+| 30 | Enterprise demo | 6 | ✅ (Nexus.Seed + DEMO.md) |
 
 ---
 
@@ -91,11 +91,12 @@ Validée de bout en bout : build 0/0, 34 tests verts (dont 2 d'intégration Post
 - Vérifié navigateur : « quels SPOF ? » → SinglePointsOfFailure, confiance 90%, 3 SPOF sourcés.
 - RAG documentaire (ingestion→chunking→embeddings→retrieval) : base pgvector prête, activé avec un déploiement d'embeddings. Voir [AI.md](AI.md).
 
-### Phase 6 — Report, Sécurité, Observabilité, Demo *(J29-J30)*
-- Report Engine (Executive Risk Report, PDF/JSON/CSV).
-- Durcissement sécurité (OIDC/Entra, RBAC, rate limiting, headers).
-- Observabilité (OpenTelemetry, métriques).
-- `Nexus.Seed` : dataset de démo + scénario de démonstration.
+### Phase 6 — Sécurité, Observabilité, Demo *(J29-J30)* ✅ (noyau)
+- Durcissement sécurité : en-têtes OWASP + rate limiting par IP. (Entra ID/OIDC réel + RBAC : à câbler avec un tenant Azure.)
+- Observabilité : Serilog (logs structurés + request logging) + OpenTelemetry (traces/métriques ASP.NET Core & HTTP).
+- `Nexus.Seed` : dataset révélant SPOF, dépendance cachée, fournisseur critique/unique, personne clé, legacy, relation non documentée. `dotnet run --project src/Nexus.Seed`.
+- [DEMO.md](DEMO.md) : scénario de démonstration < 10 min.
+- Reste (post-MVP) : Report Engine (PDF exécutif), Entra ID réel, connecteurs V1.1.
 
 ---
 
