@@ -1,3 +1,4 @@
+using Nexus.Api.Tenancy;
 using Nexus.Graph;
 using Nexus.Infrastructure;
 using Nexus.Ingestion;
@@ -5,8 +6,14 @@ using Nexus.Risk;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(o =>
+    // Enums sérialisés/désérialisés en chaînes (ex : scenario = "ServerFailure").
+    o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
+
+// Résolution du tenant (stub dev par en-tête ; remplacé par le claim du token en Phase 6).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantProvider, HeaderTenantProvider>();
 
 // --- Modules NEXUS ---
 // PostgreSQL (plan de contrôle + pgvector).

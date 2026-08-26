@@ -108,6 +108,7 @@ lenexus/
 | [CONNECTORS.md](docs/CONNECTORS.md) | Framework de connecteurs, pipeline d'ingestion |
 | [RISK_ENGINE.md](docs/RISK_ENGINE.md) | Risk & Criticality Engines (explicable, configurable) |
 | [SIMULATION_ENGINE.md](docs/SIMULATION_ENGINE.md) | Dependency, Propagation (What-If) & SPOF |
+| [API.md](docs/API.md) | Surface REST (imports, entités, risque, simulation) |
 | [SECURITY.md](docs/SECURITY.md) | Zero Trust, RBAC, secrets, OWASP |
 | [DEPLOYMENT.md](docs/DEPLOYMENT.md) | SaaS / Private Cloud / On-Prem, CI-CD |
 | [BACKLOG.md](docs/BACKLOG.md) | Backlog 30 jours + critères d'acceptation |
