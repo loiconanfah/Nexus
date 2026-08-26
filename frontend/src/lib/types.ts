@@ -101,6 +101,35 @@ export interface RiskRow {
   hasRedundancy: boolean
 }
 
+export interface ReportRiskItem {
+  name: string
+  entityType: string
+  score: number
+  band: string
+  dependents: number
+  blastRadius: number
+  hasRedundancy: boolean
+}
+export interface ReportSupplier { name: string; dependentSystems: number; dependents: string[] }
+export interface ReportHumanDependency { person: string; knownSystems: string[] }
+export interface ReportUndocumented { source: string; target: string; type: string; confidence: number; status: string }
+export interface ReportRecommendation { priority: string; title: string; detail: string }
+
+export interface ExecutiveReport {
+  generatedAt: string
+  organizationHealthScore: number
+  entityCount: number
+  relationCount: number
+  spofCount: number
+  criticalSpofCount: number
+  topRisks: ReportRiskItem[]
+  singlePointsOfFailure: ReportRiskItem[]
+  supplierConcentration: ReportSupplier[]
+  humanDependencies: ReportHumanDependency[]
+  undocumentedDependencies: ReportUndocumented[]
+  recommendations: ReportRecommendation[]
+}
+
 export interface AiEvidence {
   label: string
   detail: string

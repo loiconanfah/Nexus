@@ -2,6 +2,7 @@ import { getTenantId } from './tenant'
 import type {
   AiAnswer,
   EntityRisk,
+  ExecutiveReport,
   GraphData,
   GraphEntityRecord,
   ImportResult,
@@ -33,6 +34,8 @@ export const api = {
   graph: () => fetch(`${BASE}/graph`, { headers: headers(false) }).then(handle<GraphData>),
 
   riskEntities: () => fetch(`${BASE}/risks/entities`, { headers: headers(false) }).then(handle<RiskRow[]>),
+
+  executiveReport: () => fetch(`${BASE}/reports/executive`, { headers: headers(false) }).then(handle<ExecutiveReport>),
 
   entity: (id: string) =>
     fetch(`${BASE}/entities/${id}`, { headers: headers(false) }).then(handle<GraphEntityRecord>),

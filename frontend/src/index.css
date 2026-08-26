@@ -40,6 +40,24 @@ body {
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'tnum';
 }
 
+/* Impression : masque le chrome de l'app, laisse le document « papier » */
+@media print {
+  aside,
+  header {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
 /* Barre de défilement discrète */
 ::-webkit-scrollbar {
   width: 10px;

@@ -13,7 +13,7 @@ const NAV = [
   { to: '/risks', label: 'Risks', icon: AlertTriangle, ready: true },
   { to: '/simulations', label: 'Simulations', icon: Zap, ready: true },
   { to: '/ai', label: 'AI Analyst', icon: Sparkles, ready: true },
-  { to: '/reports', label: 'Reports', icon: ScrollText, ready: false },
+  { to: '/reports', label: 'Reports', icon: ScrollText, ready: true },
 ]
 
 export function Layout({ children, header }: { children: ReactNode; header?: ReactNode }) {

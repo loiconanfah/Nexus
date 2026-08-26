@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<PropagationEngine>();
         services.AddScoped<SpofAnalyzer>();
         services.AddScoped<RiskAnalyzer>();
+        services.AddScoped<Reporting.ReportService>();
         return services;
     }
 }
