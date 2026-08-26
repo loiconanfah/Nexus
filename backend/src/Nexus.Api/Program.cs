@@ -1,3 +1,4 @@
+﻿using Nexus.AI;
 using Nexus.Api.Tenancy;
 using Nexus.Graph;
 using Nexus.Infrastructure;
@@ -30,6 +31,10 @@ builder.Services.AddNexusIngestion();
 
 // Moteurs déterministes (risque, criticité, propagation, SPOF).
 builder.Services.AddNexusRisk();
+
+// AI Analyst (orchestrateur + LLM optionnel selon config Nexus:AI).
+builder.Services.AddNexusAI(options =>
+    builder.Configuration.GetSection(AiOptions.SectionName).Bind(options));
 
 var app = builder.Build();
 

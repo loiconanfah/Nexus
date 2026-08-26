@@ -1,4 +1,4 @@
-using Nexus.Core.Primitives;
+﻿using Nexus.Core.Primitives;
 using Nexus.Core.Results;
 
 namespace Nexus.Domain.ValueObjects;

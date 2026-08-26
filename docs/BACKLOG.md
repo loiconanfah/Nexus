@@ -32,10 +32,10 @@ Cet ordre ne doit pas être sauté.
 | 18 | Risk dashboard | 4 | ✅ (Dashboard + Risk Center) |
 | 19 | What-if engine | 3 | ✅ (Propagation Engine) |
 | 20 | Simulation visualization | 4 | ✅ (cascade par profondeur) |
-| 21 | Document ingestion | 5 | ⬜ |
-| 22 | Vector search | 5 | ⬜ |
-| 23 | AI analyst | 5 | ⬜ |
-| 24 | Evidence / citations | 5 | ⬜ |
+| 21 | Document ingestion | 5 | ⬜ (RAG — base pgvector prête, activé avec clé LLM) |
+| 22 | Vector search | 5 | ⬜ (idem RAG) |
+| 23 | AI analyst | 5 | ✅ (orchestrateur ancré, LLM optionnel) |
+| 24 | Evidence / citations | 5 | ✅ |
 | 25 | Microsoft connector | 6 (post-MVP) | ⬜ |
 | 26 | Security hardening | 6 | ⬜ |
 | 27 | Observability | 6 | ⬜ |
@@ -84,11 +84,12 @@ Validée de bout en bout : build 0/0, 34 tests verts (dont 2 d'intégration Post
 - Vérifié dans le navigateur de bout en bout (import démo → SPOF → simulation).
 - Reste (post-MVP) : path finding A→B, expand incrémental, animation de propagation.
 
-### Phase 5 — Documents & AI Analyst *(J24-J28)*
-- Ingestion documentaire → chunking → embeddings (pgvector).
-- RAG : retrieval + reranking + context builder.
-- AI Orchestrator : intent → graph query → risk → RAG → LLM → réponse.
-- Guardrails + **evidence/citations** + niveau de confiance.
+### Phase 5 — Documents & AI Analyst *(J24-J28)* ✅ (AI Analyst) · 🟡 (RAG documentaire différé)
+- AI Orchestrator : intent → moteurs déterministes → réponse ancrée ; LLM Azure OpenAI **optionnel** (reformulation), dégradation propre sans clé.
+- Guardrails + **evidence/citations** + niveau de confiance (article 22).
+- API `POST /api/v1/ai/ask` + page UI conversationnelle (preuves dépliables).
+- Vérifié navigateur : « quels SPOF ? » → SinglePointsOfFailure, confiance 90%, 3 SPOF sourcés.
+- RAG documentaire (ingestion→chunking→embeddings→retrieval) : base pgvector prête, activé avec un déploiement d'embeddings. Voir [AI.md](AI.md).
 
 ### Phase 6 — Report, Sécurité, Observabilité, Demo *(J29-J30)*
 - Report Engine (Executive Risk Report, PDF/JSON/CSV).

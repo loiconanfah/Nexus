@@ -1,4 +1,4 @@
-using Nexus.Domain.Ontology;
+﻿using Nexus.Domain.Ontology;
 
 namespace Nexus.Tests.Domain;
 

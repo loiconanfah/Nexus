@@ -6,6 +6,7 @@ import { Simulation } from './pages/Simulation'
 import { GraphExplorer } from './pages/GraphExplorer'
 import { RiskCenter } from './pages/RiskCenter'
 import { Assets } from './pages/Assets'
+import { AiAnalyst } from './pages/AiAnalyst'
 import { getTenantId, resetTenant } from './lib/tenant'
 
 const TITLES: Record<string, string> = {
@@ -15,6 +16,7 @@ const TITLES: Record<string, string> = {
   '/dependencies': 'Dependencies',
   '/risks': 'Risk Center',
   '/simulations': 'What-If Simulation',
+  '/ai': 'AI Analyst',
 }
 
 export default function App() {
@@ -49,6 +51,7 @@ export default function App() {
         <Route path="/assets" element={<Assets />} />
         <Route path="/risks" element={<RiskCenter />} />
         <Route path="/simulations" element={<Simulation />} />
+        <Route path="/ai" element={<AiAnalyst />} />
       </Routes>
     </Layout>
   )

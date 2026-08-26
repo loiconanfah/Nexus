@@ -1,4 +1,4 @@
-using Nexus.Domain.Graph;
+﻿using Nexus.Domain.Graph;
 
 namespace Nexus.Graph;
 

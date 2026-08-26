@@ -1,4 +1,4 @@
-namespace Nexus.Infrastructure.Persistence.Entities;
+﻿namespace Nexus.Infrastructure.Persistence.Entities;
 
 /// <summary>Journal d'audit immuable (article 43).</summary>
 public class AuditLog

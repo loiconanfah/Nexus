@@ -1,4 +1,4 @@
-namespace Nexus.Graph;
+﻿namespace Nexus.Graph;
 
 /// <summary>
 /// Modèle de lecture d'une entité du graphe (projection de requête). Les

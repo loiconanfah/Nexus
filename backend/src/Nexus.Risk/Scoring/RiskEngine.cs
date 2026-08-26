@@ -1,4 +1,4 @@
-namespace Nexus.Risk.Scoring;
+﻿namespace Nexus.Risk.Scoring;
 
 /// <summary>
 /// Moteur de risque déterministe et EXPLICABLE (article 14). Calcule un score

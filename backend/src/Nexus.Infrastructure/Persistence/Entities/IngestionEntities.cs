@@ -1,4 +1,4 @@
-namespace Nexus.Infrastructure.Persistence.Entities;
+﻿namespace Nexus.Infrastructure.Persistence.Entities;
 
 /// <summary>Connecteur configuré. Read-only par défaut (ADR-0008).</summary>
 public class Connector

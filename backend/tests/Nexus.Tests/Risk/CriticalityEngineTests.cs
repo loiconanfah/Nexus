@@ -1,4 +1,4 @@
-using Nexus.Risk;
+﻿using Nexus.Risk;
 
 namespace Nexus.Tests.Risk;
 

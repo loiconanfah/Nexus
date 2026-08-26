@@ -1,4 +1,4 @@
-namespace Nexus.Core.Results;
+﻿namespace Nexus.Core.Results;
 
 /// <summary>
 /// Erreur métier explicite (code stable + message + catégorie). Immuable.

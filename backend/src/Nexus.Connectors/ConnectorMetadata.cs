@@ -1,4 +1,4 @@
-namespace Nexus.Connectors;
+﻿namespace Nexus.Connectors;
 
 /// <summary>
 /// Métadonnées descriptives d'un connecteur (article 10). Un connecteur NEXUS

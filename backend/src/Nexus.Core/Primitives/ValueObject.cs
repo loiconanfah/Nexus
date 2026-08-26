@@ -1,4 +1,4 @@
-namespace Nexus.Core.Primitives;
+﻿namespace Nexus.Core.Primitives;
 
 /// <summary>
 /// Base des value objects : égalité structurelle fondée sur les composants

@@ -1,4 +1,4 @@
-namespace Nexus.Application.Lineage;
+﻿namespace Nexus.Application.Lineage;
 
 /// <summary>
 /// Entrée de data lineage : provenance d'un nœud ou d'une relation du graphe

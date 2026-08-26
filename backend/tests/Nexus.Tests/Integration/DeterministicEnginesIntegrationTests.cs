@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Nexus.Domain.Graph;
 using Nexus.Domain.Ontology;
 using Nexus.Domain.ValueObjects;

@@ -1,4 +1,4 @@
-namespace Nexus.Ingestion;
+﻿namespace Nexus.Ingestion;
 
 /// <summary>
 /// Bilan d'un import. <see cref="TimeToFirstGraph"/> est le KPI central

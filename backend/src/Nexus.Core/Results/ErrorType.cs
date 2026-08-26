@@ -1,4 +1,4 @@
-namespace Nexus.Core.Results;
+﻿namespace Nexus.Core.Results;
 
 /// <summary>
 /// Catégorie d'erreur métier, utilisée pour mapper vers les bons codes HTTP

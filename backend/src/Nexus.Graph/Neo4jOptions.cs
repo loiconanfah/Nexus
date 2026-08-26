@@ -1,4 +1,4 @@
-namespace Nexus.Graph;
+﻿namespace Nexus.Graph;
 
 /// <summary>Configuration de connexion au knowledge graph Neo4j.</summary>
 public sealed class Neo4jOptions

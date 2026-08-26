@@ -1,4 +1,4 @@
-using Nexus.Application.Lineage;
+﻿using Nexus.Application.Lineage;
 using Nexus.Infrastructure.Persistence.Entities;
 
 namespace Nexus.Infrastructure.Persistence;

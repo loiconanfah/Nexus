@@ -1,4 +1,4 @@
-namespace Nexus.Graph;
+﻿namespace Nexus.Graph;
 
 /// <summary>Un nœud impacté et sa distance minimale à l'origine de la panne.</summary>
 public sealed record BlastNode(GraphEntityRecord Entity, int Depth);

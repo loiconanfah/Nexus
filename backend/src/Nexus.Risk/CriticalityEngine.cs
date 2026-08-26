@@ -1,4 +1,4 @@
-namespace Nexus.Risk;
+﻿namespace Nexus.Risk;
 
 /// <summary>
 /// Criticality Engine (articles 14-15). La criticité effective d'une entité est

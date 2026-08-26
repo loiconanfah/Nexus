@@ -101,6 +101,29 @@ export interface RiskRow {
   hasRedundancy: boolean
 }
 
+export interface AiEvidence {
+  label: string
+  detail: string
+  confidence: number | null
+}
+
+export interface AiSource {
+  type: string
+  reference: string
+}
+
+export interface AiAnswer {
+  question: string
+  intent: string
+  answer: string
+  confidence: number
+  evidence: AiEvidence[]
+  sources: AiSource[]
+  affectedAssets: string[]
+  recommendedAction: string | null
+  llmNaturalized: boolean
+}
+
 export interface ImportResult {
   recordsRead: number
   entitiesCreated: number

@@ -1,4 +1,4 @@
-namespace Nexus.Connectors;
+﻿namespace Nexus.Connectors;
 
 /// <summary>
 /// Enregistrement brut extrait d'une source, avant normalisation. Les valeurs

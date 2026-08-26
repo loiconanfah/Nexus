@@ -1,4 +1,4 @@
-namespace Nexus.Infrastructure.Persistence.Entities;
+﻿namespace Nexus.Infrastructure.Persistence.Entities;
 
 /// <summary>Utilisateur NEXUS, lié à Entra ID via <see cref="ExternalId"/>.</summary>
 public class AppUser

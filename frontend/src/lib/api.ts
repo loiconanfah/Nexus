@@ -1,5 +1,6 @@
 import { getTenantId } from './tenant'
 import type {
+  AiAnswer,
   EntityRisk,
   GraphData,
   GraphEntityRecord,
@@ -58,6 +59,13 @@ export const api = {
       headers: headers(),
       body: JSON.stringify({ assetId, scenario, maxDepth }),
     }).then(handle<PropagationResult>),
+
+  ask: (question: string) =>
+    fetch(`${BASE}/ai/ask`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ question }),
+    }).then(handle<AiAnswer>),
 
   importCsv: (file: Blob, filename: string, profile: string) => {
     const form = new FormData()

@@ -1,4 +1,4 @@
-namespace Nexus.Ingestion.Mapping;
+﻿namespace Nexus.Ingestion.Mapping;
 
 /// <summary>
 /// Décrit comment les colonnes d'un jeu de données produisent des ENTITÉS de

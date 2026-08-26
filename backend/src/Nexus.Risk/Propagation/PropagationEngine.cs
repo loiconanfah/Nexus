@@ -1,4 +1,4 @@
-using Nexus.Graph;
+﻿using Nexus.Graph;
 
 namespace Nexus.Risk.Propagation;
 

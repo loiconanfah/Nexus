@@ -1,4 +1,4 @@
-namespace Nexus.Infrastructure.Persistence.Entities;
+﻿namespace Nexus.Infrastructure.Persistence.Entities;
 
 /// <summary>Tenant : unité d'isolation multi-tenant (ADR-0005).</summary>
 public class Tenant

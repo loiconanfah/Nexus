@@ -1,4 +1,4 @@
-using Pgvector;
+﻿using Pgvector;
 
 namespace Nexus.Infrastructure.Persistence.Entities;
 

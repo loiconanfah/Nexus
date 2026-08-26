@@ -1,4 +1,4 @@
-namespace Nexus.Graph;
+﻿namespace Nexus.Graph;
 
 /// <summary>
 /// Applique les contraintes et index du knowledge graph au démarrage

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Nexus.Infrastructure.Persistence;
 using Nexus.Infrastructure.Persistence.Entities;
 

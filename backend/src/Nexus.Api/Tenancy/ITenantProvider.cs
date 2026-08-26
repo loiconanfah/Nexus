@@ -1,4 +1,4 @@
-namespace Nexus.Api.Tenancy;
+﻿namespace Nexus.Api.Tenancy;
 
 /// <summary>Fournit le tenant de la requête courante.</summary>
 public interface ITenantProvider

@@ -12,7 +12,7 @@ const NAV = [
   { to: '/dependencies', label: 'Dependencies', icon: GitBranch, ready: true },
   { to: '/risks', label: 'Risks', icon: AlertTriangle, ready: true },
   { to: '/simulations', label: 'Simulations', icon: Zap, ready: true },
-  { to: '/ai', label: 'AI Analyst', icon: Sparkles, ready: false },
+  { to: '/ai', label: 'AI Analyst', icon: Sparkles, ready: true },
   { to: '/reports', label: 'Reports', icon: ScrollText, ready: false },
 ]
 

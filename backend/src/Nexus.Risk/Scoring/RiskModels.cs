@@ -1,4 +1,4 @@
-using Nexus.Domain.ValueObjects;
+﻿using Nexus.Domain.ValueObjects;
 
 namespace Nexus.Risk.Scoring;
 

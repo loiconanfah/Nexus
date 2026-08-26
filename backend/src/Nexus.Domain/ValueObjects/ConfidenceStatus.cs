@@ -1,4 +1,4 @@
-namespace Nexus.Domain.ValueObjects;
+﻿namespace Nexus.Domain.ValueObjects;
 
 /// <summary>
 /// Statut d'une relation dans le Confidence Engine (article 9). Détermine la

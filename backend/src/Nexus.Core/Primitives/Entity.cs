@@ -1,4 +1,4 @@
-namespace Nexus.Core.Primitives;
+﻿namespace Nexus.Core.Primitives;
 
 /// <summary>
 /// Base des entités : identité fondée sur l'<see cref="Id"/> (deux entités sont

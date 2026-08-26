@@ -1,4 +1,4 @@
-namespace Nexus.Core.Results;
+﻿namespace Nexus.Core.Results;
 
 /// <summary>
 /// Résultat d'une opération : succès, ou échec porteur d'une <see cref="Error"/>.

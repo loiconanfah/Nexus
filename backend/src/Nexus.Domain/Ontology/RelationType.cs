@@ -1,4 +1,4 @@
-using Nexus.Core.Results;
+﻿using Nexus.Core.Results;
 
 namespace Nexus.Domain.Ontology;
 
