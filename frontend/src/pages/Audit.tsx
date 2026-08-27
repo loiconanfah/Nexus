@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { BadgeCheck, FileSearch, ShieldQuestion } from 'lucide-react'
 import { api } from '../lib/api'
+import { useLang } from '../lib/i18n'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -16,9 +17,10 @@ const STATUS_COLOR: Record<string, string> = {
 function sc(status: string) { return STATUS_COLOR[status] ?? '#849396' }
 
 export function Audit() {
+  const { t } = useLang()
   const { data, isLoading, error } = useQuery({ queryKey: ['audit'], queryFn: api.audit })
 
-  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>AUDITING DEPENDENCY PROVENANCE…</div>
+  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('AUDIT DE LA PROVENANCE DES DÉPENDANCES…', 'AUDITING DEPENDENCY PROVENANCE…')}</div>
   if (error) return <div style={{ color: '#ffb4ab' }}>{(error as Error).message}</div>
   if (!data) return null
 
@@ -28,22 +30,22 @@ export function Audit() {
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="flex items-center gap-2" style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>
-          <FileSearch size={22} style={{ color: 'var(--nx-cyan)' }} /> Confidence &amp; Audit
+          <FileSearch size={22} style={{ color: 'var(--nx-cyan)' }} /> {t('Confiance & audit', 'Confidence & Audit')}
         </h2>
-        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Every dependency carries a provenance and a confidence score — separate what is verified from what is assumed.</p>
+        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chaque dépendance porte une provenance et un niveau de confiance — séparez le vérifié du supposé.', 'Every dependency carries a provenance and a confidence score — separate what is verified from what is assumed.')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Tile label="TOTAL DEPENDENCIES" value={String(data.summary.totalDependencies)} color="var(--nx-text)" />
-        <Tile label="VERIFIED" value={`${data.summary.verifiedPercent}%`} sub={`${data.summary.verified} edges`} color="#4ade80" />
-        <Tile label="AVG CONFIDENCE" value={`${data.summary.avgConfidence}%`} color={CYAN_T} />
-        <Tile label="NEEDS REVIEW" value={String(data.summary.undocumented)} color="#facc15" />
+        <Tile label={t('TOTAL DÉPENDANCES', 'TOTAL DEPENDENCIES')} value={String(data.summary.totalDependencies)} color="var(--nx-text)" />
+        <Tile label={t('VÉRIFIÉES', 'VERIFIED')} value={`${data.summary.verifiedPercent}%`} sub={`${data.summary.verified} ${t('arêtes', 'edges')}`} color="#4ade80" />
+        <Tile label={t('CONFIANCE MOY.', 'AVG CONFIDENCE')} value={`${data.summary.avgConfidence}%`} color={CYAN_T} />
+        <Tile label={t('À REVOIR', 'NEEDS REVIEW')} value={String(data.summary.undocumented)} color="#facc15" />
       </div>
 
       {/* Distribution + low confidence */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-          <h3 className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}><BadgeCheck size={14} /> Confidence Distribution</h3>
+          <h3 className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}><BadgeCheck size={14} /> {t('Distribution de la confiance', 'Confidence Distribution')}</h3>
           <div className="flex flex-col gap-3">
             {data.byStatus.map((s) => (
               <div key={s.status}>
@@ -62,7 +64,7 @@ export function Audit() {
         <div className="rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
           <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
             <ShieldQuestion size={14} style={{ color: '#facc15' }} />
-            <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>Dependencies Needing Review</h3>
+            <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Dépendances à revoir', 'Dependencies Needing Review')}</h3>
           </div>
           <div className="flex flex-col divide-y" style={{ maxHeight: 320, overflowY: 'auto' }}>
             {data.lowConfidence.map((e, idx) => (
@@ -78,7 +80,7 @@ export function Audit() {
                 <p className="mt-1" style={{ fontSize: 12, color: 'var(--nx-text-muted)', fontStyle: 'italic' }}>{e.evidence}</p>
               </div>
             ))}
-            {data.lowConfidence.length === 0 && <div className="p-4" style={{ fontFamily: mono, fontSize: 12, color: '#4ade80' }}>All dependencies verified. No review required.</div>}
+            {data.lowConfidence.length === 0 && <div className="p-4" style={{ fontFamily: mono, fontSize: 12, color: '#4ade80' }}>{t('Toutes les dépendances sont vérifiées. Aucune revue requise.', 'All dependencies verified. No review required.')}</div>}
           </div>
         </div>
       </div>
@@ -86,12 +88,12 @@ export function Audit() {
       {/* Ledger complet */}
       <div className="overflow-x-auto rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-          <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--nx-text)' }}>Dependency Provenance Ledger</h3>
+          <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--nx-text)' }}>{t('Registre de provenance des dépendances', 'Dependency Provenance Ledger')}</h3>
         </div>
         <table className="w-full text-left">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
-              {['Source', 'Relation', 'Target', 'Confidence', 'Status', 'Origin'].map((h, i) => (
+              {[t('Source', 'Source'), t('Relation', 'Relation'), t('Cible', 'Target'), t('Confiance', 'Confidence'), t('Statut', 'Status'), t('Origine', 'Origin')].map((h, i) => (
                 <th key={h} className={`px-4 py-2 ${i === 3 ? 'text-right' : ''}`} style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{h}</th>
               ))}
             </tr>

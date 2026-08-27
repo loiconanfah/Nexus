@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Play, Truck } from 'lucide-react'
 import { api } from '../lib/api'
+import { useLang } from '../lib/i18n'
 import type { Supplier, SupplierIntel } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -20,13 +21,14 @@ function bandColor(v: number): string {
 
 export function SupplierIntelligence() {
   const navigate = useNavigate()
+  const { t } = useLang()
   const { data, isLoading, error } = useQuery({ queryKey: ['suppliers'], queryFn: api.suppliers })
   const [selId, setSelId] = useState<string | null>(null)
 
   const suppliers = data?.suppliers ?? []
   const selected = suppliers.find((s) => s.id === selId) ?? suppliers[0]
 
-  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>ANALYZING SUPPLY CHAIN…</div>
+  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('ANALYSE DE LA CHAÎNE D’APPROVISIONNEMENT…', 'ANALYZING SUPPLY CHAIN…')}</div>
   if (error) return <div style={{ color: ERR }}>{(error as Error).message}</div>
   if (!data) return null
 
@@ -35,14 +37,14 @@ export function SupplierIntelligence() {
       {/* Header + tiles */}
       <div className="flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
         <div>
-          <h2 style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>Supplier Intelligence</h2>
-          <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Understand how external organizations influence your operational resilience.</p>
+          <h2 style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>{t('Intelligence fournisseurs', 'Supplier Intelligence')}</h2>
+          <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Comprenez comment les organisations externes influencent votre résilience opérationnelle.', 'Understand how external organizations influence your operational resilience.')}</p>
         </div>
         <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 lg:w-auto">
-          <Tile label="CRITICAL SUPPLIERS" value={data.summary.criticalSuppliers} color={ERR} />
-          <Tile label="SINGLE DEPENDENCIES" value={data.summary.singleDependencies} color="#fb923c" />
-          <Tile label="SUPPLIER CONCENTRATION" value={`${data.summary.concentrationPercent}%`} color={CYAN_T} />
-          <Tile label="CONTRACTS EXPIRING" value={data.summary.contractsExpiring} color="var(--nx-text)" />
+          <Tile label={t('FOURNISSEURS CRITIQUES', 'CRITICAL SUPPLIERS')} value={data.summary.criticalSuppliers} color={ERR} />
+          <Tile label={t('DÉPENDANCES UNIQUES', 'SINGLE DEPENDENCIES')} value={data.summary.singleDependencies} color="#fb923c" />
+          <Tile label={t('CONCENTRATION', 'SUPPLIER CONCENTRATION')} value={`${data.summary.concentrationPercent}%`} color={CYAN_T} />
+          <Tile label={t('CONTRATS EXPIRANT', 'CONTRACTS EXPIRING')} value={data.summary.contractsExpiring} color="var(--nx-text)" />
         </div>
       </div>
 
@@ -57,12 +59,12 @@ export function SupplierIntelligence() {
       {/* Table */}
       <div className="overflow-x-auto rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-          <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--nx-text)' }}>Supplier Risk Profiles</h3>
+          <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--nx-text)' }}>{t('Profils de risque fournisseur', 'Supplier Risk Profiles')}</h3>
         </div>
         <table className="w-full text-left">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
-              {['Supplier', 'Critical Services', 'Dependencies', 'Concentration', 'Risk', 'Alternatives'].map((h, i) => (
+              {[t('Fournisseur', 'Supplier'), t('Services critiques', 'Critical Services'), t('Dépendances', 'Dependencies'), t('Concentration', 'Concentration'), t('Risque', 'Risk'), t('Alternatives', 'Alternatives')].map((h, i) => (
                 <th key={h} className={`px-4 py-2 ${i >= 1 ? 'text-right' : ''}`} style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{h}</th>
               ))}
             </tr>
@@ -78,7 +80,7 @@ export function SupplierIntelligence() {
                   <td className="px-4 py-3 text-right" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{s.dependencies}</td>
                   <td className="px-4 py-3 text-right" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{s.concentrationPercent}%</td>
                   <td className="px-4 py-3 text-right"><span style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: c }}>{s.riskScore.toFixed(0)}</span></td>
-                  <td className="px-4 py-3 text-right" style={{ fontFamily: mono, fontSize: 12, color: s.alternatives === 0 ? ERR : 'var(--nx-text-muted)' }}>{s.alternatives === 0 ? 'None' : s.alternatives}</td>
+                  <td className="px-4 py-3 text-right" style={{ fontFamily: mono, fontSize: 12, color: s.alternatives === 0 ? ERR : 'var(--nx-text-muted)' }}>{s.alternatives === 0 ? t('Aucune', 'None') : s.alternatives}</td>
                 </tr>
               )
             })}
@@ -90,6 +92,7 @@ export function SupplierIntelligence() {
 }
 
 function NetworkMap({ data, selected, onSupplier }: { data: SupplierIntel; selected: Supplier; onSupplier: (id: string) => void }) {
+  const { t } = useLang()
   const assets = selected.dependents.slice(0, 8)
   const pos = useMemo(() => {
     const n = assets.length || 1
@@ -100,7 +103,7 @@ function NetworkMap({ data, selected, onSupplier }: { data: SupplierIntel; selec
   return (
     <div className="relative h-full min-h-[340px] w-full">
       <div className="nx-grid absolute inset-0" />
-      <div className="absolute left-3 top-3" style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Dependency Network Map</div>
+      <div className="absolute left-3 top-3" style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Carte du réseau de dépendances', 'Dependency Network Map')}</div>
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke={critical.has(p.name) ? ERR : CYAN} strokeWidth={0.4} opacity={0.5} />)}
         {pos.map((p) => (
@@ -123,6 +126,7 @@ function NetworkMap({ data, selected, onSupplier }: { data: SupplierIntel; selec
 }
 
 function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimulate: () => void }) {
+  const { t } = useLang()
   const c = bandColor(supplier.riskScore)
   const critPct = supplier.dependencies === 0 ? 0 : Math.round(100 * supplier.criticalServices / supplier.dependencies)
   return (
@@ -132,22 +136,22 @@ function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimula
           <h3 style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{supplier.name}</h3>
           <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>ID · {supplier.id.slice(0, 8).toUpperCase()}</div>
         </div>
-        {supplier.criticalServices > 0 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>CRITICAL</span>}
+        {supplier.criticalServices > 0 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>{t('CRITIQUE', 'CRITICAL')}</span>}
       </div>
 
       <div className="rounded-sm border p-4 text-center" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
-        <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Calculated Risk Score</div>
+        <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Score de risque calculé', 'Calculated Risk Score')}</div>
         <div className="mt-1 flex items-baseline justify-center gap-1"><span style={{ fontFamily: geist, fontSize: 48, lineHeight: 1, color: c }}>{supplier.riskScore.toFixed(0)}</span><span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>/100</span></div>
       </div>
 
       <div className="flex flex-col divide-y" style={{ borderColor: 'var(--nx-border)' }}>
-        <Row label="Supports Critical Svcs" value={`${critPct}%`} />
-        <Row label="Connected Assets" value={String(supplier.connectedAssets)} />
-        <Row label="Alternative Suppliers" value={supplier.alternatives === 0 ? 'None' : String(supplier.alternatives)} danger={supplier.alternatives === 0} />
-        <Row label="Concentration" value={`${supplier.concentrationPercent}%`} />
+        <Row label={t('Soutient services critiques', 'Supports Critical Svcs')} value={`${critPct}%`} />
+        <Row label={t('Actifs connectés', 'Connected Assets')} value={String(supplier.connectedAssets)} />
+        <Row label={t('Fournisseurs alternatifs', 'Alternative Suppliers')} value={supplier.alternatives === 0 ? t('Aucun', 'None') : String(supplier.alternatives)} danger={supplier.alternatives === 0} />
+        <Row label={t('Concentration', 'Concentration')} value={`${supplier.concentrationPercent}%`} />
       </div>
 
-      <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px rgba(0,229,255,0.2)' }}><Play size={16} /> Simulate Supplier Failure</button>
+      <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px rgba(0,229,255,0.2)' }}><Play size={16} /> {t('Simuler la défaillance', 'Simulate Supplier Failure')}</button>
     </aside>
   )
 }
