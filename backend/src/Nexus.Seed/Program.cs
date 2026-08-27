@@ -76,6 +76,9 @@ await Node("Payroll", EntityType.BusinessProcess, 80);
 await Node("CloudProviderX", EntityType.Supplier, 90);   // fournisseur critique
 await Node("MaintCorp", EntityType.Supplier, 65);        // fournisseur unique du legacy
 await Node("Alice", EntityType.Person, 60);              // connaissance unique du legacy
+await Node("Bob", EntityType.Person, 58);                // détenteur unique de la connaissance ERP
+await Node("Carol", EntityType.Person, 52);              // détentrice unique de CustomerDB
+await Node("David", EntityType.Person, 48);              // backup de SQL01
 
 // ---- Dépendances ----
 await Dep("ERP", "SQL01", RelationType.DependsOn, 0.98, ConfidenceStatus.Verified);
@@ -94,8 +97,12 @@ await Dep("AS400-LEGACY", "MaintCorp", RelationType.SuppliedBy, 0.9, ConfidenceS
 // Fournisseur critique : plusieurs applications en dépendent.
 await Dep("ERP", "CloudProviderX", RelationType.Uses, 0.9, ConfidenceStatus.Imported);
 await Dep("CRM", "CloudProviderX", RelationType.Uses, 0.9, ConfidenceStatus.Imported);
-// Dépendance humaine : Alice détient la connaissance du legacy.
+// Dépendances humaines : connaissance critique détenue par peu de personnes (article 28).
 await Dep("Alice", "AS400-LEGACY", RelationType.Knows, 0.8, ConfidenceStatus.Verified);
+await Dep("Bob", "ERP", RelationType.Knows, 0.85, ConfidenceStatus.Verified);      // seul à connaître l'ERP
+await Dep("Bob", "SQL01", RelationType.Knows, 0.8, ConfidenceStatus.Imported);
+await Dep("David", "SQL01", RelationType.Knows, 0.75, ConfidenceStatus.Imported);  // backup de SQL01
+await Dep("Carol", "CustomerDB", RelationType.Knows, 0.8, ConfidenceStatus.Verified); // seule à connaître CustomerDB
 // Relation NON DOCUMENTÉE, suggérée par l'IA, non confirmée.
 await Dep("Billing", "CloudProviderX", RelationType.DependsOn, 0.4, ConfidenceStatus.AiSuggested);
 

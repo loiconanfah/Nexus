@@ -8,6 +8,7 @@ import { RiskCenter } from './pages/RiskCenter'
 import { Assets } from './pages/Assets'
 import { AiAnalyst } from './pages/AiAnalyst'
 import { Reports } from './pages/Reports'
+import { HumanDependency } from './pages/HumanDependency'
 import { Login } from './pages/Login'
 import { getTenantId, resetTenant } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -21,6 +22,7 @@ const TITLES: Record<string, string> = {
   '/simulations': 'What-If Simulation',
   '/ai': 'AI Analyst',
   '/reports': 'Reports',
+  '/human': 'Human Dependency',
 }
 
 export default function App() {
@@ -75,6 +77,7 @@ export default function App() {
         <Route path="/simulations" element={<Simulation />} />
         <Route path="/ai" element={<AiAnalyst />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/human" element={<HumanDependency />} />
       </Routes>
     </Layout>
   )

@@ -142,6 +142,24 @@ export interface ExecutiveReport {
   recommendations: ReportRecommendation[]
 }
 
+export interface HumanPerson {
+  id: string
+  name: string
+  role: string
+  knownSystems: string[]
+  criticalSystems: number
+  soleKnowledgeSystems: number
+  backupExperts: number
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MODERATE'
+  documentationPercent: number
+}
+export interface HumanEdge { person: string; system: string; systemCritical: boolean; relation: string }
+export interface HumanDependencies {
+  summary: { criticalKnowledgeAreas: number; singleKnowledgeOwners: number; undocumentedProcesses: number; keyDependencyEmployees: number }
+  people: HumanPerson[]
+  edges: HumanEdge[]
+}
+
 export interface AiEvidence {
   label: string
   detail: string

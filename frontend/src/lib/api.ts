@@ -5,6 +5,7 @@ import type {
   ExecutiveReport,
   GraphData,
   GraphEntityRecord,
+  HumanDependencies,
   ImportResult,
   Overview,
   PropagationResult,
@@ -36,6 +37,8 @@ export const api = {
   riskEntities: () => fetch(`${BASE}/risks/entities`, { headers: headers(false) }).then(handle<RiskRow[]>),
 
   executiveReport: () => fetch(`${BASE}/reports/executive`, { headers: headers(false) }).then(handle<ExecutiveReport>),
+
+  humanDependencies: () => fetch(`${BASE}/human-dependencies`, { headers: headers(false) }).then(handle<HumanDependencies>),
 
   entity: (id: string) =>
     fetch(`${BASE}/entities/${id}`, { headers: headers(false) }).then(handle<GraphEntityRecord>),

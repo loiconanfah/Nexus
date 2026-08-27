@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   AlertTriangle, Boxes, Database, GitBranch, HelpCircle, LayoutDashboard, Network,
-  ScrollText, Search, Settings, Sparkles, Terminal, Zap,
+  ScrollText, Search, Settings, Sparkles, Terminal, Users, Zap,
 } from 'lucide-react'
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/assets', label: 'Assets', icon: Boxes },
   { to: '/dependencies', label: 'Dependencies', icon: GitBranch },
   { to: '/risks', label: 'Risks', icon: AlertTriangle },
+  { to: '/human', label: 'Human Deps', icon: Users },
   { to: '/simulations', label: 'Simulations', icon: Zap },
   { to: '/ai', label: 'AI Analyst', icon: Sparkles },
   { to: '/reports', label: 'Reports', icon: ScrollText },
