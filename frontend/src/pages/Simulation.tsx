@@ -68,6 +68,7 @@ export function Simulation() {
   const [assetId, setAssetId] = useState<string>(params.get('asset') ?? '')
   const [scenario, setScenario] = useState<ScenarioType>('ServerFailure')
   const [secondary, setSecondary] = useState<{ assetId: string; scenario: ScenarioType } | null>(null)
+  const [depth, setDepth] = useState(6)
   const [result, setResult] = useState<PropagationResult | null>(null)
 
   const nodes = graph.data?.nodes ?? []
@@ -75,9 +76,9 @@ export function Simulation() {
 
   const run = useMutation({
     mutationFn: async () => {
-      const primary = await api.simulate(assetId, scenario)
+      const primary = await api.simulate(assetId, scenario, depth)
       if (!secondary?.assetId) return primary
-      const second = await api.simulate(secondary.assetId, secondary.scenario)
+      const second = await api.simulate(secondary.assetId, secondary.scenario, depth)
       return mergeResults([primary, second])
     },
     onSuccess: (r) => setResult(r),
@@ -120,10 +121,7 @@ export function Simulation() {
             <div className="flex flex-col gap-4">
               <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
               <Select label={t('Type de perturbation', 'Disruption Type')} value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={scenarioOptions} />
-              <div className="flex gap-3">
-                <Select label={t('Durée', 'Duration')} value="24" onChange={() => {}} options={[{ value: '24', label: t('24 heures', '24 hours') }, { value: '48', label: t('48 heures', '48 hours') }, { value: '72', label: t('72 heures', '72 hours') }]} />
-                <Select label={t('Sévérité de base', 'Base Severity')} value="Critical" onChange={() => {}} danger options={[{ value: 'Critical', label: t('Critique', 'Critical') }, { value: 'High', label: t('Élevée', 'High') }, { value: 'Medium', label: t('Moyenne', 'Medium') }]} />
-              </div>
+              <Select label={t('Profondeur d’analyse (fenêtre)', 'Analysis depth (window)')} value={String(depth)} onChange={(v) => setDepth(Number(v))} options={[{ value: '3', label: t('Court terme (3 sauts)', 'Short term (3 hops)') }, { value: '6', label: t('Moyen terme (6 sauts)', 'Mid term (6 hops)') }, { value: '10', label: t('Long terme (10 sauts)', 'Long term (10 hops)') }]} />
             </div>
             <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
               <div className="flex items-center justify-between">

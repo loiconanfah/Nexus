@@ -8,7 +8,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import {
   Boxes, ChevronsDownUp, ChevronsUpDown, Crosshair, Database, FileText, Mail,
-  Network, Route, ScanSearch, Server, Share2, Sparkles, Users, X,
+  Network, ScanSearch, Server, Share2, Sparkles, Users, X,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { layoutGraph } from '../lib/layout'
@@ -96,7 +96,6 @@ function CommandBar({ selected, onSimulate }: { selected: string | null; onSimul
       <Btn icon={<ChevronsUpDown size={15} />} label={t('Agrandir', 'Expand')} onClick={() => zoomIn()} />
       <Btn icon={<ChevronsDownUp size={15} />} label={t('Réduire', 'Collapse')} onClick={() => zoomOut()} />
       <div className="mx-1 my-auto h-4 w-px" style={{ background: 'var(--nx-border)' }} />
-      <Btn icon={<Route size={15} />} label={t('Tracer le chemin', 'Trace Path')} />
       <Btn icon={<ScanSearch size={15} />} label={t('Analyse d’impact', 'Impact Analysis')} active onClick={onSimulate} />
       <Btn icon={<Sparkles size={15} />} label={t('Simuler', 'Simulate')} onClick={onSimulate} />
       <Btn icon={<Crosshair size={15} />} label={t('Centrer', 'Focus')} onClick={() => fitView({ duration: 400 })} />

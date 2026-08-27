@@ -57,20 +57,6 @@ export function Reports() {
 
           <div className="flex flex-col gap-4 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
             <div>
-              <Label>{t('Plage de dates', 'Date Range')}</Label>
-              <div className="mt-1 flex items-center gap-2">
-                <Input type="date" defaultValue="2026-07-01" />
-                <span style={{ color: 'var(--nx-text-muted)' }}>–</span>
-                <Input type="date" defaultValue="2026-08-31" />
-              </div>
-            </div>
-            <div>
-              <Label>{t('Unité d’affaires', 'Business Unit')}</Label>
-              <select className="mt-1 h-9 w-full appearance-none rounded-sm border px-3 outline-none" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
-                <option>{t('Opérations globales', 'Global Operations')}</option><option>Finance</option><option>{t('Production', 'Manufacturing')}</option>
-              </select>
-            </div>
-            <div>
               <Label>{t('Seuil de risque', 'Risk Threshold')}</Label>
               <div className="mt-1 flex overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
                 {['LOW', 'MED', 'HIGH'].map((th) => (
@@ -97,15 +83,30 @@ export function Reports() {
       <div className="flex flex-1 justify-center overflow-y-auto p-6" style={{ background: 'var(--nx-panel)' }}>
         {isLoading && <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('COMPILATION DU RAPPORT…', 'COMPILING REPORT…')}</div>}
         {error && <div style={{ color: ERR }}>{(error as Error).message}</div>}
-        {data && <ReportPreview report={data} />}
+        {data && <ReportPreview report={data} type={type} threshold={threshold} />}
       </div>
     </div>
   )
 }
 
-function ReportPreview({ report }: { report: ExecutiveReport }) {
+const INFRA_TYPES = new Set(['Server', 'Database', 'Network', 'CloudResource', 'Infrastructure', 'Device', 'DataStore'])
+
+function ReportPreview({ report, type, threshold }: { report: ExecutiveReport; type: string; threshold: string }) {
   const { t, lang } = useLang()
   const systemic = 100 - report.organizationHealthScore
+  const minScore = threshold === 'HIGH' ? 60 : threshold === 'MED' ? 40 : 0
+  // Sections affichées selon le type de rapport (composition réelle des données).
+  const show = (s: 'findings' | 'risks' | 'suppliers' | 'human' | 'map') => {
+    if (type === 'supplier') return s === 'suppliers'
+    if (type === 'infra') return s === 'risks' || s === 'map'
+    if (type === 'cyber') return s === 'risks' || s === 'map' || s === 'findings'
+    if (type === 'continuity') return s !== 'suppliers'
+    return true // executive = tout
+  }
+  const topRisks = report.topRisks
+    .filter((r) => r.score >= minScore)
+    .filter((r) => type !== 'infra' || INFRA_TYPES.has(r.entityType))
+  const recos = report.recommendations.filter((_, i) => threshold === 'LOW' || i < (threshold === 'HIGH' ? 2 : 4))
   return (
     <div className="relative w-full max-w-4xl overflow-hidden rounded-lg border shadow-2xl" style={{ background: '#1a1a1e', borderColor: 'var(--nx-border)' }}>
       {/* Header */}
@@ -143,52 +144,62 @@ function ReportPreview({ report }: { report: ExecutiveReport }) {
         </section>
 
         {/* Findings + map */}
-        <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <div>
-            <SectionTitle>{t('Constats critiques', 'Critical Findings')}</SectionTitle>
-            <ul className="space-y-4">
-              {report.recommendations.slice(0, 4).map((r, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: r.priority === 'Élevée' ? ERR : r.priority === 'Moyenne' ? '#fb923c' : '#facc15' }} />
-                  <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--nx-text)' }}>{r.title}</p>
-                    <p className="mt-1" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{r.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <SectionTitle>{t('Carte des dépendances (chemin critique)', 'Dependency Map (Critical Path)')}</SectionTitle>
-            <CriticalPath spofs={report.singlePointsOfFailure.slice(0, 5)} />
-          </div>
-        </section>
+        {(show('findings') || show('map')) && (
+          <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            {show('findings') && (
+              <div>
+                <SectionTitle>{t('Constats critiques', 'Critical Findings')}</SectionTitle>
+                <ul className="space-y-4">
+                  {recos.map((r, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: r.priority === 'Élevée' ? ERR : r.priority === 'Moyenne' ? '#fb923c' : '#facc15' }} />
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--nx-text)' }}>{r.title}</p>
+                        <p className="mt-1" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{r.detail}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {show('map') && (
+              <div>
+                <SectionTitle>{t('Carte des dépendances (chemin critique)', 'Dependency Map (Critical Path)')}</SectionTitle>
+                <CriticalPath spofs={report.singlePointsOfFailure.slice(0, 5)} />
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Top risks */}
-        <section>
-          <SectionTitle>{t('Risques majeurs', 'Major Risks')}</SectionTitle>
-          <RiskTable rows={report.topRisks} />
-        </section>
+        {show('risks') && topRisks.length > 0 && (
+          <section>
+            <SectionTitle>{t('Risques majeurs', 'Major Risks')}{type === 'infra' ? ' · ' + t('Infrastructure', 'Infrastructure') : ''}</SectionTitle>
+            <RiskTable rows={topRisks} />
+          </section>
+        )}
 
         {/* Supplier + human */}
-        <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          {report.supplierConcentration.length > 0 && (
-            <div>
-              <SectionTitle>{t('Concentration fournisseurs', 'Supplier Concentration')}</SectionTitle>
-              {report.supplierConcentration.map((s) => (
-                <div key={s.name} className="mb-1 flex justify-between" style={{ fontSize: 13 }}><span style={{ color: 'var(--nx-text)' }}>{s.name}</span><span style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{s.dependentSystems} {t('systèmes', 'systems')}</span></div>
-              ))}
-            </div>
-          )}
-          {report.humanDependencies.length > 0 && (
-            <div>
-              <SectionTitle>{t('Dépendances humaines', 'Human Dependencies')}</SectionTitle>
-              {report.humanDependencies.map((h) => (
-                <p key={h.person} style={{ fontSize: 13, color: 'var(--nx-text)' }}><b>{h.person}</b> <span style={{ color: 'var(--nx-text-muted)' }}>— {h.knownSystems.join(', ')}</span></p>
-              ))}
-            </div>
-          )}
-        </section>
+        {(show('suppliers') || show('human')) && (
+          <section className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            {show('suppliers') && report.supplierConcentration.length > 0 && (
+              <div>
+                <SectionTitle>{t('Concentration fournisseurs', 'Supplier Concentration')}</SectionTitle>
+                {report.supplierConcentration.map((s) => (
+                  <div key={s.name} className="mb-1 flex justify-between" style={{ fontSize: 13 }}><span style={{ color: 'var(--nx-text)' }}>{s.name}</span><span style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{s.dependentSystems} {t('systèmes', 'systems')}</span></div>
+                ))}
+              </div>
+            )}
+            {show('human') && report.humanDependencies.length > 0 && (
+              <div>
+                <SectionTitle>{t('Dépendances humaines', 'Human Dependencies')}</SectionTitle>
+                {report.humanDependencies.map((h) => (
+                  <p key={h.person} style={{ fontSize: 13, color: 'var(--nx-text)' }}><b>{h.person}</b> <span style={{ color: 'var(--nx-text-muted)' }}>— {h.knownSystems.join(', ')}</span></p>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <div className="border-t pt-4 text-center" style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>
           {t('NEXUS — Intelligence opérationnelle des dépendances · Confidentiel', 'NEXUS — Operational Dependency Intelligence · Confidential')}
@@ -260,8 +271,4 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return <label className="block" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{children}</label>
-}
-
-function Input({ type, defaultValue }: { type: string; defaultValue: string }) {
-  return <input type={type} defaultValue={defaultValue} className="h-9 flex-1 rounded-sm border px-2 outline-none" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }} />
 }
