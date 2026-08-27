@@ -77,7 +77,7 @@ export function Dashboard() {
           </div>
           <h2 className="mb-1" style={{ fontFamily: geist, fontSize: 24, letterSpacing: '-0.01em', color: 'var(--nx-text)' }}>{greeting(t)}, {t('équipe Opérations', 'Operations Team')}</h2>
           <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>
-            {t('Organisation', 'Organization')}: NEXUS Tenant <span className="mx-2 opacity-50">|</span> {t('Région', 'Region')}: NA-EAST
+            {t('Organisation', 'Organization')}: CGI Inc. <span className="mx-2 opacity-50">|</span> {t('Région', 'Region')}: {t('Canada — Montréal', 'Canada — Montreal')}
           </p>
         </div>
         <ResiliencePanel score={data.organizationHealthScore} />
