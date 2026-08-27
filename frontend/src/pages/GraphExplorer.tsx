@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Background, BackgroundVariant, Handle, Panel, Position, ReactFlow, ReactFlowProvider,
   useReactFlow, type Edge, type Node, type NodeProps,
@@ -103,9 +103,18 @@ function CommandBar({ selected, onSimulate }: { selected: string | null; onSimul
 
 function GraphInner() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const focusId = searchParams.get('focus')
   const { data, isLoading, error } = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<GraphEntityRecord | null>(null)
+
+  // Focus depuis la recherche globale ou le Jumeau numérique (?focus=id).
+  useEffect(() => {
+    if (!focusId || !data) return
+    const node = data.nodes.find((n) => n.id === focusId)
+    if (node) { setSelected(node); setQuery(node.name) }
+  }, [focusId, data])
 
   const { nodes, edges } = useMemo(() => {
     if (!data) return { nodes: [] as Node[], edges: [] as Edge[] }

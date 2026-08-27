@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { LangProvider } from './lib/i18n'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -15,7 +16,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ErrorBoundary>
-          <App />
+          <LangProvider>
+            <App />
+          </LangProvider>
         </ErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>
