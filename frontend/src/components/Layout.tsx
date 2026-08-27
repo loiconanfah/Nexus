@@ -1,21 +1,54 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
-  AlertTriangle, Boxes, Database, GitBranch, HelpCircle, LayoutDashboard, Network,
-  ScrollText, Search, Settings, Sparkles, Terminal, Truck, Users, Zap,
+  AlertTriangle, Blocks, Boxes, Database, FileSearch, GitBranch, GitPullRequest,
+  HelpCircle, LayoutDashboard, Network, Radar, Radio, ScanText, ScrollText, Search,
+  Settings, Sparkles, Terminal, Truck, Upload, Users, Zap,
 } from 'lucide-react'
 
-const NAV = [
-  { to: '/', label: 'Overview', icon: LayoutDashboard },
-  { to: '/graph', label: 'Graph', icon: Network },
-  { to: '/assets', label: 'Assets', icon: Boxes },
-  { to: '/dependencies', label: 'Dependencies', icon: GitBranch },
-  { to: '/risks', label: 'Risks', icon: AlertTriangle },
-  { to: '/human', label: 'Human Deps', icon: Users },
-  { to: '/suppliers', label: 'Suppliers', icon: Truck },
-  { to: '/simulations', label: 'Simulations', icon: Zap },
-  { to: '/ai', label: 'AI Analyst', icon: Sparkles },
-  { to: '/reports', label: 'Reports', icon: ScrollText },
+const NAV: { section: string; items: { to: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+  {
+    section: 'Intelligence',
+    items: [
+      { to: '/', label: 'Overview', icon: LayoutDashboard },
+      { to: '/graph', label: 'Graph', icon: Network },
+      { to: '/twin', label: 'Digital Twin', icon: Radio },
+    ],
+  },
+  {
+    section: 'Analysis',
+    items: [
+      { to: '/dependencies', label: 'Dependencies', icon: GitBranch },
+      { to: '/risks', label: 'Risks', icon: AlertTriangle },
+      { to: '/incidents', label: 'Early-Warning', icon: Radar },
+      { to: '/change', label: 'Change Impact', icon: GitPullRequest },
+      { to: '/audit', label: 'Confidence & Audit', icon: FileSearch },
+    ],
+  },
+  {
+    section: 'Resilience',
+    items: [
+      { to: '/suppliers', label: 'Suppliers', icon: Truck },
+      { to: '/human', label: 'Human Deps', icon: Users },
+      { to: '/simulations', label: 'Simulations', icon: Zap },
+    ],
+  },
+  {
+    section: 'Knowledge',
+    items: [
+      { to: '/ai', label: 'AI Analyst', icon: Sparkles },
+      { to: '/documents', label: 'Documents', icon: ScanText },
+      { to: '/reports', label: 'Reports', icon: ScrollText },
+    ],
+  },
+  {
+    section: 'Data',
+    items: [
+      { to: '/assets', label: 'Assets', icon: Boxes },
+      { to: '/onboarding', label: 'Onboarding', icon: Upload },
+      { to: '/integrations', label: 'Integrations', icon: Blocks },
+    ],
+  },
 ]
 
 const mono = 'var(--font-mono)'
@@ -44,23 +77,30 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 space-y-1 overflow-y-auto">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className="flex items-center gap-3 rounded-sm px-3 py-2.5 transition-colors"
-              style={({ isActive }) => ({
-                background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent',
-                color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)',
-                borderLeft: `2px solid ${isActive ? 'var(--nx-cyan)' : 'transparent'}`,
-                fontWeight: isActive ? 600 : 400,
-              })}
-            >
-              <Icon size={18} />
-              <span style={{ fontSize: 14 }}>{label}</span>
-            </NavLink>
+        <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+          {NAV.map(({ section, items }) => (
+            <div key={section}>
+              <div className="px-3 pb-1" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', opacity: 0.6 }}>{section}</div>
+              <div className="space-y-0.5">
+                {items.map(({ to, label, icon: Icon }) => (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    end={to === '/'}
+                    className="flex items-center gap-3 rounded-sm px-3 py-2 transition-colors"
+                    style={({ isActive }) => ({
+                      background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent',
+                      color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)',
+                      borderLeft: `2px solid ${isActive ? 'var(--nx-cyan)' : 'transparent'}`,
+                      fontWeight: isActive ? 600 : 400,
+                    })}
+                  >
+                    <Icon size={17} />
+                    <span style={{ fontSize: 13.5 }}>{label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 
@@ -73,11 +113,12 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
             <Terminal size={14} /> Execute Command
           </button>
           <div className="space-y-1">
-            {[{ label: 'Settings', icon: Settings }, { label: 'Support', icon: HelpCircle }].map(({ label, icon: Icon }) => (
-              <span key={label} className="flex cursor-default items-center gap-3 rounded-sm px-3 py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 14 }}>
-                <Icon size={18} /> {label}
-              </span>
-            ))}
+            <NavLink to="/admin" className="flex items-center gap-3 rounded-sm px-3 py-2 transition-colors" style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent' })}>
+              <Settings size={18} /> Admin &amp; System
+            </NavLink>
+            <span className="flex cursor-default items-center gap-3 rounded-sm px-3 py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 14 }}>
+              <HelpCircle size={18} /> Support
+            </span>
           </div>
         </div>
       </nav>

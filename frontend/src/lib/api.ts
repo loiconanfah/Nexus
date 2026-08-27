@@ -1,12 +1,14 @@
 import { getTenantId } from './tenant'
 import type {
   AiAnswer,
+  AuditData,
   EntityRisk,
   ExecutiveReport,
   GraphData,
   GraphEntityRecord,
   HumanDependencies,
   ImportResult,
+  IncidentBoard,
   Overview,
   PropagationResult,
   RiskRow,
@@ -42,6 +44,16 @@ export const api = {
   humanDependencies: () => fetch(`${BASE}/human-dependencies`, { headers: headers(false) }).then(handle<HumanDependencies>),
 
   suppliers: () => fetch(`${BASE}/suppliers`, { headers: headers(false) }).then(handle<SupplierIntel>),
+
+  incidents: () => fetch(`${BASE}/incidents`, { headers: headers(false) }).then(handle<IncidentBoard>),
+
+  audit: () => fetch(`${BASE}/audit`, { headers: headers(false) }).then(handle<AuditData>),
+
+  health: () =>
+    fetch('/health/ready', { headers: headers(false) })
+      .then((r) => r.json())
+      .then((d) => d as { status: string; dependencies: { postgres: boolean; neo4j: boolean }; utc: string })
+      .catch(() => ({ status: 'unreachable', dependencies: { postgres: false, neo4j: false }, utc: new Date().toISOString() })),
 
   entity: (id: string) =>
     fetch(`${BASE}/entities/${id}`, { headers: headers(false) }).then(handle<GraphEntityRecord>),

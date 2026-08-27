@@ -11,6 +11,14 @@ import { Reports } from './pages/Reports'
 import { HumanDependency } from './pages/HumanDependency'
 import { DependencyIntelligence } from './pages/DependencyIntelligence'
 import { SupplierIntelligence } from './pages/SupplierIntelligence'
+import { Incidents } from './pages/Incidents'
+import { Audit } from './pages/Audit'
+import { ChangeImpact } from './pages/ChangeImpact'
+import { DigitalTwin } from './pages/DigitalTwin'
+import { DocumentIntelligence } from './pages/DocumentIntelligence'
+import { Onboarding } from './pages/Onboarding'
+import { IntegrationMarketplace } from './pages/IntegrationMarketplace'
+import { Admin } from './pages/Admin'
 import { Login } from './pages/Login'
 import { getTenantId, resetTenant } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -22,6 +30,14 @@ const TITLES: Record<string, string> = {
   '/dependencies': 'Dependencies',
   '/risks': 'Risk Center',
   '/suppliers': 'Supplier Intelligence',
+  '/incidents': 'Incident Early-Warning',
+  '/change': 'Change Impact',
+  '/audit': 'Confidence & Audit',
+  '/twin': 'Digital Twin',
+  '/documents': 'Document Intelligence',
+  '/onboarding': 'Data Onboarding',
+  '/integrations': 'Integration Marketplace',
+  '/admin': 'Admin & System',
   '/simulations': 'What-If Simulation',
   '/ai': 'AI Analyst',
   '/reports': 'Reports',
@@ -76,6 +92,14 @@ export default function App() {
         <Route path="/graph" element={<GraphExplorer />} />
         <Route path="/dependencies" element={<DependencyIntelligence />} />
         <Route path="/suppliers" element={<SupplierIntelligence />} />
+        <Route path="/incidents" element={<Incidents />} />
+        <Route path="/change" element={<ChangeImpact />} />
+        <Route path="/audit" element={<Audit />} />
+        <Route path="/twin" element={<DigitalTwin />} />
+        <Route path="/documents" element={<DocumentIntelligence />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/integrations" element={<IntegrationMarketplace />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="/assets" element={<Assets />} />
         <Route path="/risks" element={<RiskCenter />} />
         <Route path="/simulations" element={<Simulation />} />

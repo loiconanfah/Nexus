@@ -163,6 +163,33 @@ export interface SupplierIntel {
   edges: SupplierEdge[]
 }
 
+export interface Incident {
+  id: string
+  title: string
+  category: string
+  severity: 'CRITICAL' | 'HIGH' | 'MODERATE'
+  probability: number
+  blastRadius: number
+  affected: number
+  entityType: string
+  trigger: string
+  recommendation: string
+}
+export interface IncidentBoard {
+  summary: { total: number; critical: number; high: number; topBlastRadius: number; healthScore: number }
+  incidents: Incident[]
+}
+
+export interface AuditStatusRow { status: string; count: number; avgConfidence: number }
+export interface AuditLowConf { source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string; evidence: string }
+export interface AuditLedgerRow { source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string }
+export interface AuditData {
+  summary: { totalDependencies: number; verified: number; verifiedPercent: number; undocumented: number; avgConfidence: number }
+  byStatus: AuditStatusRow[]
+  lowConfidence: AuditLowConf[]
+  ledger: AuditLedgerRow[]
+}
+
 export interface HumanPerson {
   id: string
   name: string
