@@ -19,6 +19,7 @@ import { DocumentIntelligence } from './pages/DocumentIntelligence'
 import { Onboarding } from './pages/Onboarding'
 import { IntegrationMarketplace } from './pages/IntegrationMarketplace'
 import { Admin } from './pages/Admin'
+import { ActionPlan } from './pages/ActionPlan'
 import { Login } from './pages/Login'
 import { getTenantId, resetTenant } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -42,6 +43,7 @@ const TITLES: Record<string, string> = {
   '/ai': 'AI Analyst',
   '/reports': 'Reports',
   '/human': 'Human Dependency',
+  '/actions': 'Action Plan',
 }
 
 export default function App() {
@@ -106,6 +108,7 @@ export default function App() {
         <Route path="/ai" element={<AiAnalyst />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/human" element={<HumanDependency />} />
+        <Route path="/actions" element={<ActionPlan />} />
       </Routes>
     </Layout>
   )

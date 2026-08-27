@@ -1,5 +1,7 @@
 import { getTenantId } from './tenant'
 import type {
+  ActionBoard,
+  ActionStatus,
   AiAnswer,
   AuditData,
   EntityRisk,
@@ -48,6 +50,16 @@ export const api = {
   incidents: () => fetch(`${BASE}/incidents`, { headers: headers(false) }).then(handle<IncidentBoard>),
 
   audit: () => fetch(`${BASE}/audit`, { headers: headers(false) }).then(handle<AuditData>),
+
+  actions: () => fetch(`${BASE}/actions`, { headers: headers(false) }).then(handle<ActionBoard>),
+
+  createAction: (body: { title: string; detail?: string; priority?: string; kind?: string; targetId?: string | null }) =>
+    fetch(`${BASE}/actions`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ id: string; title: string; priority: string; status: string; kind: string; targetName: string }>),
+
+  updateActionStatus: (id: string, status: ActionStatus) =>
+    fetch(`${BASE}/actions/${id}/status`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ status }) })
+      .then(handle<{ id: string; status: ActionStatus }>),
 
   health: () =>
     fetch('/health/ready', { headers: headers(false) })

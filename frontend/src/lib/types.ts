@@ -180,6 +180,22 @@ export interface IncidentBoard {
   incidents: Incident[]
 }
 
+export type ActionStatus = 'Open' | 'InProgress' | 'Done'
+export interface RemediationAction {
+  id: string
+  title: string
+  detail: string
+  priority: 'High' | 'Medium' | 'Low'
+  status: ActionStatus
+  kind: string
+  targetId: string | null
+  targetName: string
+}
+export interface ActionBoard {
+  summary: { total: number; open: number; inProgress: number; done: number }
+  actions: RemediationAction[]
+}
+
 export interface AuditStatusRow { status: string; count: number; avgConfidence: number }
 export interface AuditLowConf { source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string; evidence: string }
 export interface AuditLedgerRow { source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string }

@@ -1,9 +1,37 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench } from 'lucide-react'
+import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X } from 'lucide-react'
 import { api } from '../lib/api'
-import type { PropagationResult, ScenarioType } from '../lib/types'
+import { useLang } from '../lib/i18n'
+import type { BlastNode, PropagationResult, ScenarioType } from '../lib/types'
+
+/** Fusionne plusieurs résultats de propagation en un scénario composé (union). */
+function mergeResults(results: PropagationResult[]): PropagationResult {
+  const byId = new Map<string, BlastNode>()
+  for (const r of results) {
+    for (const node of r.affected) {
+      const prev = byId.get(node.entity.id)
+      if (!prev || node.depth < prev.depth) byId.set(node.entity.id, node)
+    }
+  }
+  const affected = [...byId.values()]
+  const affectedByType: Record<string, number> = {}
+  let impact = 0
+  for (const n of affected) {
+    affectedByType[n.entity.entityType] = (affectedByType[n.entity.entityType] ?? 0) + 1
+    impact += n.entity.criticality
+  }
+  return {
+    assetId: results[0].assetId,
+    scenario: results[0].scenario,
+    maxDepth: Math.max(...results.map((r) => r.maxDepth)),
+    affectedTotal: affected.length,
+    affectedByType,
+    estimatedOperationalImpact: impact,
+    affected,
+  }
+}
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -32,17 +60,24 @@ function depthColor(depth: number, max: number): string {
 }
 
 export function Simulation() {
+  const { t } = useLang()
   const [params] = useSearchParams()
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const [assetId, setAssetId] = useState<string>(params.get('asset') ?? '')
   const [scenario, setScenario] = useState<ScenarioType>('ServerFailure')
+  const [secondary, setSecondary] = useState<{ assetId: string; scenario: ScenarioType } | null>(null)
   const [result, setResult] = useState<PropagationResult | null>(null)
 
   const nodes = graph.data?.nodes ?? []
   const origin = nodes.find((n) => n.id === assetId)
 
   const run = useMutation({
-    mutationFn: () => api.simulate(assetId, scenario),
+    mutationFn: async () => {
+      const primary = await api.simulate(assetId, scenario)
+      if (!secondary?.assetId) return primary
+      const second = await api.simulate(secondary.assetId, secondary.scenario)
+      return mergeResults([primary, second])
+    },
     onSuccess: (r) => setResult(r),
   })
 
@@ -90,12 +125,24 @@ export function Simulation() {
             </div>
             <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
               <div className="flex items-center justify-between">
-                <label style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Cascading Modifiers</label>
-                <span className="rounded border px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)', borderColor: 'var(--nx-border)' }}>0 Active</span>
+                <label style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Modificateurs en cascade', 'Cascading Modifiers')}</label>
+                <span className="rounded border px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)', borderColor: 'var(--nx-border)' }}>{secondary ? t('1 actif', '1 Active') : t('0 actif', '0 Active')}</span>
               </div>
-              <button className="flex h-8 items-center justify-center gap-2 rounded-sm border border-dashed transition-colors" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
-                <Plus size={14} /> Add Secondary Event
-              </button>
+              {secondary && (
+                <div className="flex flex-col gap-3 rounded-sm border p-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+                  <div className="flex items-center justify-between">
+                    <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: ORANGE }}>{t('Événement secondaire', 'Secondary event')}</span>
+                    <button onClick={() => setSecondary(null)} style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>
+                  </div>
+                  <Select label={t('Nœud d’origine', 'Origin node')} value={secondary.assetId} onChange={(v) => setSecondary({ ...secondary, assetId: v })} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+                  <Select label={t('Type de perturbation', 'Disruption type')} value={secondary.scenario} onChange={(v) => setSecondary({ ...secondary, scenario: v as ScenarioType })} options={SCENARIOS} />
+                </div>
+              )}
+              {!secondary && (
+                <button onClick={() => setSecondary({ assetId: nodes.find((n) => n.id !== assetId)?.id ?? assetId, scenario: 'ApplicationFailure' })} className="flex h-8 items-center justify-center gap-2 rounded-sm border border-dashed transition-colors" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+                  <Plus size={14} /> {t('Ajouter un événement', 'Add Secondary Event')}
+                </button>
+              )}
             </div>
           </div>
           <div className="mt-auto border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
@@ -104,7 +151,7 @@ export function Simulation() {
               className="nx-pulse flex h-12 w-full items-center justify-center gap-2 rounded-sm transition-all disabled:opacity-50"
               style={{ background: 'transparent', border: `2px solid ${CYAN}`, color: CYAN_T, fontFamily: mono, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
             >
-              <Bolt size={18} /> {run.isPending ? 'Running…' : 'Run Simulation'}
+              <Bolt size={18} /> {run.isPending ? t('En cours…', 'Running…') : t('Lancer la simulation', 'Run Simulation')}
             </button>
           </div>
         </div>

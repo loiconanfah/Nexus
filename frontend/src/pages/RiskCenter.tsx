@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ListPlus, Network, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { api } from '../lib/api'
+import { useLang } from '../lib/i18n'
+import { ActionModal } from '../components/ActionModal'
 import type { RiskBand, RiskRow } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -164,6 +166,8 @@ function RiskTable({ rows, selectedId, onSelect }: { rows: RiskRow[]; selectedId
 
 /* ---------- Panneau Priority Risk ---------- */
 function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onClose: () => void; onSimulate: () => void; onView: () => void }) {
+  const { t } = useLang()
+  const [actionOpen, setActionOpen] = useState(false)
   const risk = useQuery({ queryKey: ['risk', row.id], queryFn: () => api.entityRisk(row.id) })
   const c = BAND_COLOR[row.band]
   const breakdown = risk.data?.assessment.breakdown ?? []
@@ -219,9 +223,18 @@ function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onCl
       {/* Actions */}
       <div className="flex flex-col gap-2">
         <button onClick={onSimulate} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 500 }}><Sparkles size={16} /> Simulate</button>
-        <button className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: CYAN_T, borderColor: 'var(--nx-border)', fontSize: 13, fontWeight: 500 }}><ListPlus size={16} /> Create Action</button>
-        <button onClick={onView} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 13, fontWeight: 500 }}><Network size={16} /> View Dependencies</button>
+        <button onClick={() => setActionOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: CYAN_T, borderColor: 'var(--nx-border)', fontSize: 13, fontWeight: 500 }}><ListPlus size={16} /> {t('Créer une action', 'Create Action')}</button>
+        <button onClick={onView} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 13, fontWeight: 500 }}><Network size={16} /> {t('Voir les dépendances', 'View Dependencies')}</button>
       </div>
+
+      <ActionModal
+        open={actionOpen}
+        onClose={() => setActionOpen(false)}
+        defaultTitle={t(`Réduire le risque sur ${row.name}`, `Reduce risk on ${row.name}`)}
+        defaultTargetId={row.id}
+        defaultTargetName={row.name}
+        kind="remediation"
+      />
 
       {row.hasRedundancy && (
         <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}><ShieldCheck size={13} /> Redundancy present</div>

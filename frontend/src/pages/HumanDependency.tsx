@@ -3,7 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { BookOpen, FileDown, Server, ShieldPlus, User } from 'lucide-react'
 import { api } from '../lib/api'
-import type { HumanPerson } from '../lib/types'
+import { useLang } from '../lib/i18n'
+import { ActionModal } from '../components/ActionModal'
+import { downloadCsv } from '../lib/download'
+import type { HumanDependencies, HumanPerson } from '../lib/types'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -13,15 +16,26 @@ const ERR = '#ffb4ab'
 
 const RISK_COLOR: Record<string, string> = { CRITICAL: '#ffb4ab', HIGH: '#fb923c', MODERATE: '#facc15' }
 
+function exportHuman(data: HumanDependencies) {
+  const rows = [['person', 'role', 'risk', 'known_systems', 'sole_knowledge', 'backup_experts', 'doc_percent']]
+  data.people.forEach((p) => rows.push([
+    p.name, p.role, p.riskLevel, p.knownSystems.join(' | '),
+    String(p.soleKnowledgeSystems), String(p.backupExperts), String(p.documentationPercent),
+  ]))
+  downloadCsv('nexus-human-dependencies.csv', rows)
+}
+
 export function HumanDependency() {
   const navigate = useNavigate()
+  const { t } = useLang()
   const { data, isLoading, error } = useQuery({ queryKey: ['humanDeps'], queryFn: api.humanDependencies })
   const [selId, setSelId] = useState<string | null>(null)
+  const [contingency, setContingency] = useState(false)
 
   const people = data?.people ?? []
   const selected = people.find((p) => p.id === selId) ?? people[0]
 
-  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>ANALYZING KNOWLEDGE CONCENTRATION…</div>
+  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('ANALYSE DE LA CONCENTRATION DE SAVOIR…', 'ANALYZING KNOWLEDGE CONCENTRATION…')}</div>
   if (error) return <div style={{ color: ERR }}>{(error as Error).message}</div>
   if (!data) return null
 
@@ -30,13 +44,23 @@ export function HumanDependency() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>Human Dependency</h2>
-          <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Identify operational knowledge that exists in too few people.</p>
+          <h2 style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>{t('Dépendance humaine', 'Human Dependency')}</h2>
+          <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Repérez le savoir opérationnel détenu par trop peu de personnes.', 'Identify operational knowledge that exists in too few people.')}</p>
         </div>
         <div className="hidden gap-2 lg:flex">
-          <button className="flex items-center gap-2 rounded-sm border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}><FileDown size={14} /> Export Report</button>
-          <button className="flex items-center gap-2 rounded-sm px-3 py-1.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 12, fontWeight: 600 }}><ShieldPlus size={14} /> Create Contingency</button>
+          <button onClick={() => exportHuman(data)} className="flex items-center gap-2 rounded-sm border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}><FileDown size={14} /> {t('Exporter', 'Export Report')}</button>
+          <button onClick={() => setContingency(true)} className="flex items-center gap-2 rounded-sm px-3 py-1.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 12, fontWeight: 600 }}><ShieldPlus size={14} /> {t('Créer une contingence', 'Create Contingency')}</button>
         </div>
+        {selected && (
+          <ActionModal
+            open={contingency}
+            onClose={() => setContingency(false)}
+            defaultTitle={t(`Documenter et former un backup pour ${selected.name}`, `Document and cross-train a backup for ${selected.name}`)}
+            defaultTargetId={selected.id}
+            defaultTargetName={selected.name}
+            kind="contingency"
+          />
+        )}
       </div>
 
       {/* Tuiles */}
