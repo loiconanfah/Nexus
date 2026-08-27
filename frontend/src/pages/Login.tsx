@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, KeyRound, LogIn, Mail, Share2, ShieldCheck } from 'lucide-react'
 import { login } from '../lib/auth'
+import { useLang } from '../lib/i18n'
 
 export function Login() {
   const navigate = useNavigate()
+  const { lang, setLang, t } = useLang()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -70,7 +72,7 @@ export function Login() {
             className="mt-2 max-w-sm text-2xl"
             style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text-muted)', lineHeight: 1.3, letterSpacing: '-0.01em' }}
           >
-            Operational Dependency Intelligence
+            {t('Intelligence opérationnelle des dépendances', 'Operational Dependency Intelligence')}
           </p>
         </div>
 
@@ -86,21 +88,27 @@ export function Login() {
 
       {/* ===== Panneau droit : formulaire ===== */}
       <div className="flex w-full items-center justify-center p-6 sm:p-12 md:w-[55%] lg:w-1/2" style={{ background: 'var(--nx-surface)' }}>
-        <div className="flex w-full max-w-md flex-col gap-8">
+        <div className="relative flex w-full max-w-md flex-col gap-8">
+          {/* Bascule langue */}
+          <div className="absolute right-0 top-0 flex items-center rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+            {(['fr', 'en'] as const).map((l) => (
+              <button key={l} type="button" onClick={() => setLang(l)} className="px-2 py-1" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, textTransform: 'uppercase', color: lang === l ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', background: lang === l ? 'var(--nx-cyan)' : 'transparent' }}>{l}</button>
+            ))}
+          </div>
           {/* En-tête */}
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-medium" style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text)', letterSpacing: '-0.01em' }}>
-              Sign in to NEXUS
+              {t('Connexion à NEXUS', 'Sign in to NEXUS')}
             </h2>
             <div className="flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.05em', color: 'var(--nx-cyan-text)' }}>
               <ShieldCheck size={16} />
-              <span>MFA-ready connection</span>
+              <span>{t('Connexion compatible MFA', 'MFA-ready connection')}</span>
             </div>
           </div>
 
           {/* Formulaire */}
           <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); authenticate() }}>
-            <Field label="Email Address">
+            <Field label={t('Adresse e-mail', 'Email Address')}>
               <InputRow icon={<Mail size={18} />}>
                 <input
                   type="email"
@@ -114,7 +122,7 @@ export function Login() {
               </InputRow>
             </Field>
 
-            <Field label="Password" aside={<a href="#" onClick={(e) => e.preventDefault()} className="transition-colors" style={{ fontSize: 13, color: 'var(--nx-cyan-text)' }}>Forgot password?</a>}>
+            <Field label={t('Mot de passe', 'Password')} aside={<a href="#" onClick={(e) => e.preventDefault()} className="transition-colors" style={{ fontSize: 13, color: 'var(--nx-cyan-text)' }}>{t('Mot de passe oublié ?', 'Forgot password?')}</a>}>
               <InputRow icon={<KeyRound size={18} />}>
                 <input
                   type="password"
@@ -137,7 +145,7 @@ export function Login() {
                 fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
               }}
             >
-              <span>Authenticate</span>
+              <span>{t('S’authentifier', 'Authenticate')}</span>
               <LogIn size={18} />
             </button>
           </form>
@@ -145,7 +153,7 @@ export function Login() {
           {/* Séparateur */}
           <div className="my-2 flex items-center gap-4">
             <div className="h-px flex-1" style={{ background: 'var(--nx-border)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.05em', color: 'var(--nx-outline)' }}>OR</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.05em', color: 'var(--nx-outline)' }}>{t('OU', 'OR')}</span>
             <div className="h-px flex-1" style={{ background: 'var(--nx-border)' }} />
           </div>
 
@@ -166,18 +174,18 @@ export function Login() {
               <rect x="1" y="11" width="9" height="9" />
               <rect x="11" y="11" width="9" height="9" />
             </svg>
-            <span>Sign in with Entra ID</span>
+            <span>{t('Se connecter avec Entra ID', 'Sign in with Entra ID')}</span>
           </button>
 
           {/* Pied */}
           <div className="mt-4 flex flex-col items-center gap-4 border-t pt-6" style={{ borderColor: 'rgba(59,73,76,0.5)' }}>
             <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-1 transition-colors" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
               <Building2 size={14} />
-              Organization Identifier
+              {t('Identifiant d’organisation', 'Organization Identifier')}
             </a>
             <p className="flex items-center gap-1" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-outline)' }}>
               <ShieldCheck size={12} />
-              Protected enterprise environment
+              {t('Environnement d’entreprise protégé', 'Protected enterprise environment')}
             </p>
           </div>
         </div>

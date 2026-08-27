@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { importDemoData } from '../lib/demo'
+import { useLang } from '../lib/i18n'
 import type { GraphData, Overview, PriorityItem } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -19,6 +20,7 @@ const HIGH = '#ff897d'
 export function Dashboard() {
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const { t } = useLang()
   const { data, isLoading, error } = useQuery({ queryKey: ['overview'], queryFn: api.overview })
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
 
@@ -29,7 +31,7 @@ export function Dashboard() {
 
   const empty = data && data.entityCount === 0
 
-  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>LOADING TELEMETRY…</div>
+  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DE LA TÉLÉMÉTRIE…', 'LOADING TELEMETRY…')}</div>
   if (error) return <ErrorBox message={(error as Error).message} />
   if (!data) return null
 
@@ -39,14 +41,14 @@ export function Dashboard() {
         <div className="rounded-sm p-4" style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)' }}>
           <Network size={26} style={{ color: CYAN }} />
         </div>
-        <div style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>No telemetry for this tenant</div>
-        <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>Import the demo dataset to reveal the dependency graph, its risks and single points of failure.</p>
+        <div style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{t('Aucune télémétrie pour ce tenant', 'No telemetry for this tenant')}</div>
+        <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>{t('Importez le jeu de démo pour révéler le graphe de dépendances, ses risques et ses points uniques de défaillance.', 'Import the demo dataset to reveal the dependency graph, its risks and single points of failure.')}</p>
         <button
           onClick={() => importDemo.mutate()} disabled={importDemo.isPending}
           className="flex items-center gap-2 rounded-sm px-4 py-2.5"
           style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}
         >
-          <DownloadCloud size={16} /> {importDemo.isPending ? 'Importing…' : 'Load demo dataset'}
+          <DownloadCloud size={16} /> {importDemo.isPending ? t('Importation…', 'Importing…') : t('Charger le jeu de démo', 'Load demo dataset')}
         </button>
         {importDemo.error && <ErrorBox message={(importDemo.error as Error).message} />}
       </div>
@@ -60,11 +62,11 @@ export function Dashboard() {
         <div>
           <div className="mb-1 flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN }} />
-            <span style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>Live Telemetry</span>
+            <span style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>{t('Télémétrie en direct', 'Live Telemetry')}</span>
           </div>
-          <h2 className="mb-1" style={{ fontFamily: geist, fontSize: 24, letterSpacing: '-0.01em', color: 'var(--nx-text)' }}>{greeting()}, Operations Team</h2>
+          <h2 className="mb-1" style={{ fontFamily: geist, fontSize: 24, letterSpacing: '-0.01em', color: 'var(--nx-text)' }}>{greeting(t)}, {t('équipe Opérations', 'Operations Team')}</h2>
           <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>
-            Organization: NEXUS Tenant <span className="mx-2 opacity-50">|</span> Region: NA-EAST
+            {t('Organisation', 'Organization')}: NEXUS Tenant <span className="mx-2 opacity-50">|</span> {t('Région', 'Region')}: NA-EAST
           </p>
         </div>
         <ResiliencePanel score={data.organizationHealthScore} />
@@ -95,11 +97,12 @@ export function Dashboard() {
 /* ---------- Sous-composants ---------- */
 
 function ResiliencePanel({ score }: { score: number }) {
+  const { t } = useLang()
   const color = score >= 75 ? '#3fb27f' : score >= 50 ? '#c8b040' : ERR
   return (
     <div className="flex items-center gap-4 rounded-sm border px-5 py-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div>
-        <p className="mb-1" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Operational Resilience</p>
+        <p className="mb-1" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Résilience opérationnelle', 'Operational Resilience')}</p>
         <div className="flex items-baseline gap-2">
           <span style={{ fontFamily: geist, fontSize: 32, lineHeight: 1, color }}>{score}</span>
           <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>/100</span>
@@ -198,14 +201,15 @@ function Topology({ graph, onNode }: { graph?: GraphData; onNode: (id: string, n
 }
 
 function PriorityIntelligence({ items, onInvestigate }: { items: PriorityItem[]; onInvestigate: () => void }) {
+  const { t } = useLang()
   return (
     <section className="flex flex-col rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="mb-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--nx-border)' }}>
         <Radar size={14} style={{ color: ERR }} />
-        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>Priority Intelligence</h3>
+        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Renseignement prioritaire', 'Priority Intelligence')}</h3>
       </div>
       <div className="space-y-3 overflow-y-auto pr-1">
-        {items.length === 0 && <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>No active priority alerts.</p>}
+        {items.length === 0 && <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Aucune alerte prioritaire active.', 'No active priority alerts.')}</p>}
         {items.map((it, i) => {
           const c = it.severity === 'SEV_CRIT' ? ERR : it.severity === 'SEV_HIGH' ? HIGH : 'var(--nx-outline)'
           return (
@@ -217,7 +221,7 @@ function PriorityIntelligence({ items, onInvestigate }: { items: PriorityItem[];
               </div>
               <p className="mb-3" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{it.text}</p>
               <button onClick={onInvestigate} className="flex w-full items-center justify-center gap-1 rounded py-1" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T, border: `1px solid ${it.severity === 'SEV_CRIT' ? 'rgba(0,229,255,0.4)' : 'var(--nx-border)'}` }}>
-                Investigate <ArrowRight size={13} />
+                {t('Investiguer', 'Investigate')} <ArrowRight size={13} />
               </button>
             </div>
           )
@@ -228,18 +232,19 @@ function PriorityIntelligence({ items, onInvestigate }: { items: PriorityItem[];
 }
 
 function Telemetry({ data }: { data: Overview }) {
+  const { t } = useLang()
   const events = [
-    { label: 'Health computed', kind: CYAN },
-    { label: `${data.spofCount} SPOF detected`, kind: data.spofCount > 0 ? ERR : 'var(--nx-outline)' },
-    { label: `${data.criticalAssetCount} critical assets`, kind: 'var(--nx-outline)' },
-    { label: `${data.entityCount} entities mapped`, kind: 'var(--nx-outline)' },
-    { label: `${data.unknownDependencyCount} unverified deps`, kind: 'var(--nx-outline)' },
+    { label: t('Santé calculée', 'Health computed'), kind: CYAN },
+    { label: `${data.spofCount} ${t('SPOF détectés', 'SPOF detected')}`, kind: data.spofCount > 0 ? ERR : 'var(--nx-outline)' },
+    { label: `${data.criticalAssetCount} ${t('actifs critiques', 'critical assets')}`, kind: 'var(--nx-outline)' },
+    { label: `${data.entityCount} ${t('entités cartographiées', 'entities mapped')}`, kind: 'var(--nx-outline)' },
+    { label: `${data.unknownDependencyCount} ${t('dép. non vérifiées', 'unverified deps')}`, kind: 'var(--nx-outline)' },
   ]
   return (
     <section className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="mb-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: 'var(--nx-border)' }}>
         <History size={14} style={{ color: 'var(--nx-text-muted)' }} />
-        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>System Telemetry Log</h3>
+        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Journal de télémétrie système', 'System Telemetry Log')}</h3>
       </div>
       <div className="relative flex h-16 items-center overflow-x-auto pb-2">
         <div className="absolute left-0 right-0 top-1/2 z-0 h-px -translate-y-1/2" style={{ background: 'var(--nx-border)' }} />
@@ -258,15 +263,16 @@ function Telemetry({ data }: { data: Overview }) {
 }
 
 function ErrorBox({ message }: { message: string }) {
+  const { t } = useLang()
   return (
     <div className="flex items-start gap-2 rounded-sm border p-3" style={{ borderColor: ERR, color: ERR, background: 'color-mix(in srgb, #ffb4ab 10%, transparent)', fontSize: 14 }}>
       <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-      <div><div className="font-medium">API error</div><div style={{ color: 'var(--nx-text-muted)' }}>{message}</div></div>
+      <div><div className="font-medium">{t('Erreur API', 'API error')}</div><div style={{ color: 'var(--nx-text-muted)' }}>{message}</div></div>
     </div>
   )
 }
 
-function greeting(): string {
+function greeting(t: (fr: string, en: string) => string): string {
   const h = new Date().getHours()
-  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
+  return h < 12 ? t('Bonjour', 'Good morning') : h < 18 ? t('Bon après-midi', 'Good afternoon') : t('Bonsoir', 'Good evening')
 }
