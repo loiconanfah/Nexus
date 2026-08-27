@@ -23,14 +23,25 @@ export interface SpofSummary {
   criticality: number
 }
 
+export interface PriorityItem {
+  severity: 'SEV_CRIT' | 'SEV_HIGH' | 'SEV_WARN'
+  confidence: number
+  text: string
+}
+
 export interface Overview {
   organizationHealthScore: number
   entityCount: number
   relationCount: number
-  entitiesByType: Record<string, number>
+  criticalRiskCount: number
+  highRiskCount: number
+  criticalAssetCount: number
+  unknownDependencyCount: number
   spofCount: number
   criticalSpofCount: number
+  supplierConcentrationPercent: number
   topSpofs: SpofSummary[]
+  priorityIntelligence: PriorityItem[]
 }
 
 export interface RiskFactor {

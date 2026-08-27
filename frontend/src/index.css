@@ -5,22 +5,23 @@
   Palette : ardoise profonde + accents ambre/rouge pour le risque.
 */
 @theme {
-  --color-bg: #0b0e14;
-  --color-surface: #131722;
-  --color-surface-2: #1a2030;
-  --color-border: #232a3b;
-  --color-text: #c7ced9;
-  --color-text-muted: #7a8496;
+  /* Palette alignée sur le design system Stitch (deep space + cyan). */
+  --color-bg: #0e0e0f;
+  --color-surface: #201f20;
+  --color-surface-2: #2a2a2b;
+  --color-border: #3b494c;
+  --color-text: #e5e2e3;
+  --color-text-muted: #bac9cc;
   --color-text-strong: #f2f5fa;
 
-  --color-brand: #4f8cff;
-  --color-brand-soft: #1e3a6b;
+  --color-brand: #00e5ff;
+  --color-brand-soft: rgba(0, 229, 255, 0.14);
 
   --color-low: #3fb27f;
   --color-moderate: #c8b040;
   --color-elevated: #e08a3c;
-  --color-high: #e0603c;
-  --color-critical: #e0455e;
+  --color-high: #ff897d;
+  --color-critical: #ffb4ab;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }

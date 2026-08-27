@@ -70,9 +70,17 @@ public sealed class ReportService(
         var health = ComputeHealth(spofs);
         var recommendations = BuildRecommendations(spofs, suppliers, humanByPerson, undocumented);
 
+        // Compteurs agrégés (tableau de bord).
+        var criticalRisk = risks.Count(r => r.Band == "Critical");
+        var highRisk = risks.Count(r => r.Band == "High");
+        var criticalAssets = entities.Count(e => e.Criticality >= 80);
+        var maxSupplierDeps = suppliers.Count == 0 ? 0 : suppliers.Max(s => s.DependentSystems);
+        var supplierConcentration = graph.EntityCount == 0 ? 0 : (int)Math.Round(100.0 * maxSupplierDeps / graph.EntityCount);
+
         return new ExecutiveReport(
             DateTimeOffset.UtcNow, health, graph.EntityCount, graph.RelationCount,
             spofs.Count, spofs.Count(s => s.Score >= 80),
+            criticalRisk, highRisk, criticalAssets, undocumented.Count, supplierConcentration,
             topRisks, spofItems, suppliers, humanByPerson, undocumented, recommendations);
     }
 
