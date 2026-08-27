@@ -97,9 +97,13 @@ function Card({ k, onImport, onKey }: { k: Connector; onImport: () => void; onKe
 
       <div className="flex items-center gap-2">
         {(k.tier === 'active' || k.tier === 'assisted') && (
-          <button onClick={onImport} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
-            {k.tier === 'active' ? <><Sparkles size={13} /> {t('Connecter', 'Connect')}</> : <><Plug size={13} /> {t('Importer l’export', 'Import export')}</>}
-          </button>
+          k.category === 'ai'
+            ? <a href={k.docUrl} target="_blank" rel="noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+                <Plug size={13} /> {t('Configurer', 'Set up')}
+              </a>
+            : <button onClick={onImport} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+                {k.tier === 'active' ? <><Sparkles size={13} /> {t('Connecter', 'Connect')}</> : <><Plug size={13} /> {t('Importer l’export', 'Import export')}</>}
+              </button>
         )}
         {k.tier === 'key' && (
           <button onClick={onKey} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(192,132,252,0.12)', border: '1px solid rgba(192,132,252,0.35)', color: '#c084fc', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>

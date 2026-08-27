@@ -1,0 +1,15 @@
+{
+  "name": "nexus-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Serveur MCP exposant NEXUS (graphe de dépendances, risques, simulations) à Claude et tout client MCP.",
+  "bin": { "nexus-mcp": "src/index.mjs" },
+  "scripts": {
+    "start": "node src/index.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  }
+}
