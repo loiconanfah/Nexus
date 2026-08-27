@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, Database, FileUp, GitBranch, Loader2, Upload } from 'lucide-react'
 import { api } from '../lib/api'
+import { useLang } from '../lib/i18n'
 import type { ImportResult } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -44,7 +45,9 @@ const PRESETS: Record<Kind, { title: string; icon: typeof Database; columns: str
 }
 
 export function Onboarding() {
+  const { t } = useLang()
   const qc = useQueryClient()
+  const presetTitle = (k: Kind) => k === 'nodes' ? t('Systèmes & actifs', 'Systems & Assets') : t('Dépendances', 'Dependencies')
   const [kind, setKind] = useState<Kind>('nodes')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
@@ -72,9 +75,9 @@ export function Onboarding() {
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="flex items-center gap-2" style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>
-          <Upload size={22} style={{ color: CYAN }} /> Data Onboarding
+          <Upload size={22} style={{ color: CYAN }} /> {t('Intégration des données', 'Data Onboarding')}
         </h2>
-        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Ingest your estate into the graph — time to first graph is minutes, not months.</p>
+        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Injectez votre parc dans le graphe — le premier graphe se mesure en minutes, pas en mois.', 'Ingest your estate into the graph — time to first graph is minutes, not months.')}</p>
       </div>
 
       {/* Choix du type de donnee */}
@@ -83,8 +86,8 @@ export function Onboarding() {
           const p = PRESETS[k]; const active = kind === k
           return (
             <button key={k} onClick={() => { setKind(k); setResult(null); setErr(null) }} className="flex flex-col gap-2 rounded-sm border p-4 text-left" style={{ background: active ? 'rgba(0,229,255,0.06)' : 'var(--nx-surface-container)', borderColor: active ? CYAN : 'var(--nx-border)' }}>
-              <div className="flex items-center gap-2" style={{ color: active ? CYAN_T : 'var(--nx-text)' }}><p.icon size={18} /> <span style={{ fontFamily: geist, fontSize: 16 }}>{p.title}</span></div>
-              <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>columns: {p.columns}</div>
+              <div className="flex items-center gap-2" style={{ color: active ? CYAN_T : 'var(--nx-text)' }}><p.icon size={18} /> <span style={{ fontFamily: geist, fontSize: 16 }}>{presetTitle(k)}</span></div>
+              <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{t('colonnes', 'columns')}: {p.columns}</div>
               <pre className="mt-1 overflow-x-auto rounded-sm p-2" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>{p.sample}</pre>
             </button>
           )
@@ -100,8 +103,8 @@ export function Onboarding() {
         style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}
       >
         {busy ? <Loader2 size={28} className="animate-spin" style={{ color: CYAN }} /> : <FileUp size={28} style={{ color: CYAN }} />}
-        <span style={{ fontSize: 14, color: 'var(--nx-text)' }}>{busy ? 'Ingesting…' : 'Drop a CSV here or click to browse'}</span>
-        <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>Profile: {PRESETS[kind].title} · dataset = filename</span>
+        <span style={{ fontSize: 14, color: 'var(--nx-text)' }}>{busy ? t('Ingestion…', 'Ingesting…') : t('Déposez un CSV ici ou cliquez pour parcourir', 'Drop a CSV here or click to browse')}</span>
+        <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{t('Profil', 'Profile')}: {presetTitle(kind)} · dataset = {t('nom de fichier', 'filename')}</span>
         <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }} />
       </div>
 
@@ -111,19 +114,19 @@ export function Onboarding() {
         <div className="rounded-sm border" style={{ borderColor: '#4ade8055' }}>
           <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)', background: 'rgba(74,222,128,0.06)' }}>
             <CheckCircle2 size={16} style={{ color: '#4ade80' }} />
-            <span style={{ fontFamily: mono, fontSize: 12, color: '#4ade80', textTransform: 'uppercase' }}>Ingested {fileName}</span>
+            <span style={{ fontFamily: mono, fontSize: 12, color: '#4ade80', textTransform: 'uppercase' }}>{t('Ingéré', 'Ingested')} {fileName}</span>
           </div>
           <div className="grid grid-cols-2 gap-px sm:grid-cols-4" style={{ background: 'var(--nx-border)' }}>
-            <Metric label="RECORDS READ" value={result.recordsRead} />
-            <Metric label="ENTITIES CREATED" value={result.entitiesCreated} color={CYAN_T} />
-            <Metric label="ENTITIES MATCHED" value={result.entitiesMatched} />
-            <Metric label="RELATIONS CREATED" value={result.relationsCreated} color={CYAN_T} />
-            <Metric label="RELATIONS UNRESOLVED" value={result.relationsUnresolved} color={result.relationsUnresolved > 0 ? '#facc15' : undefined} />
-            <Metric label="SKIPPED" value={result.skipped} />
-            <MetricText label="DURATION" value={result.duration} />
-            <MetricText label="TIME TO FIRST GRAPH" value={result.timeToFirstGraph ?? '—'} />
+            <Metric label={t('LIGNES LUES', 'RECORDS READ')} value={result.recordsRead} />
+            <Metric label={t('ENTITÉS CRÉÉES', 'ENTITIES CREATED')} value={result.entitiesCreated} color={CYAN_T} />
+            <Metric label={t('ENTITÉS APPARIÉES', 'ENTITIES MATCHED')} value={result.entitiesMatched} />
+            <Metric label={t('RELATIONS CRÉÉES', 'RELATIONS CREATED')} value={result.relationsCreated} color={CYAN_T} />
+            <Metric label={t('RELATIONS NON RÉSOLUES', 'RELATIONS UNRESOLVED')} value={result.relationsUnresolved} color={result.relationsUnresolved > 0 ? '#facc15' : undefined} />
+            <Metric label={t('IGNORÉES', 'SKIPPED')} value={result.skipped} />
+            <MetricText label={t('DURÉE', 'DURATION')} value={result.duration} />
+            <MetricText label={t('DÉLAI 1ER GRAPHE', 'TIME TO FIRST GRAPH')} value={result.timeToFirstGraph ?? '—'} />
           </div>
-          <div className="px-4 py-3" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>Graph refreshed across all centers. Explore it in the Graph and Digital Twin views.</div>
+          <div className="px-4 py-3" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{t('Graphe rafraîchi dans tous les centres. Explorez-le dans les vues Graphe et Jumeau numérique.', 'Graph refreshed across all centers. Explore it in the Graph and Digital Twin views.')}</div>
         </div>
       )}
     </div>
