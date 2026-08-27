@@ -165,15 +165,16 @@ export interface SupplierIntel {
 
 export interface Incident {
   id: string
-  title: string
-  category: string
+  category: 'spof' | 'supplier' | 'human'
   severity: 'CRITICAL' | 'HIGH' | 'MODERATE'
   probability: number
   blastRadius: number
   affected: number
+  entityName: string
   entityType: string
-  trigger: string
-  recommendation: string
+  dependents: number
+  hasRedundancy: boolean
+  systems: string[]
 }
 export interface IncidentBoard {
   summary: { total: number; critical: number; high: number; topBlastRadius: number; healthScore: number }

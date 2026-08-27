@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Tenancy;
 using Nexus.Risk.Reporting;
 
 namespace Nexus.Api.Controllers;
 
 /// <summary>
-/// Incident Early-Warning Center (article 30) : scénarios d'incident PREDITS à
+/// Incident Early-Warning Center (article 30) : scenarios d'incident PREDITS a
 /// partir de la topologie — SPOF, risques majeurs, concentration fournisseurs et
-/// dépendances humaines. NEXUS ne collecte pas d'incidents passés : il anticipe
-/// les défaillances probables avant qu'elles ne surviennent.
+/// dependances humaines. Le controleur renvoie des DONNEES STRUCTUREES (faits +
+/// codes) ; la phrase lisible est composee cote frontend dans la langue choisie.
 /// </summary>
 [Route("api/v1/incidents")]
 public sealed class IncidentsController(
@@ -23,24 +23,23 @@ public sealed class IncidentsController(
         var r = await reportService.GenerateAsync(tenant, ct);
         var incidents = new List<object>();
 
-        // 1. SPOF -> panne matérielle/logicielle probable, rayon d'impact connu.
+        // 1. SPOF -> panne materielle/logicielle probable, rayon d'impact connu.
         foreach (var s in r.SinglePointsOfFailure)
         {
             var sev = s.Score >= 80 ? "CRITICAL" : s.Score >= 60 ? "HIGH" : "MODERATE";
             incidents.Add(new
             {
                 id = $"spof-{s.Name}",
-                title = $"{s.Name} outage",
-                category = "Single Point of Failure",
+                category = "spof",
                 severity = sev,
                 probability = Math.Min(99, (int)s.Score),
                 blastRadius = s.BlastRadius,
                 affected = s.Dependents,
+                entityName = s.Name,
                 entityType = s.EntityType,
-                trigger = $"{s.Name} ({s.EntityType}) has {s.Dependents} dependent(s) and no redundancy.",
-                recommendation = s.HasRedundancy
-                    ? "Validate failover paths and RTO."
-                    : $"Introduce redundancy for {s.Name} to remove this single point of failure.",
+                dependents = s.Dependents,
+                hasRedundancy = s.HasRedundancy,
+                systems = Array.Empty<string>(),
             });
         }
 
@@ -50,15 +49,16 @@ public sealed class IncidentsController(
             incidents.Add(new
             {
                 id = $"supplier-{sup.Name}",
-                title = $"{sup.Name} service disruption",
-                category = "Supplier Failure",
+                category = "supplier",
                 severity = sup.DependentSystems >= 2 ? "HIGH" : "MODERATE",
                 probability = Math.Min(90, 40 + 15 * sup.DependentSystems),
                 blastRadius = sup.DependentSystems,
                 affected = sup.DependentSystems,
+                entityName = sup.Name,
                 entityType = "Supplier",
-                trigger = $"{sup.Name} supports {sup.DependentSystems} system(s): {string.Join(", ", sup.Dependents)}.",
-                recommendation = $"Identify an alternative supplier for {sup.Name} and formalise SLAs.",
+                dependents = sup.DependentSystems,
+                hasRedundancy = false,
+                systems = sup.Dependents.ToArray(),
             });
         }
 
@@ -68,15 +68,16 @@ public sealed class IncidentsController(
             incidents.Add(new
             {
                 id = $"human-{h.Person}",
-                title = $"Knowledge loss — {h.Person} unavailable",
-                category = "Human Dependency",
+                category = "human",
                 severity = h.KnownSystems.Count >= 2 ? "HIGH" : "MODERATE",
                 probability = 55,
                 blastRadius = h.KnownSystems.Count,
                 affected = h.KnownSystems.Count,
+                entityName = h.Person,
                 entityType = "Person",
-                trigger = $"{h.Person} is the sole knowledge holder for {string.Join(", ", h.KnownSystems)}.",
-                recommendation = $"Document {string.Join(", ", h.KnownSystems)} and cross-train a backup expert.",
+                dependents = h.KnownSystems.Count,
+                hasRedundancy = false,
+                systems = h.KnownSystems.ToArray(),
             });
         }
 
