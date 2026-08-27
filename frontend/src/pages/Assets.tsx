@@ -6,6 +6,8 @@ import {
   ShieldAlert, Users,
 } from 'lucide-react'
 import { api } from '../lib/api'
+import { useLang } from '../lib/i18n'
+import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -29,6 +31,7 @@ function typeIcon(t: string, size = 16) {
 }
 
 export function Assets() {
+  const { t } = useLang()
   const { data, isLoading } = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const [q, setQ] = useState('')
   const [selId, setSelId] = useState<string | null>(null)
@@ -42,7 +45,7 @@ export function Assets() {
 
   const selected = rows.find((r) => r.id === selId) ?? rows[0]
 
-  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>LOADING ASSETS…</div>
+  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DES ACTIFS…', 'LOADING ASSETS…')}</div>
 
   return (
     <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
@@ -51,7 +54,7 @@ export function Assets() {
         <div className="border-b p-3" style={{ borderColor: 'var(--nx-border)' }}>
           <div className="flex items-center gap-2 rounded-sm border px-2 py-1.5" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
             <Search size={14} style={{ color: 'var(--nx-text-muted)' }} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search assets…" className="w-full bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Rechercher des actifs…', 'Search assets…')} className="w-full bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
@@ -64,7 +67,7 @@ export function Assets() {
                   <span style={{ color: active ? CYAN_T : 'var(--nx-text-muted)' }}>{typeIcon(n.entityType, 15)}</span>
                   <div className="min-w-0">
                     <div className="truncate" style={{ fontSize: 13, fontWeight: 500, color: 'var(--nx-text)' }}>{n.name}</div>
-                    <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{n.entityType}</div>
+                    <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(n.entityType, t)}</div>
                   </div>
                 </div>
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: bandColor(n.criticality) }} />
@@ -76,7 +79,7 @@ export function Assets() {
 
       {/* Détail */}
       <div className="min-w-0 flex-1 overflow-y-auto" style={{ background: 'var(--nx-panel)' }}>
-        {selected ? <AssetDetail asset={selected} /> : <div className="p-6" style={{ color: 'var(--nx-text-muted)' }}>No assets. Import data from the Overview.</div>}
+        {selected ? <AssetDetail asset={selected} /> : <div className="p-6" style={{ color: 'var(--nx-text-muted)' }}>{t('Aucun actif. Importez des données depuis la Vue d’ensemble.', 'No assets. Import data from the Overview.')}</div>}
       </div>
     </div>
   )
@@ -84,7 +87,9 @@ export function Assets() {
 
 function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
   const navigate = useNavigate()
+  const { t } = useLang()
   const [tab, setTab] = useState('Overview')
+  const tabLabel = (k: string) => k === 'Overview' ? t('Aperçu', 'Overview') : k === 'Dependencies' ? t('Dépendances', 'Dependencies') : k === 'Dependents' ? t('Dépendants', 'Dependents') : t('Risques', 'Risks')
   const risk = useQuery({ queryKey: ['risk', asset.id], queryFn: () => api.entityRisk(asset.id) })
   const deps = useQuery({ queryKey: ['deps', asset.id], queryFn: () => api.dependencies(asset.id) })
   const dependents = useQuery({ queryKey: ['dependents', asset.id], queryFn: () => api.dependents(asset.id) })
@@ -109,20 +114,20 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
             <div className="flex items-center gap-3">
               <span className="h-2 w-2 rounded-full" style={{ background: bandColor(asset.criticality) }} />
               <h1 style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>{asset.name}</h1>
-              {asset.criticality >= 80 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>CRITICAL</span>}
+              {asset.criticality >= 80 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>{t('CRITIQUE', 'CRITICAL')}</span>}
             </div>
-            <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{asset.entityType} · {asset.sourceSystem ?? 'unknown source'}</p>
+            <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(asset.entityType, t)} · {asset.sourceSystem ?? t('source inconnue', 'unknown source')}</p>
           </div>
           <div className="flex gap-6">
-            <Stat label="RISK SCORE" value={score !== undefined ? score.toFixed(0) : '—'} suffix="/100" color={score !== undefined ? bandColor(score) : 'var(--nx-text)'} />
-            <Stat label="CONFIDENCE" value={String(confidence)} suffix="%" color={CYAN_T} />
+            <Stat label={t('SCORE DE RISQUE', 'RISK SCORE')} value={score !== undefined ? score.toFixed(0) : '—'} suffix="/100" color={score !== undefined ? bandColor(score) : 'var(--nx-text)'} />
+            <Stat label={t('CONFIANCE', 'CONFIDENCE')} value={String(confidence)} suffix="%" color={CYAN_T} />
           </div>
         </div>
         {/* Tabs */}
         <div className="mt-4 flex gap-6 overflow-x-auto">
-          {tabs.map((t) => (
-            <button key={t} onClick={() => setTab(t)} className="whitespace-nowrap pb-2 transition-colors"
-              style={{ fontSize: 13, color: tab === t ? CYAN_T : 'var(--nx-text-muted)', borderBottom: `2px solid ${tab === t ? CYAN : 'transparent'}` }}>{t}</button>
+          {tabs.map((tb) => (
+            <button key={tb} onClick={() => setTab(tb)} className="whitespace-nowrap pb-2 transition-colors"
+              style={{ fontSize: 13, color: tab === tb ? CYAN_T : 'var(--nx-text-muted)', borderBottom: `2px solid ${tab === tb ? CYAN : 'transparent'}` }}>{tabLabel(tb)}</button>
           ))}
         </div>
       </div>
@@ -134,34 +139,34 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
             <div className="flex flex-col gap-4 lg:flex-row">
               {/* Properties */}
               <div className="w-full shrink-0 lg:w-72">
-                <Panel title="Properties">
-                  <Prop label="Type" value={<span className="flex items-center gap-2">{typeIcon(asset.entityType, 15)} {asset.entityType}</span>} />
-                  <Prop label="Criticality" value={String(asset.criticality)} />
-                  <Prop label="Location" value={<span className="flex items-center gap-2"><MapPin size={14} /> Unassigned</span>} />
-                  <Prop label="Owner" value={<span className="flex items-center gap-2"><Users size={14} /> Unassigned</span>} />
+                <Panel title={t('Propriétés', 'Properties')}>
+                  <Prop label="Type" value={<span className="flex items-center gap-2">{typeIcon(asset.entityType, 15)} {entityTypeLabel(asset.entityType, t)}</span>} />
+                  <Prop label={t('Criticité', 'Criticality')} value={String(asset.criticality)} />
+                  <Prop label={t('Site', 'Location')} value={<span className="flex items-center gap-2"><MapPin size={14} /> {t('Non attribué', 'Unassigned')}</span>} />
+                  <Prop label={t('Responsable', 'Owner')} value={<span className="flex items-center gap-2"><Users size={14} /> {t('Non attribué', 'Unassigned')}</span>} />
                   <Prop label="Source" value={asset.sourceSystem ?? '—'} />
-                  <Prop label="Aliases" value={asset.aliases.length ? asset.aliases.join(', ') : '—'} last />
+                  <Prop label={t('Alias', 'Aliases')} value={asset.aliases.length ? asset.aliases.join(', ') : '—'} last />
                 </Panel>
               </div>
               {/* Local topography */}
               <div className="min-h-[300px] flex-1">
-                <Panel title="Local Topography" fill>
+                <Panel title={t('Topographie locale', 'Local Topography')} fill>
                   <LocalTopography name={asset.name} deps={(deps.data ?? []).map((d) => ({ name: d.target.name, crit: d.target.criticality }))} dependents={(dependents.data ?? []).map((d) => ({ name: d.name, crit: d.criticality }))} />
                 </Panel>
               </div>
               {/* Intelligence */}
               <div className="w-full shrink-0 lg:w-80">
-                <Panel title={<span className="flex items-center gap-2"><Brain size={15} style={{ color: CYAN }} /> Intelligence Center</span>}>
+                <Panel title={<span className="flex items-center gap-2"><Brain size={15} style={{ color: CYAN }} /> {t('Centre d’intelligence', 'Intelligence Center')}</span>}>
                   <div className="flex flex-col gap-3">
-                    {!hasRedundancy && dependentCount > 0 && <Finding icon={<AlertTriangle size={15} />} color={ERR} title="Single point of failure" sub="SEV-1 STRUCTURAL" />}
-                    {!hasRedundancy && <Finding icon={<ShieldAlert size={15} />} color={ERR} title="No verified secondary" sub="SEV-2 REDUNDANCY" />}
-                    <Finding icon={<Layers size={15} />} color={CYAN} title={`Supports ${dependentCount} downstream asset(s)`} sub="IMPACT ANALYSIS" />
-                    {band && (band === 'High' || band === 'Critical') && <Finding icon={<AlertTriangle size={15} />} color={ERR} title={`Elevated operational risk (${band})`} sub="RISK ENGINE" />}
-                    {hasRedundancy && dependentCount === 0 && <Finding icon={<Layers size={15} />} color="#3fb27f" title="No structural risks detected" sub="NOMINAL" />}
+                    {!hasRedundancy && dependentCount > 0 && <Finding icon={<AlertTriangle size={15} />} color={ERR} title={t('Point unique de défaillance', 'Single point of failure')} sub={t('SEV-1 STRUCTUREL', 'SEV-1 STRUCTURAL')} />}
+                    {!hasRedundancy && <Finding icon={<ShieldAlert size={15} />} color={ERR} title={t('Aucun secours vérifié', 'No verified secondary')} sub={t('SEV-2 REDONDANCE', 'SEV-2 REDUNDANCY')} />}
+                    <Finding icon={<Layers size={15} />} color={CYAN} title={t(`Soutient ${dependentCount} actif(s) en aval`, `Supports ${dependentCount} downstream asset(s)`)} sub={t('ANALYSE D’IMPACT', 'IMPACT ANALYSIS')} />
+                    {band && (band === 'High' || band === 'Critical') && <Finding icon={<AlertTriangle size={15} />} color={ERR} title={t(`Risque opérationnel élevé (${band})`, `Elevated operational risk (${band})`)} sub={t('MOTEUR DE RISQUE', 'RISK ENGINE')} />}
+                    {hasRedundancy && dependentCount === 0 && <Finding icon={<Layers size={15} />} color="#3fb27f" title={t('Aucun risque structurel détecté', 'No structural risks detected')} sub="NOMINAL" />}
                   </div>
                   <button onClick={() => navigate(`/simulations?asset=${asset.id}&name=${encodeURIComponent(asset.name)}`)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-sm py-2.5"
                     style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px rgba(0,229,255,0.2)' }}>
-                    <Play size={16} /> Simulate Failure
+                    <Play size={16} /> {t('Simuler une défaillance', 'Simulate Failure')}
                   </button>
                 </Panel>
               </div>
@@ -169,7 +174,7 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
 
             {/* Evidence & lineage */}
             <div className="mt-4">
-              <Panel title="Evidence & Data Lineage">
+              <Panel title={t('Preuves & traçabilité des données', 'Evidence & Data Lineage')}>
                 <div className="flex flex-wrap gap-3">
                   {(deps.data ?? []).length > 0 ? (deps.data ?? []).slice(0, 6).map((d) => (
                     <div key={d.target.id} className="flex min-w-[200px] items-center gap-3 rounded-sm border px-3 py-2" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
@@ -179,17 +184,17 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
                         <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{d.relationType} · {Math.round(d.confidence * 100)}%</div>
                       </div>
                     </div>
-                  )) : <div style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Source: {asset.sourceSystem ?? 'unknown'} — no upstream dependencies.</div>}
+                  )) : <div style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t(`Source : ${asset.sourceSystem ?? 'inconnue'} — aucune dépendance amont.`, `Source: ${asset.sourceSystem ?? 'unknown'} — no upstream dependencies.`)}</div>}
                 </div>
               </Panel>
             </div>
           </>
         )}
 
-        {tab === 'Dependencies' && <EntityList title="Depends on" items={(deps.data ?? []).map((d) => ({ id: d.target.id, name: d.target.name, type: d.target.entityType, meta: `${d.relationType} · ${Math.round(d.confidence * 100)}% · ${d.status}` }))} />}
-        {tab === 'Dependents' && <EntityList title="Depended on by" items={(dependents.data ?? []).map((d) => ({ id: d.id, name: d.name, type: d.entityType, meta: `criticality ${d.criticality}` }))} />}
+        {tab === 'Dependencies' && <EntityList title={t('Dépend de', 'Depends on')} items={(deps.data ?? []).map((d) => ({ id: d.target.id, name: d.target.name, type: entityTypeLabel(d.target.entityType, t), meta: `${d.relationType} · ${Math.round(d.confidence * 100)}% · ${d.status}` }))} />}
+        {tab === 'Dependents' && <EntityList title={t('Dont dépendent', 'Depended on by')} items={(dependents.data ?? []).map((d) => ({ id: d.id, name: d.name, type: entityTypeLabel(d.entityType, t), meta: `${t('criticité', 'criticality')} ${d.criticality}` }))} />}
         {tab === 'Risks' && (
-          <Panel title="Risk Breakdown">
+          <Panel title={t('Décomposition du risque', 'Risk Breakdown')}>
             {risk.data ? (
               <div className="flex flex-col gap-2">
                 <div className="mb-2 flex items-baseline gap-2"><span style={{ fontFamily: geist, fontSize: 32, color: bandColor(risk.data.assessment.score) }}>{risk.data.assessment.score.toFixed(0)}</span><span style={{ color: 'var(--nx-text-muted)' }}>/100 · {risk.data.assessment.band}</span></div>
@@ -203,7 +208,7 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
                   </div>
                 ))}
               </div>
-            ) : <div style={{ color: 'var(--nx-text-muted)' }}>Loading…</div>}
+            ) : <div style={{ color: 'var(--nx-text-muted)' }}>{t('Chargement…', 'Loading…')}</div>}
           </Panel>
         )}
       </div>
@@ -212,6 +217,7 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
 }
 
 function LocalTopography({ name, deps, dependents }: { name: string; deps: { name: string; crit: number }[]; dependents: { name: string; crit: number }[] }) {
+  const { t } = useLang()
   const up = dependents.slice(0, 4)
   const down = deps.slice(0, 4)
   return (
@@ -225,7 +231,7 @@ function LocalTopography({ name, deps, dependents }: { name: string; deps: { nam
         <circle cx={50} cy={50} r={4} fill="var(--nx-surface-bright)" stroke={CYAN} strokeWidth={0.7} />
         <text x={50} y={57} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="3.4" fontWeight="700">{name}</text>
       </svg>
-      {up.length === 0 && down.length === 0 && <div className="absolute inset-0 flex items-center justify-center" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>Isolated node</div>}
+      {up.length === 0 && down.length === 0 && <div className="absolute inset-0 flex items-center justify-center" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Nœud isolé', 'Isolated node')}</div>}
     </div>
   )
 }
@@ -264,9 +270,10 @@ function Finding({ icon, color, title, sub }: { icon: React.ReactNode; color: st
   )
 }
 function EntityList({ title, items }: { title: string; items: { id: string; name: string; type: string; meta: string }[] }) {
+  const { t } = useLang()
   return (
     <Panel title={`${title} (${items.length})`}>
-      {items.length === 0 ? <div style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>None.</div> : (
+      {items.length === 0 ? <div style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Aucun.', 'None.')}</div> : (
         <div className="flex flex-col gap-2">
           {items.map((it) => (
             <div key={it.id} className="flex items-center justify-between rounded-sm border p-2" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
