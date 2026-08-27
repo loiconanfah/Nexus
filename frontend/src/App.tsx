@@ -9,6 +9,7 @@ import { Assets } from './pages/Assets'
 import { AiAnalyst } from './pages/AiAnalyst'
 import { Reports } from './pages/Reports'
 import { HumanDependency } from './pages/HumanDependency'
+import { DependencyIntelligence } from './pages/DependencyIntelligence'
 import { Login } from './pages/Login'
 import { getTenantId, resetTenant } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -71,7 +72,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/graph" element={<GraphExplorer />} />
-        <Route path="/dependencies" element={<GraphExplorer />} />
+        <Route path="/dependencies" element={<DependencyIntelligence />} />
         <Route path="/assets" element={<Assets />} />
         <Route path="/risks" element={<RiskCenter />} />
         <Route path="/simulations" element={<Simulation />} />

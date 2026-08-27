@@ -93,6 +93,8 @@ export interface GraphEdge {
   type: string
   confidence: number
   status: string
+  sourceSystem?: string | null
+  evidence?: string | null
 }
 
 export interface GraphData {

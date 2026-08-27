@@ -149,7 +149,8 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             MATCH (s:Entity { tenantId: $t })-[r]->(tg:Entity { tenantId: $t })
             WHERE r.validUntil IS NULL
             RETURN r.id AS id, s.id AS source, tg.id AS target, type(r) AS type,
-                   r.confidence AS confidence, r.status AS status
+                   r.confidence AS confidence, r.status AS status,
+                   r.sourceSystem AS sourceSystem, r.evidence AS evidence
             LIMIT {{take}}
             """;
 
@@ -160,7 +161,9 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             Guid.Parse(r["target"].As<string>()),
             r["type"].As<string>(),
             r["confidence"].As<double>(),
-            r["status"].As<string>())).ToList();
+            r["status"].As<string>(),
+            r["sourceSystem"]?.As<string>(),
+            r["evidence"]?.As<string>())).ToList();
     }
 
     /// <summary>Contrôle qu'un label/type provient bien du registre d'ontologie avant interpolation.</summary>

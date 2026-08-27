@@ -29,4 +29,6 @@ public sealed record GraphEdgeRecord(
     Guid Target,
     string Type,
     double Confidence,
-    string Status);
+    string Status,
+    string? SourceSystem = null,
+    string? Evidence = null);
