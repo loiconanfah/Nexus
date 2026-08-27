@@ -144,6 +144,25 @@ export interface ExecutiveReport {
   recommendations: ReportRecommendation[]
 }
 
+export interface Supplier {
+  id: string
+  name: string
+  riskScore: number
+  riskBand: string
+  criticalServices: number
+  dependencies: number
+  connectedAssets: number
+  concentrationPercent: number
+  dependents: string[]
+  alternatives: number
+}
+export interface SupplierEdge { supplier: string; asset: string; assetCritical: boolean }
+export interface SupplierIntel {
+  summary: { criticalSuppliers: number; singleDependencies: number; concentrationPercent: number; contractsExpiring: number }
+  suppliers: Supplier[]
+  edges: SupplierEdge[]
+}
+
 export interface HumanPerson {
   id: string
   name: string

@@ -10,6 +10,7 @@ import { AiAnalyst } from './pages/AiAnalyst'
 import { Reports } from './pages/Reports'
 import { HumanDependency } from './pages/HumanDependency'
 import { DependencyIntelligence } from './pages/DependencyIntelligence'
+import { SupplierIntelligence } from './pages/SupplierIntelligence'
 import { Login } from './pages/Login'
 import { getTenantId, resetTenant } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -20,6 +21,7 @@ const TITLES: Record<string, string> = {
   '/assets': 'Assets',
   '/dependencies': 'Dependencies',
   '/risks': 'Risk Center',
+  '/suppliers': 'Supplier Intelligence',
   '/simulations': 'What-If Simulation',
   '/ai': 'AI Analyst',
   '/reports': 'Reports',
@@ -73,6 +75,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/graph" element={<GraphExplorer />} />
         <Route path="/dependencies" element={<DependencyIntelligence />} />
+        <Route path="/suppliers" element={<SupplierIntelligence />} />
         <Route path="/assets" element={<Assets />} />
         <Route path="/risks" element={<RiskCenter />} />
         <Route path="/simulations" element={<Simulation />} />

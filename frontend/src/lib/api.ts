@@ -11,6 +11,7 @@ import type {
   PropagationResult,
   RiskRow,
   ScenarioType,
+  SupplierIntel,
 } from './types'
 
 const BASE = '/api/v1'
@@ -39,6 +40,8 @@ export const api = {
   executiveReport: () => fetch(`${BASE}/reports/executive`, { headers: headers(false) }).then(handle<ExecutiveReport>),
 
   humanDependencies: () => fetch(`${BASE}/human-dependencies`, { headers: headers(false) }).then(handle<HumanDependencies>),
+
+  suppliers: () => fetch(`${BASE}/suppliers`, { headers: headers(false) }).then(handle<SupplierIntel>),
 
   entity: (id: string) =>
     fetch(`${BASE}/entities/${id}`, { headers: headers(false) }).then(handle<GraphEntityRecord>),
