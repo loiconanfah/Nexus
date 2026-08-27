@@ -26,7 +26,11 @@ export interface SpofSummary {
 export interface PriorityItem {
   severity: 'SEV_CRIT' | 'SEV_HIGH' | 'SEV_WARN'
   confidence: number
-  text: string
+  code: 'spof' | 'supplier' | 'human' | 'undocumented'
+  name: string
+  entityType: string
+  count: number
+  systems: string[]
 }
 
 export interface Overview {

@@ -8,7 +8,18 @@ import {
 import { api } from '../lib/api'
 import { importDemoData } from '../lib/demo'
 import { useLang } from '../lib/i18n'
+import { entityTypeLabel } from '../lib/labels'
 import type { GraphData, Overview, PriorityItem } from '../lib/types'
+
+function priorityText(it: PriorityItem, t: (fr: string, en: string) => string): string {
+  const type = entityTypeLabel(it.entityType, t)
+  switch (it.code) {
+    case 'spof': return t(`${it.name} (${type}) est un point unique de défaillance — ${it.count} actif(s) en dépendent sans redondance.`, `${it.name} (${type}) is a single point of failure — ${it.count} asset(s) depend on it with no redundancy.`)
+    case 'supplier': return t(`Le fournisseur « ${it.name} » soutient ${it.count} système(s) critique(s) — risque de concentration.`, `Supplier '${it.name}' supports ${it.count} critical system(s) — concentration risk.`)
+    case 'human': return t(`${it.name} concentre un savoir critique sur ${it.systems.join(', ')}.`, `${it.name} holds critical knowledge concentration for ${it.systems.join(', ')}.`)
+    case 'undocumented': return t(`${it.count} dépendance(s) cartographiée(s) ont un faible niveau de confiance selon les derniers scans.`, `${it.count} mapped dependency(ies) have low confidence scores based on recent scan data.`)
+  }
+}
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -219,7 +230,7 @@ function PriorityIntelligence({ items, onInvestigate }: { items: PriorityItem[];
                 <span className="rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, background: `color-mix(in srgb, ${c} 20%, transparent)`, color: c }}>{it.severity}</span>
                 <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>CONF: {it.confidence}%</span>
               </div>
-              <p className="mb-3" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{it.text}</p>
+              <p className="mb-3" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{priorityText(it, t)}</p>
               <button onClick={onInvestigate} className="flex w-full items-center justify-center gap-1 rounded py-1" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T, border: `1px solid ${it.severity === 'SEV_CRIT' ? 'rgba(0,229,255,0.4)' : 'var(--nx-border)'}` }}>
                 {t('Investiguer', 'Investigate')} <ArrowRight size={13} />
               </button>

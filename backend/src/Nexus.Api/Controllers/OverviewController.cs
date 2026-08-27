@@ -39,6 +39,8 @@ public sealed class OverviewController(
         });
     }
 
+    // Renvoie des codes + parametres ; la phrase lisible est composee cote
+    // frontend dans la langue active (voir architecture i18n).
     private static List<object> BuildPriorityIntelligence(ExecutiveReport r)
     {
         var items = new List<object>();
@@ -48,7 +50,11 @@ public sealed class OverviewController(
             {
                 severity = s.Score >= 80 ? "SEV_CRIT" : "SEV_HIGH",
                 confidence = Math.Min(99, s.Score),
-                text = $"{s.Name} ({s.EntityType}) is a single point of failure — {s.Dependents} asset(s) depend on it with no redundancy.",
+                code = "spof",
+                name = s.Name,
+                entityType = s.EntityType,
+                count = s.Dependents,
+                systems = Array.Empty<string>(),
             });
 
         var topSupplier = r.SupplierConcentration.FirstOrDefault();
@@ -57,7 +63,11 @@ public sealed class OverviewController(
             {
                 severity = "SEV_HIGH",
                 confidence = r.EntityCount == 0 ? 50 : Math.Min(99, 100 * topSupplier.DependentSystems / r.EntityCount + 40),
-                text = $"Supplier '{topSupplier.Name}' supports {topSupplier.DependentSystems} critical system(s) — concentration risk.",
+                code = "supplier",
+                name = topSupplier.Name,
+                entityType = "Supplier",
+                count = topSupplier.DependentSystems,
+                systems = Array.Empty<string>(),
             });
 
         var human = r.HumanDependencies.FirstOrDefault();
@@ -66,7 +76,11 @@ public sealed class OverviewController(
             {
                 severity = "SEV_HIGH",
                 confidence = 87,
-                text = $"{human.Person} holds critical knowledge concentration for {string.Join(", ", human.KnownSystems)}.",
+                code = "human",
+                name = human.Person,
+                entityType = "Person",
+                count = human.KnownSystems.Count,
+                systems = human.KnownSystems.ToArray(),
             });
 
         if (r.UndocumentedCount > 0)
@@ -74,7 +88,11 @@ public sealed class OverviewController(
             {
                 severity = "SEV_WARN",
                 confidence = 42,
-                text = $"{r.UndocumentedCount} mapped dependency(ies) have low confidence scores based on recent scan data.",
+                code = "undocumented",
+                name = "",
+                entityType = "",
+                count = r.UndocumentedCount,
+                systems = Array.Empty<string>(),
             });
 
         return items;
