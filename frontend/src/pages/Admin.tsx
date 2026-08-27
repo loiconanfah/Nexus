@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Database, LogOut, RotateCcw, Server, Settings, ShieldCheck } from 'lucide-react'
+import { Check, Database, KeyRound, Loader2, LogOut, RotateCcw, Server, Settings, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { getTenantId, resetTenant } from '../lib/tenant'
 import { logout } from '../lib/auth'
@@ -58,6 +59,9 @@ export function Admin() {
         </div>
       </div>
 
+      {/* Intégrations IA */}
+      <AiIntegration />
+
       {/* Actions */}
       <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
@@ -78,6 +82,92 @@ export function Admin() {
     </div>
   )
 }
+
+function AiIntegration() {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const { data: cfg } = useQuery({ queryKey: ['aiConfig'], queryFn: api.aiConfig })
+  const [provider, setProvider] = useState('anthropic')
+  const [apiKey, setApiKey] = useState('')
+  const [endpoint, setEndpoint] = useState('')
+  const [model, setModel] = useState('')
+  const [testMsg, setTestMsg] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const save = useMutation({
+    mutationFn: () => api.setAiKey({ provider, apiKey, endpoint: endpoint || undefined, model: model || undefined }),
+    onSuccess: () => { setApiKey(''); setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) },
+  })
+  const test = useMutation({ mutationFn: api.testAiKey, onSuccess: (r) => setTestMsg(r) })
+  const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
+
+  const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p
+  const configured = cfg?.configured
+
+  return (
+    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: configured ? 'rgba(192,132,252,0.35)' : 'var(--nx-border)' }}>
+      <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
+        <KeyRound size={15} style={{ color: '#c084fc' }} />
+        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Intégrations IA', 'AI Integrations')}</h3>
+        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: configured ? '#4ade80' : 'var(--nx-text-muted)', background: configured ? 'rgba(74,222,128,0.12)' : 'var(--nx-surface)' }}>
+          {configured ? `${t('Configuré', 'Configured')} · ${providerLabel(cfg!.provider)}` : t('Non configuré', 'Not configured')}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-3 p-4">
+        <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>
+          {t('Ajoutez une clé pour activer la naturalisation des réponses de l’Analyste IA et le mapping assisté. La clé est stockée côté serveur en mémoire — jamais dans le navigateur, jamais renvoyée.', 'Add a key to enable AI Analyst naturalization and assisted mapping. The key is stored server-side in memory — never in the browser, never returned.')}
+        </p>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="flex flex-col gap-1">
+            <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Fournisseur', 'Provider')}</span>
+            <select value={provider} onChange={(e) => setProvider(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
+              <option value="anthropic">Claude (Anthropic)</option>
+              <option value="openai">OpenAI</option>
+              <option value="azure-openai">Azure OpenAI</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1">
+            <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Clé API', 'API key')}</span>
+            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+          </label>
+          {provider === 'azure-openai' && (
+            <label className="flex flex-col gap-1">
+              <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Endpoint Azure', 'Azure endpoint')}</span>
+              <input value={endpoint} onChange={(e) => setEndpoint(e.target.value)} placeholder="https://xxx.openai.azure.com" className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+            </label>
+          )}
+          <label className="flex flex-col gap-1">
+            <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Modèle (optionnel)', 'Model (optional)')}</span>
+            <input value={model} onChange={(e) => setModel(e.target.value)} placeholder={provider === 'anthropic' ? 'claude-3-5-sonnet-latest' : 'gpt-4o'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+          </label>
+        </div>
+
+        {testMsg && (
+          <div className="flex items-center gap-2 rounded-sm p-2.5" style={{ background: testMsg.ok ? 'rgba(74,222,128,0.08)' : 'rgba(255,180,171,0.08)', border: `1px solid ${testMsg.ok ? '#4ade8040' : '#ffb4ab40'}` }}>
+            {testMsg.ok ? <Check size={15} style={{ color: '#4ade80' }} /> : <X size={15} style={{ color: '#ffb4ab' }} />}
+            <span style={{ fontSize: 12.5, color: testMsg.ok ? '#4ade80' : '#ffb4ab' }}>{testMsg.message}</span>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => save.mutate()} disabled={!apiKey.trim() || save.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: apiKey.trim() ? '#c084fc' : 'var(--nx-surface-high)', color: apiKey.trim() ? '#1a0a2e' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12, fontWeight: 600, cursor: apiKey.trim() ? 'pointer' : 'not-allowed' }}>
+            {save.isPending ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} {t('Enregistrer la clé', 'Save key')}
+          </button>
+          <button onClick={() => test.mutate()} disabled={!configured || test.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
+            {test.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} {t('Tester la connexion', 'Test connection')}
+          </button>
+          <button onClick={() => clear.mutate()} disabled={!configured || clear.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: '#ffb4ab', fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
+            <X size={14} /> {t('Effacer', 'Clear')}
+          </button>
+        </div>
+        <p style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('Production : préférez une variable d’environnement (ANTHROPIC_API_KEY) ou un gestionnaire de secrets.', 'Production: prefer an environment variable (ANTHROPIC_API_KEY) or a secrets manager.')}</p>
+      </div>
+    </div>
+  )
+}
+
+const inputStyle = { background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontSize: 13 } as const
 
 function HealthRow({ icon: Icon, label, ok }: { icon: typeof Database; label: string; ok?: boolean }) {
   const { t } = useLang()

@@ -9,16 +9,21 @@ public static class DependencyInjection
     public static IServiceCollection AddNexusAI(this IServiceCollection services, Action<AiOptions> configure)
     {
         services.Configure(configure);
+        services.AddHttpClient("anthropic");
 
-        // Azure OpenAI si configuré, sinon implémentation inactive : l'AI Analyst
-        // reste pleinement fonctionnel avec ses réponses déterministes.
-        services.AddSingleton<IChatCompletion>(sp =>
+        // Config IA mutable à l'exécution (pilotée depuis Admin), amorcée depuis
+        // l'environnement / la section Nexus:AI au démarrage.
+        services.AddSingleton(sp =>
         {
-            var options = sp.GetRequiredService<IOptions<AiOptions>>();
-            return options.Value.IsConfigured
-                ? new AzureOpenAIChatCompletion(options)
-                : new NullChatCompletion();
+            var cfg = new AiRuntimeConfig();
+            cfg.SeedFromEnvironment(sp.GetRequiredService<IOptions<AiOptions>>().Value);
+            return cfg;
         });
+
+        // Complétion dont le fournisseur est choisi à l'exécution. Sans clé,
+        // l'AI Analyst reste pleinement fonctionnel avec ses réponses déterministes.
+        services.AddSingleton<DynamicChatCompletion>();
+        services.AddSingleton<IChatCompletion>(sp => sp.GetRequiredService<DynamicChatCompletion>());
 
         services.AddScoped<AiOrchestrator>();
         return services;

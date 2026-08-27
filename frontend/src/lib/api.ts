@@ -61,6 +61,20 @@ export const api = {
     fetch(`${BASE}/actions/${id}/status`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ status }) })
       .then(handle<{ id: string; status: ActionStatus }>),
 
+  aiConfig: () =>
+    fetch(`${BASE}/ai/config`, { headers: headers(false) })
+      .then(handle<{ providers: string[]; provider: string; configured: boolean; model: string; endpointHost: string | null }>),
+
+  setAiKey: (body: { provider: string; apiKey: string; endpoint?: string; model?: string }) =>
+    fetch(`${BASE}/ai/config`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ provider: string; configured: boolean; model: string; endpointHost: string | null }>),
+
+  clearAiKey: () =>
+    fetch(`${BASE}/ai/config`, { method: 'DELETE', headers: headers(false) }).then(handle<{ configured: boolean }>),
+
+  testAiKey: () =>
+    fetch(`${BASE}/ai/config/test`, { method: 'POST', headers: headers(false) }).then(handle<{ ok: boolean; message: string }>),
+
   health: () =>
     fetch('/health/ready', { headers: headers(false) })
       .then((r) => r.json())
