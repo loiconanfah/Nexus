@@ -1,224 +1,261 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { Activity, Zap } from 'lucide-react'
+import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench } from 'lucide-react'
 import { api } from '../lib/api'
-import { BAND_COLOR, scoreColor } from '../lib/format'
 import type { PropagationResult, ScenarioType } from '../lib/types'
-import { Badge, Button, Card, SectionTitle, Spinner, StatTile } from '../components/ui'
 
-const SCENARIOS: ScenarioType[] = [
-  'ServerFailure', 'DatabaseFailure', 'ApplicationFailure', 'NetworkFailure',
-  'SupplierFailure', 'EmployeeLoss', 'LocationFailure', 'CloudRegionFailure',
-  'CyberIncident', 'DataLoss', 'PowerOutage', 'CommunicationFailure',
+const mono = 'var(--font-mono)'
+const geist = 'var(--font-geist)'
+const CYAN = 'var(--nx-cyan)'
+const CYAN_T = 'var(--nx-cyan-text)'
+const ERR = '#ffb4ab'
+const ORANGE = '#fb923c'
+
+const SCENARIOS: { value: ScenarioType; label: string }[] = [
+  { value: 'ServerFailure', label: 'Infrastructure Failure' },
+  { value: 'DatabaseFailure', label: 'Database Failure' },
+  { value: 'ApplicationFailure', label: 'Application Failure' },
+  { value: 'NetworkFailure', label: 'Network Failure' },
+  { value: 'SupplierFailure', label: 'Supplier Failure' },
+  { value: 'CyberIncident', label: 'Cyber Incident' },
+  { value: 'PowerOutage', label: 'Power Loss (Datacenter)' },
+  { value: 'CloudRegionFailure', label: 'Cloud Region Failure' },
+  { value: 'EmployeeLoss', label: 'Key Employee Loss' },
+  { value: 'DataLoss', label: 'Data Loss' },
 ]
 
-const TYPES = ['Server', 'Application', 'Database', 'BusinessProcess', 'CloudResource', 'Service', 'Supplier', 'Person', 'Network']
+function depthColor(depth: number, max: number): string {
+  if (depth <= 1) return ERR
+  if (depth <= Math.ceil(max / 2)) return ORANGE
+  return '#849396'
+}
 
 export function Simulation() {
   const [params] = useSearchParams()
-  const [name, setName] = useState(params.get('name') ?? '')
-  const [type, setType] = useState('Server')
+  const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
+  const [assetId, setAssetId] = useState<string>(params.get('asset') ?? '')
   const [scenario, setScenario] = useState<ScenarioType>('ServerFailure')
-  const [assetId, setAssetId] = useState<string | null>(params.get('asset'))
   const [result, setResult] = useState<PropagationResult | null>(null)
-  const [notFound, setNotFound] = useState(false)
 
-  const risk = useQuery({
-    queryKey: ['risk', assetId],
-    queryFn: () => api.entityRisk(assetId!),
-    enabled: !!assetId,
-  })
+  const nodes = graph.data?.nodes ?? []
+  const origin = nodes.find((n) => n.id === assetId)
 
   const run = useMutation({
-    mutationFn: async () => {
-      setNotFound(false)
-      let id = assetId
-      if (!id) {
-        const res = await api.searchEntity(name.trim(), type)
-        if (!res.match) {
-          setNotFound(true)
-          return null
-        }
-        id = res.match.id
-        setAssetId(id)
-      }
-      return api.simulate(id, scenario)
-    },
-    onSuccess: (r) => r && setResult(r),
+    mutationFn: () => api.simulate(assetId, scenario),
+    onSuccess: (r) => setResult(r),
   })
 
-  // Auto-run si un actif est passé en paramètre (clic depuis le dashboard).
+  // Auto-run si un actif est passé en paramètre.
   useEffect(() => {
-    if (params.get('asset')) run.mutate()
+    if (params.get('asset') && graph.data && !run.isPending && !result) run.mutate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [graph.data])
 
-  const byDepth = useMemo(() => {
-    if (!result) return []
-    const groups = new Map<number, PropagationResult['affected']>()
-    for (const a of result.affected) {
-      const arr = groups.get(a.depth) ?? []
-      arr.push(a)
-      groups.set(a.depth, arr)
-    }
-    return [...groups.entries()].sort((a, b) => a[0] - b[0])
-  }, [result])
+  // Présélectionne le premier actif si aucun.
+  useEffect(() => {
+    if (!assetId && nodes.length > 0) setAssetId(nodes[0].id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes.length])
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      {/* Panneau de contrôle « WHAT IF? » */}
-      <Card>
-        <SectionTitle>What if?</SectionTitle>
-        <form
-          className="flex flex-wrap items-end gap-3"
-          onSubmit={(e) => {
-            e.preventDefault()
-            setAssetId(null)
-            setResult(null)
-            run.mutate()
-          }}
-        >
-          <Field label="Actif">
-            <input
-              value={name}
-              onChange={(e) => { setName(e.target.value); setAssetId(null) }}
-              placeholder="ex : SQL01"
-              className="w-44 rounded-lg border px-3 py-2 text-sm outline-none"
-              style={{ background: 'var(--color-surface-2)', borderColor: 'var(--color-border)', color: 'var(--color-text-strong)' }}
-            />
-          </Field>
-          <Field label="Type">
-            <Select value={type} onChange={setType} options={TYPES} />
-          </Field>
-          <Field label="Scénario">
-            <Select value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={SCENARIOS} />
-          </Field>
-          <Button type="submit" disabled={run.isPending || (!name && !assetId)}>
-            <Zap size={16} />
-            {run.isPending ? 'Simulation…' : 'Simuler'}
-          </Button>
-        </form>
-        {notFound && (
-          <p className="mt-2 text-sm" style={{ color: 'var(--color-elevated)' }}>
-            Actif introuvable pour ce nom et ce type.
-          </p>
-        )}
-        {run.error && <p className="mt-2 text-sm" style={{ color: 'var(--color-critical)' }}>{(run.error as Error).message}</p>}
-      </Card>
+    <div className="flex h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+      {/* Context header */}
+      <div className="flex h-14 shrink-0 items-center justify-between border-b px-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+        <div className="flex items-baseline gap-4">
+          <h1 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>WHAT IF?</h1>
+          <span className="hidden md:inline" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Simulate operational disruption before it happens.</span>
+        </div>
+        <span className="flex items-center gap-1 rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 12, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CYAN }} /> ENGINE READY
+        </span>
+      </div>
 
-      {run.isPending && <Spinner label="Calcul de la propagation…" />}
-
-      {result && (
-        <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatTile label="Entités affectées" value={result.affectedTotal} color="var(--color-high)" />
-            <StatTile label="Profondeur max" value={result.maxDepth} />
-            <StatTile label="Impact opérationnel" value={result.estimatedOperationalImpact} sub="Σ criticités" />
-            <StatTile label="Scénario" value={<span className="text-lg">{result.scenario}</span>} />
+      <div className="flex flex-1 overflow-hidden">
+        {/* ===== Config ===== */}
+        <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-r" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+          <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
+            <h3 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN_T }}>
+              <Bolt size={14} /> Scenario Configuration
+            </h3>
           </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Cascade par profondeur */}
-            <Card className="lg:col-span-2">
-              <SectionTitle hint={`${result.affectedTotal} affectés`}>Cascade de propagation</SectionTitle>
-              {result.affectedTotal === 0 ? (
-                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Aucun dépendant : la panne de cet actif n'affecte rien d'autre.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {byDepth.map(([depth, nodes]) => (
-                    <div key={depth} className="flex gap-3">
-                      <div className="flex w-16 shrink-0 flex-col items-center">
-                        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>niveau</span>
-                        <span className="text-lg font-semibold tabular-nums" style={{ color: 'var(--color-elevated)' }}>{depth}</span>
-                      </div>
-                      <div className="flex flex-1 flex-wrap gap-2">
-                        {nodes.map((n) => (
-                          <div
-                            key={n.entity.id}
-                            className="rounded-lg border px-3 py-2"
-                            style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface-2)' }}
-                          >
-                            <div className="text-sm font-medium" style={{ color: 'var(--color-text-strong)' }}>{n.entity.name}</div>
-                            <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                              <Badge>{n.entity.entityType}</Badge>
-                              <span>crit {n.entity.criticality}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            {/* Impact par type + risque de l'actif */}
-            <div className="space-y-6">
-              <Card>
-                <SectionTitle>Impact par type</SectionTitle>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(result.affectedByType).map(([t, n]) => (
-                    <Badge key={t} color="var(--color-high)">{t} · {n}</Badge>
-                  ))}
-                </div>
-              </Card>
-
-              {risk.data && (
-                <Card>
-                  <SectionTitle hint={risk.data.assessment.band}>Risque de l'actif</SectionTitle>
-                  <div className="mb-3 flex items-baseline gap-2">
-                    <span className="text-3xl font-semibold tabular-nums" style={{ color: BAND_COLOR[risk.data.assessment.band] }}>
-                      {risk.data.assessment.score}
-                    </span>
-                    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>/ 100</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {risk.data.assessment.breakdown.filter((b) => b.points > 0).map((b) => (
-                      <div key={b.factor} className="flex items-center gap-2 text-xs">
-                        <div className="w-36 shrink-0" style={{ color: 'var(--color-text-muted)' }}>{b.factor}</div>
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--color-surface-2)' }}>
-                          <div className="h-full rounded-full" style={{ width: `${(b.points / risk.data!.assessment.score) * 100}%`, background: scoreColor(risk.data!.assessment.score) }} />
-                        </div>
-                        <div className="w-10 text-right tabular-nums" style={{ color: 'var(--color-text)' }}>{b.points}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-3 flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    <Activity size={12} /> {risk.data.hasRedundancy ? 'Redondance présente' : 'Aucune redondance'} · {risk.data.directDependents} dépendants directs
-                  </p>
-                </Card>
-              )}
+          <div className="flex flex-col gap-6 p-4">
+            <div className="flex flex-col gap-4">
+              <Select label="Target Origin Node" value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+              <Select label="Disruption Type" value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={SCENARIOS} />
+              <div className="flex gap-3">
+                <Select label="Duration" value="24" onChange={() => {}} options={[{ value: '24', label: '24 hours' }, { value: '48', label: '48 hours' }, { value: '72', label: '72 hours' }]} />
+                <Select label="Base Severity" value="Critical" onChange={() => {}} danger options={[{ value: 'Critical', label: 'Critical' }, { value: 'High', label: 'High' }, { value: 'Medium', label: 'Medium' }]} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
+              <div className="flex items-center justify-between">
+                <label style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Cascading Modifiers</label>
+                <span className="rounded border px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)', borderColor: 'var(--nx-border)' }}>0 Active</span>
+              </div>
+              <button className="flex h-8 items-center justify-center gap-2 rounded-sm border border-dashed transition-colors" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+                <Plus size={14} /> Add Secondary Event
+              </button>
             </div>
           </div>
-        </>
-      )}
+          <div className="mt-auto border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+            <button
+              onClick={() => assetId && run.mutate()} disabled={!assetId || run.isPending}
+              className="nx-pulse flex h-12 w-full items-center justify-center gap-2 rounded-sm transition-all disabled:opacity-50"
+              style={{ background: 'transparent', border: `2px solid ${CYAN}`, color: CYAN_T, fontFamily: mono, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+            >
+              <Bolt size={18} /> {run.isPending ? 'Running…' : 'Run Simulation'}
+            </button>
+          </div>
+        </div>
+
+        {/* ===== Graphe de propagation ===== */}
+        <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
+          <div className="nx-grid absolute inset-0" />
+          {!result && (
+            <div className="z-10 text-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>
+              {run.isPending ? 'SIMULATING PROPAGATION…' : origin ? `Ready — run failure of ${origin.name}` : 'Select a target origin node'}
+            </div>
+          )}
+          {result && <PropagationGraph origin={origin?.name ?? 'ORIGIN'} result={result} />}
+          {result && (
+            <div className="absolute bottom-4 left-4 z-20 flex gap-4 rounded-sm border p-2 backdrop-blur" style={{ background: 'rgba(19,19,20,0.8)', borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10 }}>
+              <Legend color={ERR} label="Critical Path" />
+              <Legend color={ORANGE} label="High Impact" />
+              <Legend color={CYAN} label="Origin" />
+            </div>
+          )}
+        </div>
+
+        {/* ===== Résultats ===== */}
+        <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-l" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+          <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
+            <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>Simulation Result</h3>
+          </div>
+          {result ? <ResultPanel origin={origin?.name ?? 'origin'} result={result} redundant={false} /> : (
+            <div className="p-4" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Run a simulation to see the impact analysis.</div>
+          )}
+          {run.error && <div className="p-4" style={{ color: ERR, fontSize: 13 }}>{(run.error as Error).message}</div>}
+        </div>
+      </div>
     </div>
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function PropagationGraph({ origin, result }: { origin: string; result: PropagationResult }) {
+  const nodes = result.affected.slice(0, 24)
+  const n = nodes.length || 1
+  const cx = 400, cy = 300
+  const positions = nodes.map((a, i) => {
+    const ring = 90 + a.depth * 70
+    const ang = (i / n) * 2 * Math.PI - Math.PI / 2
+    return { a, x: cx + Math.cos(ang) * ring, y: cy + Math.sin(ang) * ring }
+  })
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-      {children}
-    </label>
+    <svg className="z-10 h-full w-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+      {positions.map(({ a, x, y }) => (
+        <line key={`l-${a.entity.id}`} x1={cx} y1={cy} x2={x} y2={y} stroke={depthColor(a.depth, result.maxDepth)} strokeWidth={a.depth <= 1 ? 2 : 1} opacity={0.6} strokeDasharray={a.depth <= 1 ? '4 4' : undefined} />
+      ))}
+      {positions.map(({ a, x, y }) => {
+        const c = depthColor(a.depth, result.maxDepth)
+        return (
+          <g key={a.entity.id}>
+            <circle cx={x} cy={y} r={7} fill="var(--nx-surface-container)" stroke={c} strokeWidth={1.5} />
+            <text x={x} y={y + 20} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="9">{a.entity.name}</text>
+          </g>
+        )
+      })}
+      {/* Origin */}
+      <circle cx={cx} cy={cy} r={26} fill="rgba(255,180,171,0.15)" stroke={ERR} strokeWidth={2} className="animate-pulse" />
+      <text x={cx} y={cy + 4} textAnchor="middle" fill={ERR} fontFamily="JetBrains Mono" fontSize="10" fontWeight="700">FAIL</text>
+      <text x={cx} y={cy + 46} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="10">{origin}</text>
+    </svg>
   )
 }
 
-function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+function ResultPanel({ origin, result, redundant }: { origin: string; result: PropagationResult; redundant: boolean }) {
+  const t = result.affectedByType
+  const apps = (t['Application'] ?? 0) + (t['Service'] ?? 0) + (t['System'] ?? 0)
+  const procs = (t['BusinessProcess'] ?? 0) + (t['BusinessService'] ?? 0)
+  const suppliers = t['Supplier'] ?? 0
+
+  const timeline = useMemo(() => {
+    const evts: { d: number; label: string; c: string }[] = [{ d: 0, label: `Initial failure: ${origin} offline`, c: ERR }]
+    ;[...result.affected].sort((a, b) => a.depth - b.depth).slice(0, 7).forEach((a) => {
+      evts.push({ d: a.depth, label: `${a.entity.name} (${a.entity.entityType}) impacted`, c: depthColor(a.depth, result.maxDepth) })
+    })
+    return evts
+  }, [result, origin])
+
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-lg border px-3 py-2 text-sm outline-none"
-      style={{ background: 'var(--color-surface-2)', borderColor: 'var(--color-border)', color: 'var(--color-text-strong)' }}
-    >
-      {options.map((o) => (
-        <option key={o} value={o} style={{ background: 'var(--color-surface)' }}>{o}</option>
-      ))}
-    </select>
+    <div className="flex flex-col gap-4 p-4">
+      {/* Metrics */}
+      <div className="grid grid-cols-2 gap-2">
+        <Metric label="AFFECTED ASSETS" value={result.affectedTotal} color={ERR} />
+        <Metric label="APPLICATIONS" value={apps} color="var(--nx-text)" />
+        <Metric label="CRIT PROCESS" value={procs} color={ORANGE} />
+        <Metric label="SUPPLIERS IMP." value={suppliers} color={CYAN_T} />
+      </div>
+
+      {/* Findings */}
+      <Finding icon={<AlertOctagon size={14} />} color={ERR} title="Critical Finding"
+        text={redundant ? `Cascade reaches depth ${result.maxDepth}; redundancy present limits exposure.` : `No verified failover path for ${result.affectedTotal} dependent service(s). Cascade reaches depth ${result.maxDepth}.`} />
+      <Finding icon={<Wrench size={14} />} color={ORANGE} title="Recovery Bottleneck"
+        text={`Manual recovery required for ${origin}. Estimated operational impact ${result.estimatedOperationalImpact} (sum of criticalities).`} />
+
+      {/* Timeline */}
+      <div>
+        <h4 className="mb-3 border-b pb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>Propagation Timeline</h4>
+        <div className="relative flex flex-col gap-3 pl-4">
+          <div className="absolute bottom-1 left-[5px] top-1 w-px" style={{ background: 'var(--nx-border)' }} />
+          {timeline.map((e, i) => (
+            <div key={i} className="relative">
+              <span className="absolute -left-4 top-1 h-2.5 w-2.5 rounded-full" style={{ background: 'var(--nx-panel)', border: `2px solid ${e.c}` }} />
+              <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>T+{e.d}h</div>
+              <div style={{ fontSize: 13, color: 'var(--nx-text)' }}>{e.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   )
+}
+
+/* ---------- primitives ---------- */
+function Select({ label, value, onChange, options, danger }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; danger?: boolean }) {
+  return (
+    <div className="flex flex-1 flex-col gap-1.5">
+      <label style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{label}</label>
+      <div className="relative">
+        <select value={value} onChange={(e) => onChange(e.target.value)}
+          className="h-9 w-full appearance-none rounded-sm border pl-3 pr-8 outline-none"
+          style={{ background: danger ? '#2B1B1C' : 'var(--nx-surface-container)', border: `1px solid ${danger ? '#690005' : 'var(--nx-border)'}`, color: danger ? ERR : 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
+          {options.map((o) => <option key={o.value} value={o.value} style={{ background: 'var(--nx-surface)' }}>{o.label}</option>)}
+        </select>
+        <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" style={{ color: danger ? ERR : 'var(--nx-text-muted)' }} />
+      </div>
+    </div>
+  )
+}
+
+function Metric({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="rounded-sm border p-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+      <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{label}</div>
+      <div style={{ fontFamily: geist, fontSize: 24, fontWeight: 600, color }}>{value}</div>
+    </div>
+  )
+}
+
+function Finding({ icon, color, title, text }: { icon: React.ReactNode; color: string; title: string; text: string }) {
+  return (
+    <div className="rounded-sm border p-3" style={{ background: `color-mix(in srgb, ${color} 8%, transparent)`, borderColor: `color-mix(in srgb, ${color} 30%, transparent)` }}>
+      <div className="mb-1 flex items-center gap-1.5" style={{ color, fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{icon} {title}</div>
+      <p style={{ fontSize: 13, color: 'var(--nx-text)' }}>{text}</p>
+    </div>
+  )
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return <div className="flex items-center gap-1.5" style={{ color: 'var(--nx-text)' }}><span className="h-2 w-2 rounded-full" style={{ background: color }} /> {label}</div>
 }
