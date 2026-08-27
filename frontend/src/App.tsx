@@ -1,5 +1,5 @@
-import { Route, Routes, useLocation } from 'react-router-dom'
-import { RotateCcw } from 'lucide-react'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { LogOut, RotateCcw } from 'lucide-react'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { Simulation } from './pages/Simulation'
@@ -8,7 +8,9 @@ import { RiskCenter } from './pages/RiskCenter'
 import { Assets } from './pages/Assets'
 import { AiAnalyst } from './pages/AiAnalyst'
 import { Reports } from './pages/Reports'
+import { Login } from './pages/Login'
 import { getTenantId, resetTenant } from './lib/tenant'
+import { isAuthed, logout } from './lib/auth'
 
 const TITLES: Record<string, string> = {
   '/': 'Overview',
@@ -23,7 +25,17 @@ const TITLES: Record<string, string> = {
 
 export default function App() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const tenant = getTenantId()
+
+  // Page de login : plein écran, hors du layout applicatif.
+  if (pathname === '/login') {
+    return <Login />
+  }
+  // Gate d'authentification (stub dev).
+  if (!isAuthed()) {
+    return <Navigate to="/login" replace />
+  }
 
   return (
     <Layout
@@ -41,6 +53,14 @@ export default function App() {
               title="Nouveau tenant vierge"
             >
               <RotateCcw size={12} /> reset
+            </button>
+            <button
+              onClick={() => { logout(); navigate('/login') }}
+              className="flex items-center gap-1 rounded-md border px-2 py-1 transition-colors hover:brightness-125"
+              style={{ borderColor: 'var(--color-border)' }}
+              title="Se déconnecter"
+            >
+              <LogOut size={12} /> logout
             </button>
           </div>
         </>

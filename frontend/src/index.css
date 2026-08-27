@@ -70,3 +70,52 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* =====================================================================
+   NEXUS Operational Design System (source : Stitch)
+   Palette « deep space » + accent cyan électrique, fonts Geist/Inter/Mono.
+   ===================================================================== */
+:root {
+  --nx-bg: #131314;
+  --nx-panel: #0e0e0f;
+  --nx-surface: #131314;
+  --nx-surface-container: #201f20;
+  --nx-surface-high: #2a2a2b;
+  --nx-surface-highest: #353436;
+  --nx-border: #3b494c;
+  --nx-outline: #849396;
+  --nx-text: #e5e2e3;
+  --nx-text-muted: #bac9cc;
+  --nx-cyan: #00e5ff;
+  --nx-cyan-text: #c3f5ff;
+  --nx-cyan-hover: #9cf0ff;
+  --nx-on-cyan: #00363d;
+
+  --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-inter: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+}
+
+/* Trame de fond technique */
+.nx-grid {
+  background-image:
+    linear-gradient(to right, var(--nx-border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--nx-border) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.15;
+}
+
+/* Anneau de focus cyan des champs (design Stitch) */
+.nx-input:focus-within {
+  border-color: var(--nx-cyan) !important;
+  box-shadow: 0 0 0 1px var(--nx-cyan);
+}
+
+/* Pulsation des nœuds du graphe */
+.nx-node-pulse {
+  animation: nx-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes nx-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.85; }
+}
