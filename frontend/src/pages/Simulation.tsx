@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { entityTypeLabel } from '../lib/labels'
 import type { BlastNode, PropagationResult, ScenarioType } from '../lib/types'
 
 /** Fusionne plusieurs résultats de propagation en un scénario composé (union). */
@@ -40,17 +41,17 @@ const CYAN_T = 'var(--nx-cyan-text)'
 const ERR = '#ffb4ab'
 const ORANGE = '#fb923c'
 
-const SCENARIOS: { value: ScenarioType; label: string }[] = [
-  { value: 'ServerFailure', label: 'Infrastructure Failure' },
-  { value: 'DatabaseFailure', label: 'Database Failure' },
-  { value: 'ApplicationFailure', label: 'Application Failure' },
-  { value: 'NetworkFailure', label: 'Network Failure' },
-  { value: 'SupplierFailure', label: 'Supplier Failure' },
-  { value: 'CyberIncident', label: 'Cyber Incident' },
-  { value: 'PowerOutage', label: 'Power Loss (Datacenter)' },
-  { value: 'CloudRegionFailure', label: 'Cloud Region Failure' },
-  { value: 'EmployeeLoss', label: 'Key Employee Loss' },
-  { value: 'DataLoss', label: 'Data Loss' },
+const SCENARIOS: { value: ScenarioType; fr: string; en: string }[] = [
+  { value: 'ServerFailure', fr: 'Défaillance infrastructure', en: 'Infrastructure Failure' },
+  { value: 'DatabaseFailure', fr: 'Défaillance base de données', en: 'Database Failure' },
+  { value: 'ApplicationFailure', fr: 'Défaillance application', en: 'Application Failure' },
+  { value: 'NetworkFailure', fr: 'Défaillance réseau', en: 'Network Failure' },
+  { value: 'SupplierFailure', fr: 'Défaillance fournisseur', en: 'Supplier Failure' },
+  { value: 'CyberIncident', fr: 'Incident cyber', en: 'Cyber Incident' },
+  { value: 'PowerOutage', fr: 'Panne électrique (datacenter)', en: 'Power Loss (Datacenter)' },
+  { value: 'CloudRegionFailure', fr: 'Panne région cloud', en: 'Cloud Region Failure' },
+  { value: 'EmployeeLoss', fr: 'Perte d’un employé clé', en: 'Key Employee Loss' },
+  { value: 'DataLoss', fr: 'Perte de données', en: 'Data Loss' },
 ]
 
 function depthColor(depth: number, max: number): string {
@@ -60,7 +61,8 @@ function depthColor(depth: number, max: number): string {
 }
 
 export function Simulation() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
+  const scenarioOptions = SCENARIOS.map((s) => ({ value: s.value, label: lang === 'fr' ? s.fr : s.en }))
   const [params] = useSearchParams()
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const [assetId, setAssetId] = useState<string>(params.get('asset') ?? '')
@@ -98,11 +100,11 @@ export function Simulation() {
       {/* Context header */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b px-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
         <div className="flex items-baseline gap-4">
-          <h1 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>WHAT IF?</h1>
-          <span className="hidden md:inline" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Simulate operational disruption before it happens.</span>
+          <h1 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>{t('ET SI ?', 'WHAT IF?')}</h1>
+          <span className="hidden md:inline" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Simulez une perturbation opérationnelle avant qu’elle ne survienne.', 'Simulate operational disruption before it happens.')}</span>
         </div>
         <span className="flex items-center gap-1 rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 12, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CYAN }} /> ENGINE READY
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CYAN }} /> {t('MOTEUR PRÊT', 'ENGINE READY')}
         </span>
       </div>
 
@@ -111,16 +113,16 @@ export function Simulation() {
         <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-r" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
             <h3 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN_T }}>
-              <Bolt size={14} /> Scenario Configuration
+              <Bolt size={14} /> {t('Configuration du scénario', 'Scenario Configuration')}
             </h3>
           </div>
           <div className="flex flex-col gap-6 p-4">
             <div className="flex flex-col gap-4">
-              <Select label="Target Origin Node" value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
-              <Select label="Disruption Type" value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={SCENARIOS} />
+              <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+              <Select label={t('Type de perturbation', 'Disruption Type')} value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={scenarioOptions} />
               <div className="flex gap-3">
-                <Select label="Duration" value="24" onChange={() => {}} options={[{ value: '24', label: '24 hours' }, { value: '48', label: '48 hours' }, { value: '72', label: '72 hours' }]} />
-                <Select label="Base Severity" value="Critical" onChange={() => {}} danger options={[{ value: 'Critical', label: 'Critical' }, { value: 'High', label: 'High' }, { value: 'Medium', label: 'Medium' }]} />
+                <Select label={t('Durée', 'Duration')} value="24" onChange={() => {}} options={[{ value: '24', label: t('24 heures', '24 hours') }, { value: '48', label: t('48 heures', '48 hours') }, { value: '72', label: t('72 heures', '72 hours') }]} />
+                <Select label={t('Sévérité de base', 'Base Severity')} value="Critical" onChange={() => {}} danger options={[{ value: 'Critical', label: t('Critique', 'Critical') }, { value: 'High', label: t('Élevée', 'High') }, { value: 'Medium', label: t('Moyenne', 'Medium') }]} />
               </div>
             </div>
             <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
@@ -135,7 +137,7 @@ export function Simulation() {
                     <button onClick={() => setSecondary(null)} style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>
                   </div>
                   <Select label={t('Nœud d’origine', 'Origin node')} value={secondary.assetId} onChange={(v) => setSecondary({ ...secondary, assetId: v })} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
-                  <Select label={t('Type de perturbation', 'Disruption type')} value={secondary.scenario} onChange={(v) => setSecondary({ ...secondary, scenario: v as ScenarioType })} options={SCENARIOS} />
+                  <Select label={t('Type de perturbation', 'Disruption type')} value={secondary.scenario} onChange={(v) => setSecondary({ ...secondary, scenario: v as ScenarioType })} options={scenarioOptions} />
                 </div>
               )}
               {!secondary && (
@@ -161,15 +163,15 @@ export function Simulation() {
           <div className="nx-grid absolute inset-0" />
           {!result && (
             <div className="z-10 text-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>
-              {run.isPending ? 'SIMULATING PROPAGATION…' : origin ? `Ready — run failure of ${origin.name}` : 'Select a target origin node'}
+              {run.isPending ? t('SIMULATION DE LA PROPAGATION…', 'SIMULATING PROPAGATION…') : origin ? t(`Prêt — lancer la défaillance de ${origin.name}`, `Ready — run failure of ${origin.name}`) : t('Sélectionnez un nœud d’origine', 'Select a target origin node')}
             </div>
           )}
           {result && <PropagationGraph origin={origin?.name ?? 'ORIGIN'} result={result} />}
           {result && (
             <div className="absolute bottom-4 left-4 z-20 flex gap-4 rounded-sm border p-2 backdrop-blur" style={{ background: 'rgba(19,19,20,0.8)', borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10 }}>
-              <Legend color={ERR} label="Critical Path" />
-              <Legend color={ORANGE} label="High Impact" />
-              <Legend color={CYAN} label="Origin" />
+              <Legend color={ERR} label={t('Chemin critique', 'Critical Path')} />
+              <Legend color={ORANGE} label={t('Fort impact', 'High Impact')} />
+              <Legend color={CYAN} label={t('Origine', 'Origin')} />
             </div>
           )}
         </div>
@@ -177,10 +179,10 @@ export function Simulation() {
         {/* ===== Résultats ===== */}
         <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-l" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
-            <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>Simulation Result</h3>
+            <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Résultat de la simulation', 'Simulation Result')}</h3>
           </div>
           {result ? <ResultPanel origin={origin?.name ?? 'origin'} result={result} redundant={false} /> : (
-            <div className="p-4" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Run a simulation to see the impact analysis.</div>
+            <div className="p-4" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Lancez une simulation pour voir l’analyse d’impact.', 'Run a simulation to see the impact analysis.')}</div>
           )}
           {run.error && <div className="p-4" style={{ color: ERR, fontSize: 13 }}>{(run.error as Error).message}</div>}
         </div>
@@ -221,38 +223,39 @@ function PropagationGraph({ origin, result }: { origin: string; result: Propagat
 }
 
 function ResultPanel({ origin, result, redundant }: { origin: string; result: PropagationResult; redundant: boolean }) {
-  const t = result.affectedByType
-  const apps = (t['Application'] ?? 0) + (t['Service'] ?? 0) + (t['System'] ?? 0)
-  const procs = (t['BusinessProcess'] ?? 0) + (t['BusinessService'] ?? 0)
-  const suppliers = t['Supplier'] ?? 0
+  const { t, lang } = useLang()
+  const byType = result.affectedByType
+  const apps = (byType['Application'] ?? 0) + (byType['Service'] ?? 0) + (byType['System'] ?? 0)
+  const procs = (byType['BusinessProcess'] ?? 0) + (byType['BusinessService'] ?? 0)
+  const suppliers = byType['Supplier'] ?? 0
 
   const timeline = useMemo(() => {
-    const evts: { d: number; label: string; c: string }[] = [{ d: 0, label: `Initial failure: ${origin} offline`, c: ERR }]
+    const evts: { d: number; label: string; c: string }[] = [{ d: 0, label: lang === 'fr' ? `Défaillance initiale : ${origin} hors service` : `Initial failure: ${origin} offline`, c: ERR }]
     ;[...result.affected].sort((a, b) => a.depth - b.depth).slice(0, 7).forEach((a) => {
-      evts.push({ d: a.depth, label: `${a.entity.name} (${a.entity.entityType}) impacted`, c: depthColor(a.depth, result.maxDepth) })
+      evts.push({ d: a.depth, label: lang === 'fr' ? `${a.entity.name} (${entityTypeLabel(a.entity.entityType, t)}) impacté` : `${a.entity.name} (${a.entity.entityType}) impacted`, c: depthColor(a.depth, result.maxDepth) })
     })
     return evts
-  }, [result, origin])
+  }, [result, origin, lang, t])
 
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">
-        <Metric label="AFFECTED ASSETS" value={result.affectedTotal} color={ERR} />
-        <Metric label="APPLICATIONS" value={apps} color="var(--nx-text)" />
-        <Metric label="CRIT PROCESS" value={procs} color={ORANGE} />
-        <Metric label="SUPPLIERS IMP." value={suppliers} color={CYAN_T} />
+        <Metric label={t('ACTIFS AFFECTÉS', 'AFFECTED ASSETS')} value={result.affectedTotal} color={ERR} />
+        <Metric label={t('APPLICATIONS', 'APPLICATIONS')} value={apps} color="var(--nx-text)" />
+        <Metric label={t('PROCESSUS CRIT.', 'CRIT PROCESS')} value={procs} color={ORANGE} />
+        <Metric label={t('FOURNISSEURS', 'SUPPLIERS IMP.')} value={suppliers} color={CYAN_T} />
       </div>
 
       {/* Findings */}
-      <Finding icon={<AlertOctagon size={14} />} color={ERR} title="Critical Finding"
-        text={redundant ? `Cascade reaches depth ${result.maxDepth}; redundancy present limits exposure.` : `No verified failover path for ${result.affectedTotal} dependent service(s). Cascade reaches depth ${result.maxDepth}.`} />
-      <Finding icon={<Wrench size={14} />} color={ORANGE} title="Recovery Bottleneck"
-        text={`Manual recovery required for ${origin}. Estimated operational impact ${result.estimatedOperationalImpact} (sum of criticalities).`} />
+      <Finding icon={<AlertOctagon size={14} />} color={ERR} title={t('Constat critique', 'Critical Finding')}
+        text={redundant ? t(`La cascade atteint la profondeur ${result.maxDepth} ; la redondance présente limite l’exposition.`, `Cascade reaches depth ${result.maxDepth}; redundancy present limits exposure.`) : t(`Aucun chemin de bascule vérifié pour ${result.affectedTotal} service(s) dépendant(s). La cascade atteint la profondeur ${result.maxDepth}.`, `No verified failover path for ${result.affectedTotal} dependent service(s). Cascade reaches depth ${result.maxDepth}.`)} />
+      <Finding icon={<Wrench size={14} />} color={ORANGE} title={t('Goulot de reprise', 'Recovery Bottleneck')}
+        text={t(`Reprise manuelle requise pour ${origin}. Impact opérationnel estimé ${result.estimatedOperationalImpact} (somme des criticités).`, `Manual recovery required for ${origin}. Estimated operational impact ${result.estimatedOperationalImpact} (sum of criticalities).`)} />
 
       {/* Timeline */}
       <div>
-        <h4 className="mb-3 border-b pb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>Propagation Timeline</h4>
+        <h4 className="mb-3 border-b pb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Chronologie de propagation', 'Propagation Timeline')}</h4>
         <div className="relative flex flex-col gap-3 pl-4">
           <div className="absolute bottom-1 left-[5px] top-1 w-px" style={{ background: 'var(--nx-border)' }} />
           {timeline.map((e, i) => (

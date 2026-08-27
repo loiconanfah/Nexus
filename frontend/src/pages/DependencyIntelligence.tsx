@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, CheckCircle2, Database, Route, Search, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import { entityTypeLabel, relationTypeLabel } from '../lib/labels'
+import { relationTypeLabel } from '../lib/labels'
 import type { GraphEdge, GraphEntityRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
