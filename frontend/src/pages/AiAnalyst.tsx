@@ -1,149 +1,243 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { ChevronRight, Send, Sparkles } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import {
+  ArrowRight, Database, Eye, RefreshCw, Search, Send, Sparkles, Terminal, User, Zap,
+} from 'lucide-react'
 import { api } from '../lib/api'
-import { healthColor } from '../lib/format'
 import type { AiAnswer } from '../lib/types'
-import { Badge, Card, Spinner } from '../components/ui'
+
+const mono = 'var(--font-mono)'
+const geist = 'var(--font-geist)'
+const CYAN = 'var(--nx-cyan)'
+const CYAN_T = 'var(--nx-cyan-text)'
+const ERR = '#ffb4ab'
 
 const SUGGESTIONS = [
-  'Quels sont nos plus grands risques ?',
-  'Pourquoi SQL01 est-il critique ?',
-  'Que se passe-t-il si SQL01 tombe ?',
-  'Quels sont les single points of failure ?',
-  'Quelles dépendances sont non documentées ?',
+  'What are our five biggest operational risks?',
+  'What breaks if a supplier disappears?',
+  'Find unknown dependencies.',
+  'Why is SQL01 critical?',
 ]
 
-interface Turn {
-  question: string
-  answer?: AiAnswer
-  error?: string
+function intentMeta(intent: string): { title: string; color: string } {
+  switch (intent) {
+    case 'SinglePointsOfFailure': return { title: 'SINGLE POINTS OF FAILURE', color: ERR }
+    case 'TopRisks': return { title: 'STRUCTURAL VULNERABILITIES', color: ERR }
+    case 'ExplainCriticality': return { title: 'CRITICALITY ANALYSIS', color: '#fb923c' }
+    case 'SimulateFailure': return { title: 'IMPACT PROJECTION', color: '#fb923c' }
+    case 'UndocumentedDependencies': return { title: 'UNVERIFIED DEPENDENCIES', color: '#facc15' }
+    default: return { title: 'OPERATIONAL BRIEF', color: CYAN }
+  }
 }
 
+interface Turn { question: string; ts: string; answer?: AiAnswer; error?: string }
+
 export function AiAnalyst() {
+  const navigate = useNavigate()
   const [input, setInput] = useState('')
   const [turns, setTurns] = useState<Turn[]>([])
 
   const ask = useMutation({
     mutationFn: (q: string) => api.ask(q),
-    onMutate: (q) => setTurns((t) => [...t, { question: q }]),
+    onMutate: (q) => setTurns((t) => [...t, { question: q, ts: nowUtc() }]),
     onSuccess: (answer) => setTurns((t) => t.map((x, i) => (i === t.length - 1 ? { ...x, answer } : x))),
     onError: (err) => setTurns((t) => t.map((x, i) => (i === t.length - 1 ? { ...x, error: (err as Error).message } : x))),
   })
 
-  const submit = (q: string) => {
-    const question = q.trim()
-    if (!question || ask.isPending) return
-    setInput('')
-    ask.mutate(question)
-  }
+  const submit = (q: string) => { const question = q.trim(); if (!question || ask.isPending) return; setInput(''); ask.mutate(question) }
+  const lastAnswer = [...turns].reverse().find((t) => t.answer)?.answer
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-7.5rem)] max-w-3xl flex-col">
-      <div className="flex-1 space-y-4 overflow-auto pb-4">
-        {turns.length === 0 && (
-          <Card className="text-center">
-            <div className="mx-auto mb-3 w-fit rounded-full p-3" style={{ background: 'var(--color-surface-2)' }}>
-              <Sparkles size={24} style={{ color: 'var(--color-brand)' }} />
-            </div>
-            <div className="text-lg font-semibold" style={{ color: 'var(--color-text-strong)' }}>NEXUS Analyst</div>
-            <p className="mx-auto mt-1 max-w-md text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              Posez une question sur vos dépendances et vos risques. Chaque réponse est ancrée dans les moteurs
-              déterministes, avec ses preuves et son niveau de confiance.
-            </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => submit(s)}
-                  className="rounded-full border px-3 py-1.5 text-xs transition-colors hover:brightness-125"
-                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
+    <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+      {/* ===== Investigation Log ===== */}
+      <section className="flex flex-1 flex-col overflow-hidden border-r" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+        <header className="flex h-16 shrink-0 flex-col justify-center border-b px-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+          <h2 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>
+            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN, boxShadow: '0 0 8px #00e5ff' }} /> NEXUS Analyst
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Ask questions about your organization's operational dependencies.</p>
+        </header>
 
-        {turns.map((turn, i) => (
-          <div key={i} className="space-y-2">
-            <div className="flex justify-end">
-              <div className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-2 text-sm" style={{ background: 'var(--color-brand-soft)', color: 'var(--color-text-strong)' }}>
-                {turn.question}
+        {/* Log */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
+          {turns.length === 0 && (
+            <div className="m-auto max-w-md text-center">
+              <div className="mx-auto mb-3 w-fit rounded-sm p-3" style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)' }}><Sparkles size={24} style={{ color: CYAN }} /></div>
+              <div style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>NEXUS Analyst</div>
+              <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>Every answer is grounded in the deterministic engines, with its evidence and confidence.</p>
+            </div>
+          )}
+
+          {turns.map((turn, i) => (
+            <div key={i} className="flex flex-col gap-6">
+              {/* User */}
+              <div className="ml-auto flex w-full max-w-3xl items-start justify-end gap-4">
+                <div className="rounded-lg rounded-tr-none border p-4 text-right" style={{ background: 'var(--nx-surface-high)', borderColor: 'var(--nx-border)' }}>
+                  <p style={{ fontSize: 14, color: 'var(--nx-text)' }}>{turn.question}</p>
+                  <span className="mt-2 block opacity-70" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{turn.ts} | Operator: OP-4A</span>
+                </div>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}><User size={15} style={{ color: 'var(--nx-text-muted)' }} /></div>
               </div>
-            </div>
-            {turn.error && <div className="text-sm" style={{ color: 'var(--color-critical)' }}>{turn.error}</div>}
-            {!turn.answer && !turn.error && <Spinner label="NEXUS analyse le graphe…" />}
-            {turn.answer && <AnswerCard a={turn.answer} />}
-          </div>
-        ))}
-      </div>
 
-      <form
-        onSubmit={(e) => { e.preventDefault(); submit(input) }}
-        className="flex items-center gap-2 rounded-xl border p-2"
-        style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-      >
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Poser une question…"
-          className="flex-1 bg-transparent px-2 text-sm outline-none"
-          style={{ color: 'var(--color-text-strong)' }}
-        />
-        <button
-          type="submit"
-          disabled={ask.isPending || !input.trim()}
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-50"
-          style={{ background: 'var(--color-brand)', color: '#fff' }}
-        >
-          <Send size={15} /> Demander
-        </button>
-      </form>
+              {/* Typing */}
+              {!turn.answer && !turn.error && (
+                <div className="flex w-full max-w-3xl items-center gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'rgba(0,229,255,0.1)', borderColor: 'rgba(0,229,255,0.3)' }}><RefreshCw size={15} className="animate-spin" style={{ color: CYAN }} /></div>
+                  <span className="animate-pulse" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>Querying dependency graph…</span>
+                </div>
+              )}
+              {turn.error && <div style={{ color: ERR, fontSize: 13 }}>{turn.error}</div>}
+              {turn.answer && <AnswerCard a={turn.answer} onView={() => navigate('/graph')} onSimulate={(name) => navigate(`/simulations?name=${encodeURIComponent(name)}`)} />}
+            </div>
+          ))}
+        </div>
+
+        {/* Input */}
+        <div className="flex flex-col gap-3 border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {SUGGESTIONS.map((s) => (
+              <button key={s} onClick={() => submit(s)} className="flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 transition-colors"
+                style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-high)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+                <Sparkles size={13} style={{ color: CYAN }} /> {s}
+              </button>
+            ))}
+          </div>
+          <form className="relative flex items-center" onSubmit={(e) => { e.preventDefault(); submit(input) }}>
+            <Terminal size={18} className="absolute left-4" style={{ color: 'var(--nx-text-muted)' }} />
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask NEXUS anything… (e.g. ⌘+K)"
+              className="w-full rounded-sm border py-3 pl-12 pr-14 outline-none" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 13 }} />
+            <button type="submit" disabled={ask.isPending || !input.trim()} className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-sm disabled:opacity-40"
+              style={{ background: 'rgba(0,229,255,0.2)', border: '1px solid rgba(0,229,255,0.5)', color: CYAN }}><Send size={15} /></button>
+          </form>
+        </div>
+      </section>
+
+      {/* ===== Context Viewer ===== */}
+      <aside className="hidden w-[320px] shrink-0 flex-col overflow-hidden lg:flex" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+        <header className="flex h-16 shrink-0 items-center border-b px-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+          <h3 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}><Database size={14} /> Context Viewer</h3>
+        </header>
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
+          <ContextViewer affected={lastAnswer?.affectedAssets ?? []} onView={() => navigate('/graph')} />
+        </div>
+      </aside>
     </div>
   )
 }
 
-function AnswerCard({ a }: { a: AiAnswer }) {
-  const [showEvidence, setShowEvidence] = useState(false)
+function AnswerCard({ a, onView, onSimulate }: { a: AiAnswer; onView: () => void; onSimulate: (name: string) => void }) {
+  const meta = intentMeta(a.intent)
+  const severity = Math.round(a.confidence * 100)
+  const evidence = a.evidence[0]
+  const path = a.affectedAssets.length > 0 ? ['Root', a.affectedAssets[0], 'Operations'] : ['Root', 'Graph', 'Operations']
+
   return (
-    <Card>
-      <div className="mb-2 flex items-center gap-2">
-        <Badge color="var(--color-brand)">{a.intent}</Badge>
-        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-          confiance <span style={{ color: healthColor(a.confidence * 100) }}>{Math.round(a.confidence * 100)}%</span>
-        </span>
-        {a.llmNaturalized && <Badge>LLM</Badge>}
-        <span className="ml-auto text-xs" style={{ color: 'var(--color-text-muted)' }}>{a.sources.length} source(s)</span>
+    <div className="flex w-full max-w-3xl items-start gap-4">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface)', borderColor: CYAN, boxShadow: '0 0 10px rgba(0,229,255,0.15)' }}><Zap size={15} style={{ color: CYAN }} /></div>
+      <div className="relative w-full overflow-hidden rounded-lg rounded-tl-none border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+        <div className="absolute left-0 top-0 h-full w-1" style={{ background: CYAN, boxShadow: '0 0 12px #00e5ff' }} />
+        <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+          <p className="whitespace-pre-line" style={{ fontSize: 14, color: 'var(--nx-text)' }}>{a.answer}</p>
+          {a.llmNaturalized && <span className="mt-1 inline-block rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN_T, background: 'rgba(0,229,255,0.1)' }}>LLM</span>}
+        </div>
+
+        <div className="p-4">
+          <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
+            <div className="mb-3 flex items-start justify-between">
+              <h3 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 14, letterSpacing: '0.05em', color: meta.color }}>{meta.title}</h3>
+              <div className="flex flex-col items-end">
+                <span style={{ fontFamily: mono, fontSize: 18, fontWeight: 700, color: meta.color }}>{severity}<span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>/100</span></span>
+                <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Confidence Index</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-3">
+                {evidence && (
+                  <div>
+                    <span className="mb-1 block" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>Evidence:</span>
+                    <div className="border-l-2 py-1 pl-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)', fontSize: 13, color: 'var(--nx-text)', opacity: 0.85 }}>{evidence.label} — {evidence.detail}</div>
+                  </div>
+                )}
+                {a.affectedAssets.length > 0 && (
+                  <div>
+                    <span className="mb-1 block" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>Affected Assets:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {a.affectedAssets.slice(0, 6).map((n) => (
+                        <span key={n} className="rounded border px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, borderColor: 'var(--nx-border)', background: 'var(--nx-surface-highest)', color: 'var(--nx-text)' }}>{n}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3 border-t pt-3 md:border-l md:border-t-0 md:pl-4 md:pt-0" style={{ borderColor: 'var(--nx-border)' }}>
+                <div>
+                  <div className="mb-1 flex justify-between" style={{ fontFamily: mono, fontSize: 12 }}><span style={{ color: 'var(--nx-text-muted)' }}>Confidence Level</span><span style={{ color: CYAN_T }}>{severity}%</span></div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-highest)' }}><div className="h-full" style={{ width: `${severity}%`, background: CYAN }} /></div>
+                </div>
+                <div>
+                  <span className="mb-1 block" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>Graph Path:</span>
+                  <div className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)', opacity: 0.75 }}>
+                    {path.map((p, i) => (<span key={i} className="flex items-center gap-1"><span style={{ color: i === 1 ? meta.color : undefined }}>{p}</span>{i < path.length - 1 && <ArrowRight size={12} />}</span>))}
+                  </div>
+                </div>
+                {a.recommendedAction && <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>▸ {a.recommendedAction}</div>}
+                <div className="flex gap-2">
+                  <button onClick={onView} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5 transition-colors" style={{ borderColor: 'rgba(0,229,255,0.3)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Eye size={13} /> Subgraph</button>
+                  {a.affectedAssets.length > 0 && <button onClick={() => onSimulate(a.affectedAssets[0])} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Zap size={13} /> Simulate</button>}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 text-right" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{a.sources.length} source(s)</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ContextViewer({ affected, onView }: { affected: string[]; onView: () => void }) {
+  const nodes = affected.slice(0, 6)
+  const pos = useMemo(() => {
+    const n = nodes.length || 1
+    return nodes.map((name, i) => { const a = (i / n) * 2 * Math.PI - Math.PI / 2; return { name, x: 50 + Math.cos(a) * 32, y: 50 + Math.sin(a) * 32 } })
+  }, [nodes])
+
+  return (
+    <>
+      <div>
+        <h4 className="mb-3 flex items-center justify-between border-b pb-2" style={{ fontSize: 13, color: 'var(--nx-text)', borderColor: 'var(--nx-border)' }}>
+          Active Entities <span className="rounded px-2" style={{ fontFamily: mono, fontSize: 11, background: 'var(--nx-surface-highest)' }}>{affected.length}</span>
+        </h4>
+        {affected.length === 0 && <p style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>Ask a question to populate the context.</p>}
+        <div className="flex flex-col gap-2">
+          {affected.slice(0, 8).map((name, i) => (
+            <div key={name} onClick={onView} className="flex cursor-pointer items-center justify-between rounded-sm border p-2 transition-colors" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', borderLeft: i === 0 ? `2px solid ${CYAN}` : undefined }}>
+              <div className="flex items-center gap-2"><Database size={15} style={{ color: 'var(--nx-text-muted)' }} /><span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{name}</span></div>
+              <span className="h-2 w-2 rounded-full" style={{ background: ERR }} />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="whitespace-pre-line text-sm" style={{ color: 'var(--color-text)' }}>{a.answer}</div>
-
-      {a.recommendedAction && (
-        <div className="mt-3 flex items-start gap-2 rounded-lg border p-2 text-sm" style={{ borderColor: 'var(--color-elevated)', background: 'color-mix(in srgb, var(--color-elevated) 10%, transparent)' }}>
-          <ChevronRight size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-elevated)' }} />
-          <span style={{ color: 'var(--color-text)' }}>{a.recommendedAction}</span>
-        </div>
-      )}
-
-      {a.evidence.length > 0 && (
-        <div className="mt-3">
-          <button onClick={() => setShowEvidence((v) => !v)} className="text-xs font-medium uppercase tracking-wide" style={{ color: 'var(--color-text-muted)' }}>
-            {showEvidence ? '▾' : '▸'} Preuves ({a.evidence.length})
-          </button>
-          {showEvidence && (
-            <div className="mt-2 space-y-1">
-              {a.evidence.map((e, i) => (
-                <div key={i} className="flex justify-between rounded-md px-2 py-1 text-xs" style={{ background: 'var(--color-surface-2)' }}>
-                  <span style={{ color: 'var(--color-text)' }}>{e.label}</span>
-                  <span style={{ color: 'var(--color-text-muted)' }}>{e.detail}</span>
-                </div>
-              ))}
-            </div>
+      <div className="flex min-h-[220px] flex-1 flex-col">
+        <h4 className="mb-3 flex items-center gap-2 border-b pb-2" style={{ fontSize: 13, color: 'var(--nx-text)', borderColor: 'var(--nx-border)' }}><Search size={14} /> Topology Map</h4>
+        <div className="relative flex-1 overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+          <div className="nx-grid absolute inset-0" />
+          {nodes.length > 0 && (
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
+              {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke="#3b494c" strokeWidth={0.4} />)}
+              {pos.map((p) => <circle key={p.name} cx={p.x} cy={p.y} r={2} fill={ERR} />)}
+              <circle cx={50} cy={50} r={3.5} fill="none" stroke={CYAN} strokeWidth={0.8} />
+              <circle cx={50} cy={50} r={1.6} fill={CYAN} />
+            </svg>
           )}
         </div>
-      )}
-    </Card>
+      </div>
+    </>
   )
+}
+
+function nowUtc(): string {
+  return new Date().toISOString().slice(11, 19) + ' UTC'
 }
