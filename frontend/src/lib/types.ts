@@ -133,6 +133,7 @@ export interface ExecutiveReport {
   relationCount: number
   spofCount: number
   criticalSpofCount: number
+  supplierConcentrationPercent: number
   topRisks: ReportRiskItem[]
   singlePointsOfFailure: ReportRiskItem[]
   supplierConcentration: ReportSupplier[]
