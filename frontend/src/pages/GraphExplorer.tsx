@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { layoutGraph } from '../lib/layout'
+import { useLang } from '../lib/i18n'
+import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -40,6 +42,7 @@ function typeIcon(type: string, size = 14) {
 type NodeData = { rec: GraphEntityRecord; dim: boolean }
 
 function EntityNode({ data, selected }: NodeProps) {
+  const { t } = useLang()
   const { rec, dim } = data as NodeData
   const c = bandColor(rec.criticality)
   return (
@@ -58,14 +61,14 @@ function EntityNode({ data, selected }: NodeProps) {
       <div className="flex items-center justify-between border-b p-2" style={{ borderColor: 'var(--nx-border)', background: selected ? 'rgba(0,229,255,0.05)' : 'rgba(42,42,43,0.4)' }}>
         <div className="flex items-center gap-1.5" style={{ color: selected ? CYAN : 'var(--nx-text-muted)' }}>
           {typeIcon(rec.entityType)}
-          <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase' }}>{rec.entityType}</span>
+          <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase' }}>{entityTypeLabel(rec.entityType, t)}</span>
         </div>
         <span className="rounded px-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)', background: 'var(--nx-surface-highest)' }}>{rec.criticality}</span>
       </div>
       <div className="p-2.5">
         <div className="truncate" style={{ fontSize: 13, fontWeight: 500, color: 'var(--nx-text)' }}>{rec.name}</div>
         <div className="mt-1.5 flex items-center gap-1.5">
-          <span style={{ fontFamily: mono, fontSize: 10, color: c }}>{rec.criticality >= 80 ? 'CRITICAL' : rec.criticality >= 40 ? 'ELEVATED' : 'OK'}</span>
+          <span style={{ fontFamily: mono, fontSize: 10, color: c }}>{rec.criticality >= 80 ? t('CRITIQUE', 'CRITICAL') : rec.criticality >= 40 ? t('ÉLEVÉ', 'ELEVATED') : 'OK'}</span>
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: c }} />
         </div>
       </div>
@@ -77,6 +80,7 @@ function EntityNode({ data, selected }: NodeProps) {
 const nodeTypes = { entity: EntityNode }
 
 function CommandBar({ selected, onSimulate }: { selected: string | null; onSimulate: () => void }) {
+  const { t } = useLang()
   const { fitView, zoomIn, zoomOut } = useReactFlow()
   const Btn = ({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) => (
     <button
@@ -89,13 +93,13 @@ function CommandBar({ selected, onSimulate }: { selected: string | null; onSimul
   )
   return (
     <div className="flex gap-1 rounded p-1.5 shadow-lg" style={{ background: 'rgba(19,19,20,0.9)', border: '1px solid var(--nx-border)', backdropFilter: 'blur(8px)' }}>
-      <Btn icon={<ChevronsUpDown size={15} />} label="Expand" onClick={() => zoomIn()} />
-      <Btn icon={<ChevronsDownUp size={15} />} label="Collapse" onClick={() => zoomOut()} />
+      <Btn icon={<ChevronsUpDown size={15} />} label={t('Agrandir', 'Expand')} onClick={() => zoomIn()} />
+      <Btn icon={<ChevronsDownUp size={15} />} label={t('Réduire', 'Collapse')} onClick={() => zoomOut()} />
       <div className="mx-1 my-auto h-4 w-px" style={{ background: 'var(--nx-border)' }} />
-      <Btn icon={<Route size={15} />} label="Trace Path" />
-      <Btn icon={<ScanSearch size={15} />} label="Impact Analysis" active onClick={onSimulate} />
-      <Btn icon={<Sparkles size={15} />} label="Simulate" onClick={onSimulate} />
-      <Btn icon={<Crosshair size={15} />} label="Focus" onClick={() => fitView({ duration: 400 })} />
+      <Btn icon={<Route size={15} />} label={t('Tracer le chemin', 'Trace Path')} />
+      <Btn icon={<ScanSearch size={15} />} label={t('Analyse d’impact', 'Impact Analysis')} active onClick={onSimulate} />
+      <Btn icon={<Sparkles size={15} />} label={t('Simuler', 'Simulate')} onClick={onSimulate} />
+      <Btn icon={<Crosshair size={15} />} label={t('Centrer', 'Focus')} onClick={() => fitView({ duration: 400 })} />
       {selected && <span className="sr-only">selected</span>}
     </div>
   )
@@ -103,6 +107,7 @@ function CommandBar({ selected, onSimulate }: { selected: string | null; onSimul
 
 function GraphInner() {
   const navigate = useNavigate()
+  const { t } = useLang()
   const [searchParams] = useSearchParams()
   const focusId = searchParams.get('focus')
   const { data, isLoading, error } = useQuery({ queryKey: ['graph'], queryFn: api.graph })
@@ -134,10 +139,10 @@ function GraphInner() {
     return { nodes: layoutGraph(rfNodes, rfEdges), edges: rfEdges }
   }, [data, query])
 
-  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>LOADING GRAPH…</div>
+  if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DU GRAPHE…', 'LOADING GRAPH…')}</div>
   if (error) return <div style={{ color: ERR }}>{(error as Error).message}</div>
   if (!data || data.nodes.length === 0)
-    return <div className="rounded-sm border p-6" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>Graph is empty — import data from the Overview.</div>
+    return <div className="rounded-sm border p-6" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Le graphe est vide — importez des données depuis la Vue d’ensemble.', 'Graph is empty — import data from the Overview.')}</div>
 
   return (
     <div className="relative h-[calc(100vh-7rem)] overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
@@ -147,7 +152,7 @@ function GraphInner() {
       {/* Recherche */}
       <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded px-2 py-1.5" style={{ background: 'rgba(19,19,20,0.9)', border: '1px solid var(--nx-border)' }}>
         <Network size={14} style={{ color: 'var(--nx-text-muted)' }} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Find a node…" className="w-40 bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Trouver un nœud…', 'Find a node…')} className="w-40 bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
       </div>
 
       <ReactFlow
@@ -167,6 +172,7 @@ function GraphInner() {
 }
 
 function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClose: () => void; onAnalyze: () => void }) {
+  const { t } = useLang()
   const risk = useQuery({ queryKey: ['risk', rec.id], queryFn: () => api.entityRisk(rec.id) })
   const deps = useQuery({ queryKey: ['deps', rec.id], queryFn: () => api.dependencies(rec.id) })
   const dependents = useQuery({ queryKey: ['dependents', rec.id], queryFn: () => api.dependents(rec.id) })
@@ -186,12 +192,12 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
       {/* Header */}
       <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="mb-1 flex items-start justify-between">
-          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>{rec.entityType} Entity</span>
+          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>{t('Entité', 'Entity')} {entityTypeLabel(rec.entityType, t)}</span>
           <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
         </div>
         <h2 style={{ fontFamily: geist, fontSize: 22, fontWeight: 500, color: 'var(--nx-text)' }}>{rec.name}</h2>
         <div className="mt-3 flex gap-2">
-          {rec.criticality >= 80 && <Badge color={ERR}>CRITICAL</Badge>}
+          {rec.criticality >= 80 && <Badge color={ERR}>{t('CRITIQUE', 'CRITICAL')}</Badge>}
           {band && <Badge color={c} dot>{band.toUpperCase()}</Badge>}
         </div>
       </div>
@@ -199,25 +205,25 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
       {/* Contenu */}
       <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4">
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="RISK SCORE" value={score !== undefined ? score.toFixed(0) : '—'} suffix="/100" color={score !== undefined ? bandColor(score) : 'var(--nx-text)'} />
-          <Stat label="CONFIDENCE" value={String(confidence)} suffix="%" color={CYAN_T} />
+          <Stat label={t('SCORE DE RISQUE', 'RISK SCORE')} value={score !== undefined ? score.toFixed(0) : '—'} suffix="/100" color={score !== undefined ? bandColor(score) : 'var(--nx-text)'} />
+          <Stat label={t('CONFIANCE', 'CONFIDENCE')} value={String(confidence)} suffix="%" color={CYAN_T} />
           <div className="col-span-2 flex items-center justify-between rounded-sm border p-3" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
             <div>
               <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>SOURCE</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--nx-text)' }}>{rec.sourceSystem ?? 'Unassigned'}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--nx-text)' }}>{rec.sourceSystem ?? t('Non attribué', 'Unassigned')}</div>
             </div>
             <Mail size={16} style={{ color: CYAN_T }} />
           </div>
         </div>
 
         {/* Topology metrics */}
-        <Section title="Topology Metrics">
-          <MetricRow label="Dependencies" value={deps.data?.length ?? '…'} />
-          <MetricRow label="Dependents" value={dependents.data?.length ?? '…'} />
+        <Section title={t('Métriques de topologie', 'Topology Metrics')}>
+          <MetricRow label={t('Dépendances', 'Dependencies')} value={deps.data?.length ?? '…'} />
+          <MetricRow label={t('Dépendants', 'Dependents')} value={dependents.data?.length ?? '…'} />
         </Section>
 
         {/* Evidence & sources */}
-        <Section title="Evidence & Sources">
+        <Section title={t('Preuves & sources', 'Evidence & Sources')}>
           {deps.data && deps.data.length > 0 ? deps.data.slice(0, 6).map((d) => (
             <div key={d.target.id} className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'rgba(59,73,76,0.5)', background: 'rgba(19,19,20,0.5)' }}>
               <div className="flex h-6 w-6 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-container)' }}>{typeIcon(d.target.entityType, 12)}</div>
@@ -229,7 +235,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
           )) : (
             <div className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'rgba(59,73,76,0.5)' }}>
               <div className="flex h-6 w-6 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-container)' }}><FileText size={12} style={{ color: CYAN_T }} /></div>
-              <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{rec.sourceSystem ?? 'No upstream dependencies'}</div>
+              <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{rec.sourceSystem ?? t('Aucune dépendance amont', 'No upstream dependencies')}</div>
             </div>
           )}
         </Section>
@@ -238,7 +244,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
       {/* Footer */}
       <div className="border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
         <button onClick={onAnalyze} className="flex w-full items-center justify-center gap-2 rounded-sm py-2 transition-colors" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 500 }}>
-          <ScanSearch size={16} /> Analyze Impact
+          <ScanSearch size={16} /> {t('Analyser l’impact', 'Analyze Impact')}
         </button>
       </div>
     </div>
