@@ -121,6 +121,10 @@ export const api = {
       body: JSON.stringify({ question }),
     }).then(handle<AiAnswer>),
 
+  analyzeImport: (sample: string) =>
+    fetch(`${BASE}/imports/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ sample }) })
+      .then(handle<{ usedAi: boolean; message: string; mapping: null | { kind: 'entities' | 'relations'; name: string; type: string; crit: string; source: string; sourceType: string; target: string; targetType: string; relation: string; confidence: string; defaultEntityType: string } }>),
+
   importCsv: (file: Blob, filename: string, profile: string) => {
     const form = new FormData()
     form.append('file', file, filename)

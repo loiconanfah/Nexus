@@ -39,7 +39,7 @@ const PRESETS: Record<'nodes' | 'edges', { columns: string; sample: string; buil
 function guess(headers: string[], re: RegExp): string {
   return headers.find((h) => re.test(h)) ?? ''
 }
-type AutoMap = { kind: 'entities' | 'relations'; name: string; type: string; crit: string; source: string; sourceType: string; target: string; targetType: string; relation: string; confidence: string }
+type AutoMap = { kind: 'entities' | 'relations'; name: string; type: string; crit: string; source: string; sourceType: string; target: string; targetType: string; relation: string; confidence: string; defaultType?: string }
 function autoDetect(headers: string[]): AutoMap {
   const source = guess(headers, /source|from|src|parent|depend.*on|upstream/i)
   const target = guess(headers, /target|to\b|dest|child|downstream/i)
@@ -57,18 +57,19 @@ function autoDetect(headers: string[]): AutoMap {
   }
 }
 function buildAutoProfile(ds: string, m: AutoMap): object {
+  const et = m.defaultType || 'Asset'
   if (m.kind === 'entities') {
     return {
       sourceSystem: 'CSV Upload',
-      entities: [{ dataset: ds, entityType: 'Asset', nameColumn: m.name, ...(m.type ? { entityTypeColumn: m.type } : {}), ...(m.crit ? { criticalityColumn: m.crit } : {}) }],
+      entities: [{ dataset: ds, entityType: et, nameColumn: m.name, ...(m.type ? { entityTypeColumn: m.type } : {}), ...(m.crit ? { criticalityColumn: m.crit } : {}) }],
       relations: [],
     }
   }
   return {
     sourceSystem: 'CSV Upload',
     entities: [
-      { dataset: ds, entityType: 'Asset', nameColumn: m.source, ...(m.sourceType ? { entityTypeColumn: m.sourceType } : {}) },
-      { dataset: ds, entityType: 'Asset', nameColumn: m.target, ...(m.targetType ? { entityTypeColumn: m.targetType } : {}) },
+      { dataset: ds, entityType: et, nameColumn: m.source, ...(m.sourceType ? { entityTypeColumn: m.sourceType } : {}) },
+      { dataset: ds, entityType: et, nameColumn: m.target, ...(m.targetType ? { entityTypeColumn: m.targetType } : {}) },
     ],
     relations: [{
       dataset: ds, relationType: m.relation, sourceEntityType: 'Asset', sourceNameColumn: m.source,
@@ -92,6 +93,8 @@ export function Onboarding() {
   // Mode auto : fichier en attente + mapping détecté à confirmer.
   const [pending, setPending] = useState<{ file: File; headers: string[] } | null>(null)
   const [map, setMap] = useState<AutoMap | null>(null)
+  const [aiUsed, setAiUsed] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const modeTitle = (m: Mode) => m === 'nodes' ? t('Systèmes & actifs', 'Systems & Assets') : m === 'edges' ? t('Dépendances', 'Dependencies') : t('Auto / IA — tout fichier', 'Auto / AI — any file')
@@ -111,11 +114,23 @@ export function Onboarding() {
 
   async function onFile(file: File) {
     if (mode === 'auto') {
-      // Lit l'entête réel du fichier et propose un mapping.
+      // Lit l'entête réel du fichier ; propose un mapping (IA si clé, sinon heuristique).
       const text = await file.text()
-      const firstLine = (text.split(/\r?\n/)[0] ?? '').trim()
-      const headers = firstLine.split(',').map((h) => h.trim()).filter(Boolean)
-      setPending({ file, headers }); setMap(autoDetect(headers)); setResult(null); setErr(null)
+      const lines = text.split(/\r?\n/)
+      const headers = (lines[0] ?? '').trim().split(',').map((h) => h.trim()).filter(Boolean)
+      setPending({ file, headers }); setResult(null); setErr(null)
+      setMap(autoDetect(headers)); setAiUsed(false)   // heuristique immédiate
+      // Tente une analyse IA (classement + mapping) en arrière-plan.
+      setAnalyzing(true)
+      try {
+        const sample = lines.slice(0, 15).join('\n')
+        const r = await api.analyzeImport(sample)
+        if (r.usedAi && r.mapping) {
+          const m = r.mapping
+          setMap({ kind: m.kind, name: m.name, type: m.type, crit: m.crit, source: m.source, sourceType: m.sourceType, target: m.target, targetType: m.targetType, relation: m.relation || 'DEPENDS_ON', confidence: m.confidence, defaultType: m.defaultEntityType })
+          setAiUsed(true)
+        }
+      } catch { /* on garde l'heuristique */ } finally { setAnalyzing(false) }
       return
     }
     const ds = file.name.replace(/\.[^.]+$/, '')
@@ -173,8 +188,11 @@ export function Onboarding() {
       {/* Mode auto : mapping détecté à valider */}
       {mode === 'auto' && pending && map && (
         <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'rgba(0,229,255,0.3)' }}>
-          <div className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>
+          <div className="mb-3 flex flex-wrap items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>
             <Sparkles size={14} /> {t('Mapping détecté', 'Detected mapping')} · {pending.file.name} · {pending.headers.length} {t('colonnes', 'columns')}
+            {analyzing
+              ? <span className="flex items-center gap-1 rounded px-2 py-0.5" style={{ fontSize: 10, color: 'var(--nx-text-muted)', background: 'var(--nx-surface)' }}><Loader2 size={10} className="animate-spin" /> {t('analyse IA…', 'AI analysis…')}</span>
+              : <span className="rounded px-2 py-0.5" style={{ fontSize: 10, color: aiUsed ? '#4ade80' : 'var(--nx-text-muted)', background: aiUsed ? 'rgba(74,222,128,0.12)' : 'var(--nx-surface)' }}>{aiUsed ? t('classé par IA', 'AI-classified') : t('heuristique', 'heuristic')}</span>}
           </div>
           <div className="mb-3 flex gap-2">
             {(['entities', 'relations'] as const).map((k) => (
