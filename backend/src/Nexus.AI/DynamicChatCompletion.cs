@@ -40,6 +40,8 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
             {
                 case "anthropic":
                     return new AnthropicChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, model);
+                case "gemini":
+                    return new GeminiChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, model);
                 case "openai":
                     return new OpenAiCompatibleCompletion(new OpenAI.OpenAIClient(new ApiKeyCredential(apiKey)).GetChatClient(model));
                 case "azure-openai":
@@ -100,6 +102,12 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
                 req.Headers.Add("Authorization", $"Bearer {apiKey}");
                 return await ReadModels(http, req, "data", "id", ct);
             }
+            if (provider == "gemini")
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200");
+                req.Headers.Add("x-goog-api-key", apiKey);
+                return await ReadGeminiModels(http, req, ct);
+            }
             // Azure : les « modèles » sont des déploiements, non listables via cette API.
             var (_, _, _, model) = config.Snapshot();
             return (true, "Fournisseur Azure : utilisez le nom de votre déploiement.", string.IsNullOrWhiteSpace(model) ? [] : [model]);
@@ -123,6 +131,33 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
                 if (item.TryGetProperty(idProp, out var id) && id.GetString() is { } s) list.Add(s);
         list.Sort(StringComparer.OrdinalIgnoreCase);
         return (true, $"Clé valide · {list.Count} modèle(s) disponible(s).", [.. list]);
+    }
+
+    // Gemini : modèles sous "models", nom "models/xxx", filtrés à generateContent.
+    private static async Task<(bool, string, string[])> ReadGeminiModels(HttpClient http, HttpRequestMessage req, CancellationToken ct)
+    {
+        using var res = await http.SendAsync(req, ct);
+        if (res.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden or System.Net.HttpStatusCode.BadRequest)
+            return (false, "Clé invalide ou API Generative Language non activée.", []);
+        if (!res.IsSuccessStatusCode) return (false, $"Échec du fournisseur ({(int)res.StatusCode}).", []);
+        using var stream = await res.Content.ReadAsStreamAsync(ct);
+        using var doc = await System.Text.Json.JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        var list = new List<string>();
+        if (doc.RootElement.TryGetProperty("models", out var arr))
+        {
+            foreach (var item in arr.EnumerateArray())
+            {
+                var supports = false;
+                if (item.TryGetProperty("supportedGenerationMethods", out var methods))
+                    foreach (var mm in methods.EnumerateArray())
+                        if (mm.GetString() == "generateContent") { supports = true; break; }
+                if (!supports) continue;
+                if (item.TryGetProperty("name", out var n) && n.GetString() is { } s)
+                    list.Add(s.StartsWith("models/", StringComparison.OrdinalIgnoreCase) ? s["models/".Length..] : s);
+            }
+        }
+        list.Sort(StringComparer.OrdinalIgnoreCase);
+        return (true, $"Clé valide · {list.Count} modèle(s) Gemini disponible(s).", [.. list]);
     }
 }
 

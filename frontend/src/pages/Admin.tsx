@@ -106,7 +106,7 @@ function AiIntegration() {
   const pickModel = useMutation({ mutationFn: (m: string) => api.setAiModel(m), onSuccess: () => { setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
   const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); setModels([]); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
 
-  const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p
+  const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p
   const configured = cfg?.configured
 
   return (
@@ -129,13 +129,14 @@ function AiIntegration() {
             <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Fournisseur', 'Provider')}</span>
             <select value={provider} onChange={(e) => setProvider(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
               <option value="anthropic">Claude (Anthropic)</option>
+              <option value="gemini">Google Gemini {t('(palier gratuit)', '(free tier)')}</option>
               <option value="openai">OpenAI</option>
               <option value="azure-openai">Azure OpenAI</option>
             </select>
           </label>
           <label className="flex flex-col gap-1">
             <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Clé API', 'API key')}</span>
-            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : provider === 'gemini' ? 'AIza…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
           </label>
           {provider === 'azure-openai' && (
             <label className="flex flex-col gap-1">

@@ -23,7 +23,7 @@ public sealed class AiRuntimeConfig
             {
                 if (string.IsNullOrWhiteSpace(_apiKey)) return false;
                 if (_provider == "azure-openai") return !string.IsNullOrWhiteSpace(_endpoint);
-                return _provider is "anthropic" or "openai";
+                return _provider is "anthropic" or "openai" or "gemini";
             }
         }
     }
@@ -76,6 +76,7 @@ public sealed class AiRuntimeConfig
         "anthropic" => "claude-3-5-sonnet-latest",
         "openai" => "gpt-4o",
         "azure-openai" => "gpt-4o",
+        "gemini" => "gemini-1.5-flash",
         _ => "",
     };
 
@@ -92,6 +93,12 @@ public sealed class AiRuntimeConfig
         if (!string.IsNullOrWhiteSpace(openai))
         {
             Set("openai", openai, null, Environment.GetEnvironmentVariable("OPENAI_MODEL"));
+            return;
+        }
+        var gemini = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GOOGLE_API_KEY");
+        if (!string.IsNullOrWhiteSpace(gemini))
+        {
+            Set("gemini", gemini, null, Environment.GetEnvironmentVariable("GEMINI_MODEL"));
             return;
         }
         if (azure.IsConfigured)
