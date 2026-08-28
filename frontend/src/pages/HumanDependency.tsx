@@ -65,10 +65,10 @@ export function HumanDependency() {
 
       {/* Tuiles */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Tile label="CRITICAL KNOWLEDGE AREAS" value={data.summary.criticalKnowledgeAreas} color={ERR} />
-        <Tile label="SINGLE-KNOWLEDGE OWNERS" value={data.summary.singleKnowledgeOwners} color="#fb923c" />
-        <Tile label="UNDOCUMENTED PROCESSES" value={data.summary.undocumentedProcesses} color="#facc15" />
-        <Tile label="KEY DEPENDENCY EMPLOYEES" value={data.summary.keyDependencyEmployees} color={CYAN_T} />
+        <Tile label={t('DOMAINES DE SAVOIR CRITIQUES', 'CRITICAL KNOWLEDGE AREAS')} value={data.summary.criticalKnowledgeAreas} color={ERR} />
+        <Tile label={t('DÉTENTEURS UNIQUES', 'SINGLE-KNOWLEDGE OWNERS')} value={data.summary.singleKnowledgeOwners} color="#fb923c" />
+        <Tile label={t('PROCESSUS NON DOCUMENTÉS', 'UNDOCUMENTED PROCESSES')} value={data.summary.undocumentedProcesses} color="#facc15" />
+        <Tile label={t('EMPLOYÉS CLÉS', 'KEY DEPENDENCY EMPLOYEES')} value={data.summary.keyDependencyEmployees} color={CYAN_T} />
       </div>
 
       {/* Graphe + profil */}
@@ -82,12 +82,12 @@ export function HumanDependency() {
       {/* Directory */}
       <div className="overflow-x-auto rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-          <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--nx-text)' }}>Knowledge Risk Directory</h3>
+          <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--nx-text)' }}>{t('Répertoire des risques de savoir', 'Knowledge Risk Directory')}</h3>
         </div>
         <table className="w-full text-left">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
-              {['Employee', 'Role', 'Critical Knowledge', 'Backup', 'Risk Level', 'Documentation'].map((h, i) => (
+              {[t('Employé', 'Employee'), t('Rôle', 'Role'), t('Savoir critique', 'Critical Knowledge'), t('Secours', 'Backup'), t('Niveau de risque', 'Risk Level'), 'Documentation'].map((h, i) => (
                 <th key={h} className={`px-4 py-2 ${i >= 3 && i <= 3 ? 'text-right' : ''}`} style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{h}</th>
               ))}
             </tr>
@@ -120,6 +120,7 @@ export function HumanDependency() {
 }
 
 function KnowledgeGraph({ person, onSystem }: { person: HumanPerson; onSystem: (name: string) => void }) {
+  const { t } = useLang()
   const systems = person.knownSystems.slice(0, 6)
   const pos = useMemo(() => {
     const n = systems.length || 1
@@ -128,7 +129,7 @@ function KnowledgeGraph({ person, onSystem }: { person: HumanPerson; onSystem: (
   return (
     <div className="relative h-full min-h-[320px] w-full">
       <div className="nx-grid absolute inset-0" />
-      <div className="absolute left-3 top-3" style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>Knowledge Concentration</div>
+      <div className="absolute left-3 top-3" style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Concentration de savoir', 'Knowledge Concentration')}</div>
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke={CYAN} strokeWidth={0.4} strokeDasharray="2 1" opacity={0.5} />)}
         {pos.map((p) => (
@@ -147,10 +148,11 @@ function KnowledgeGraph({ person, onSystem }: { person: HumanPerson; onSystem: (
 }
 
 function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () => void }) {
+  const { t } = useLang()
   const c = RISK_COLOR[person.riskLevel]
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 rounded-sm border p-5 lg:w-[320px]" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-      <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-text-muted)' }}>Dependency Profile</h3>
+      <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-text-muted)' }}>{t('Profil de dépendance', 'Dependency Profile')}</h3>
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface)', borderColor: CYAN }}><User size={22} style={{ color: CYAN }} /></div>
         <div>
@@ -158,10 +160,10 @@ function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () =
           <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{person.role}</div>
         </div>
       </div>
-      {person.soleKnowledgeSystems > 0 && <span className="w-fit rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>⚠ CRITICAL CONCENTRATION</span>}
+      {person.soleKnowledgeSystems > 0 && <span className="w-fit rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>⚠ {t('CONCENTRATION CRITIQUE', 'CRITICAL CONCENTRATION')}</span>}
 
       <div>
-        <h4 className="mb-2 border-b pb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>Core Knowledge Areas</h4>
+        <h4 className="mb-2 border-b pb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Domaines de savoir clés', 'Core Knowledge Areas')}</h4>
         <div className="flex flex-wrap gap-2">
           {person.knownSystems.map((s) => (
             <span key={s} className="flex items-center gap-1 rounded border px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, borderColor: 'var(--nx-border)', background: 'var(--nx-surface)', color: 'var(--nx-text)' }}><Server size={11} /> {s}</span>
@@ -170,16 +172,16 @@ function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () =
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <MiniStat label="CRITICAL SYSTEMS" value={person.criticalSystems || person.knownSystems.length} color={c} />
-        <MiniStat label="BACKUP EXPERTS" value={person.backupExperts} color={person.backupExperts === 0 ? ERR : CYAN_T} />
+        <MiniStat label={t('SYSTÈMES CRITIQUES', 'CRITICAL SYSTEMS')} value={person.criticalSystems || person.knownSystems.length} color={c} />
+        <MiniStat label={t('EXPERTS DE SECOURS', 'BACKUP EXPERTS')} value={person.backupExperts} color={person.backupExperts === 0 ? ERR : CYAN_T} />
       </div>
 
       <div>
-        <div className="mb-1 flex justify-between" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}><span>Documentation</span><span>{person.documentationPercent}% Covered</span></div>
+        <div className="mb-1 flex justify-between" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}><span>Documentation</span><span>{person.documentationPercent}% {t('couvert', 'Covered')}</span></div>
         <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-highest)' }}><div className="h-full" style={{ width: `${person.documentationPercent}%`, background: person.documentationPercent < 40 ? ERR : CYAN }} /></div>
       </div>
 
-      <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}><BookOpen size={16} /> Simulate Knowledge Loss</button>
+      <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}><BookOpen size={16} /> {t('Simuler la perte de savoir', 'Simulate Knowledge Loss')}</button>
     </aside>
   )
 }
