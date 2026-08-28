@@ -21,11 +21,9 @@ public sealed class NormalizationEngine
             ? record.Get(mapping.EntityTypeColumn) ?? mapping.EntityType
             : mapping.EntityType;
 
-        var typeResult = EntityType.FromName(typeName);
-        if (typeResult.IsFailure)
-        {
-            return typeResult.Error;
-        }
+        // Résolution tolérante (synonymes + repli Asset) : jamais d'abandon de
+        // ligne pour un type « en langage naturel » (web app, vm, db…).
+        var entityType = OntologyResolver.ResolveEntityType(typeName);
 
         var name = record.Get(mapping.NameColumn);
         if (string.IsNullOrWhiteSpace(name))
@@ -50,34 +48,24 @@ public sealed class NormalizationEngine
 
         var description = mapping.DescriptionColumn is null ? null : record.Get(mapping.DescriptionColumn);
 
-        return new EntityCandidate(typeResult.Value, name, aliases, criticality, description, record.SourceKey);
+        return new EntityCandidate(entityType, name, aliases, criticality, description, record.SourceKey);
     }
 
     public Result<RelationCandidate> NormalizeRelation(RawRecord record, RelationMapping mapping)
     {
-        var relResult = RelationType.FromName(mapping.RelationType);
-        if (relResult.IsFailure)
-        {
-            return relResult.Error;
-        }
+        // Résolution tolérante (synonymes + repli). Corrige aussi les variantes
+        // de casse/format du type de relation (DependsOn, depends_on, « consumes »…).
+        var relType = OntologyResolver.ResolveRelationType(mapping.RelationType);
 
         var sourceTypeName = mapping.SourceTypeColumn is not null
             ? record.Get(mapping.SourceTypeColumn) ?? mapping.SourceEntityType
             : mapping.SourceEntityType;
-        var sourceType = EntityType.FromName(sourceTypeName);
-        if (sourceType.IsFailure)
-        {
-            return sourceType.Error;
-        }
+        var sourceType = OntologyResolver.ResolveEntityType(sourceTypeName);
 
         var targetTypeName = mapping.TargetTypeColumn is not null
             ? record.Get(mapping.TargetTypeColumn) ?? mapping.TargetEntityType
             : mapping.TargetEntityType;
-        var targetType = EntityType.FromName(targetTypeName);
-        if (targetType.IsFailure)
-        {
-            return targetType.Error;
-        }
+        var targetType = OntologyResolver.ResolveEntityType(targetTypeName);
 
         var sourceName = record.Get(mapping.SourceNameColumn);
         var targetName = record.Get(mapping.TargetNameColumn);
@@ -96,6 +84,6 @@ public sealed class NormalizationEngine
         }
 
         return new RelationCandidate(
-            relResult.Value, sourceType.Value, sourceName, targetType.Value, targetName, confidence, record.SourceKey);
+            relType, sourceType, sourceName, targetType, targetName, confidence, record.SourceKey);
     }
 }
