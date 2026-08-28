@@ -88,6 +88,10 @@ export interface PropagationResult {
   affectedByType: Record<string, number>
   estimatedOperationalImpact: number
   affected: BlastNode[]
+  estimatedFinancialImpactPerHour: number
+  estimatedFinancialImpact: number
+  durationHours: number
+  currency: string
 }
 
 export interface GraphEdge {

@@ -19,10 +19,13 @@ function mergeResults(results: PropagationResult[]): PropagationResult {
   const affected = [...byId.values()]
   const affectedByType: Record<string, number> = {}
   let impact = 0
+  let perHour = 0
   for (const n of affected) {
     affectedByType[n.entity.entityType] = (affectedByType[n.entity.entityType] ?? 0) + 1
     impact += n.entity.criticality
+    perHour += costPerHour(n.entity.criticality)
   }
+  const duration = results[0].durationHours || 8
   return {
     assetId: results[0].assetId,
     scenario: results[0].scenario,
@@ -31,7 +34,22 @@ function mergeResults(results: PropagationResult[]): PropagationResult {
     affectedByType,
     estimatedOperationalImpact: impact,
     affected,
+    estimatedFinancialImpactPerHour: perHour,
+    estimatedFinancialImpact: perHour * duration,
+    durationHours: duration,
+    currency: results[0].currency || 'CAD',
   }
+}
+
+// Miroir déterministe du modèle backend (coût d'arrêt horaire selon criticité).
+function costPerHour(c: number): number {
+  if (c >= 90) return 50000
+  if (c >= 80) return 25000
+  if (c >= 70) return 15000
+  if (c >= 60) return 10000
+  if (c >= 40) return 3000
+  if (c >= 20) return 800
+  return 200
 }
 
 const mono = 'var(--font-mono)'
@@ -71,6 +89,7 @@ export function Simulation() {
   const [scenario, setScenario] = useState<ScenarioType>('ServerFailure')
   const [secondary, setSecondary] = useState<{ assetId: string; scenario: ScenarioType } | null>(null)
   const [depth, setDepth] = useState(6)
+  const [duration, setDuration] = useState(24)
   const [result, setResult] = useState<PropagationResult | null>(null)
 
   const nodes = graph.data?.nodes ?? []
@@ -80,9 +99,9 @@ export function Simulation() {
 
   const run = useMutation({
     mutationFn: async () => {
-      const primary = await api.simulate(assetId, scenario, depth)
+      const primary = await api.simulate(assetId, scenario, depth, duration)
       if (!secondary?.assetId) return primary
-      const second = await api.simulate(secondary.assetId, secondary.scenario, depth)
+      const second = await api.simulate(secondary.assetId, secondary.scenario, depth, duration)
       return mergeResults([primary, second])
     },
     onSuccess: (r) => setResult(r),
@@ -133,6 +152,7 @@ export function Simulation() {
               <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
               <Select label={t('Type de perturbation', 'Disruption Type')} value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={scenarioOptions} />
               <Select label={t('Profondeur d’analyse (fenêtre)', 'Analysis depth (window)')} value={String(depth)} onChange={(v) => setDepth(Number(v))} options={[{ value: '3', label: t('Court terme (3 sauts)', 'Short term (3 hops)') }, { value: '6', label: t('Moyen terme (6 sauts)', 'Mid term (6 hops)') }, { value: '10', label: t('Long terme (10 sauts)', 'Long term (10 hops)') }]} />
+              <Select label={t('Durée d’arrêt estimée', 'Estimated outage duration')} value={String(duration)} onChange={(v) => setDuration(Number(v))} options={[{ value: '1', label: t('1 heure', '1 hour') }, { value: '4', label: t('4 heures', '4 hours') }, { value: '24', label: t('24 heures', '24 hours') }, { value: '72', label: t('72 heures', '72 hours') }, { value: '168', label: t('1 semaine', '1 week') }]} />
             </div>
             <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
               <div className="flex items-center justify-between">
@@ -246,8 +266,23 @@ function ResultPanel({ origin, result, redundant }: { origin: string; result: Pr
     return evts
   }, [result, origin, lang, t])
 
+  const fmtMoney = (n: number) => new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { maximumFractionDigits: 0 }).format(n)
+
   return (
     <div className="flex flex-col gap-4 p-4">
+      {/* Impact financier estimé (P2) */}
+      <div className="rounded-sm border p-4" style={{ background: 'rgba(255,180,171,0.06)', borderColor: 'rgba(255,180,171,0.35)' }}>
+        <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Impact financier estimé', 'Estimated financial impact')}</div>
+        <div className="mt-0.5 flex items-baseline gap-1">
+          <span style={{ fontFamily: geist, fontSize: 30, lineHeight: 1, color: ERR }}>{fmtMoney(result.estimatedFinancialImpact)}</span>
+          <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{result.currency}</span>
+        </div>
+        <div className="mt-1" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
+          {fmtMoney(result.estimatedFinancialImpactPerHour)} {result.currency}{t('/h', '/h')} × {result.durationHours}{t(' h d’arrêt', 'h outage')}
+        </div>
+        <div className="mt-1" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-outline)' }}>{t('Estimé (coût d’arrêt dérivé de la criticité)', 'Estimate (downtime cost derived from criticality)')}</div>
+      </div>
+
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-2">
         <Metric label={t('ACTIFS AFFECTÉS', 'AFFECTED ASSETS')} value={result.affectedTotal} color={ERR} />

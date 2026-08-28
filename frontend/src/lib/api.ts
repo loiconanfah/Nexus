@@ -113,11 +113,11 @@ export const api = {
   entityRisk: (id: string) =>
     fetch(`${BASE}/entities/${id}/risk`, { headers: headers(false) }).then(handle<EntityRisk>),
 
-  simulate: (assetId: string, scenario: ScenarioType, maxDepth = 10) =>
+  simulate: (assetId: string, scenario: ScenarioType, maxDepth = 10, durationHours = 8) =>
     fetch(`${BASE}/simulations`, {
       method: 'POST',
       headers: headers(),
-      body: JSON.stringify({ assetId, scenario, maxDepth }),
+      body: JSON.stringify({ assetId, scenario, maxDepth, durationHours }),
     }).then(handle<PropagationResult>),
 
   ask: (question: string) =>
