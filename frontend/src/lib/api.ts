@@ -8,9 +8,11 @@ import type {
   ExecutiveReport,
   GraphData,
   GraphEntityRecord,
+  HistoryData,
   HumanDependencies,
   ImportResult,
   IncidentBoard,
+  Snapshot,
   Overview,
   PropagationResult,
   RiskRow,
@@ -48,6 +50,10 @@ export const api = {
   suppliers: () => fetch(`${BASE}/suppliers`, { headers: headers(false) }).then(handle<SupplierIntel>),
 
   incidents: () => fetch(`${BASE}/incidents`, { headers: headers(false) }).then(handle<IncidentBoard>),
+
+  history: (limit = 90) => fetch(`${BASE}/history?limit=${limit}`, { headers: headers(false) }).then(handle<HistoryData>),
+
+  captureSnapshot: () => fetch(`${BASE}/history/snapshot`, { method: 'POST', headers: headers(false) }).then(handle<Snapshot>),
 
   audit: () => fetch(`${BASE}/audit`, { headers: headers(false) }).then(handle<AuditData>),
 

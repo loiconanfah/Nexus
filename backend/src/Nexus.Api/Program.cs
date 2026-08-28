@@ -53,6 +53,7 @@ builder.Services.AddRateLimiter(options =>
 // --- Résolution du tenant (stub dev par en-tête ; claim du token en Phase 6+) ---
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantProvider, HeaderTenantProvider>();
+builder.Services.AddScoped<Nexus.Api.History.HistoryService>();
 
 // --- Modules NEXUS ---
 var postgres = builder.Configuration.GetConnectionString("Postgres")

@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle, Blocks, Boxes, Database, FileSearch, GitBranch, GitPullRequest,
-  ClipboardList, HelpCircle, LayoutDashboard, Network, Radar, Radio, ScanText, ScrollText, Search,
+  ClipboardList, HelpCircle, History, LayoutDashboard, Network, Radar, Radio, ScanText, ScrollText, Search,
   Settings, Sparkles, Terminal, Truck, Upload, Users, Zap,
 } from 'lucide-react'
 import { api } from '../lib/api'
@@ -17,6 +17,7 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
       { to: '/', fr: 'Vue d’ensemble', en: 'Overview', icon: LayoutDashboard },
       { to: '/graph', fr: 'Graphe', en: 'Graph', icon: Network },
       { to: '/twin', fr: 'Jumeau numérique', en: 'Digital Twin', icon: Radio },
+      { to: '/history', fr: 'Historique du jumeau', en: 'Twin History', icon: History },
     ],
   },
   {

@@ -185,6 +185,20 @@ export interface IncidentBoard {
   incidents: Incident[]
 }
 
+export interface Snapshot {
+  id: string
+  capturedAt: string
+  healthScore: number
+  entityCount: number
+  relationCount: number
+  spofCount: number
+  criticalSpofCount: number
+  criticalAssetCount: number
+  supplierConcentrationPercent: number
+  topSpofs: { name: string; score: number }[]
+}
+export interface HistoryData { count: number; snapshots: Snapshot[] }
+
 export type ActionStatus = 'Open' | 'InProgress' | 'Done'
 export interface RemediationAction {
   id: string

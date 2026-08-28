@@ -15,6 +15,7 @@ import { Incidents } from './pages/Incidents'
 import { Audit } from './pages/Audit'
 import { ChangeImpact } from './pages/ChangeImpact'
 import { DigitalTwin } from './pages/DigitalTwin'
+import { History } from './pages/History'
 import { DocumentIntelligence } from './pages/DocumentIntelligence'
 import { Onboarding } from './pages/Onboarding'
 import { IntegrationMarketplace } from './pages/IntegrationMarketplace'
@@ -35,6 +36,7 @@ const TITLES: Record<string, string> = {
   '/change': 'Change Impact',
   '/audit': 'Confidence & Audit',
   '/twin': 'Digital Twin',
+  '/history': 'Digital Twin History',
   '/documents': 'Document Intelligence',
   '/onboarding': 'Data Onboarding',
   '/integrations': 'Integration Marketplace',
@@ -98,6 +100,7 @@ export default function App() {
         <Route path="/change" element={<ChangeImpact />} />
         <Route path="/audit" element={<Audit />} />
         <Route path="/twin" element={<DigitalTwin />} />
+        <Route path="/history" element={<History />} />
         <Route path="/documents" element={<DocumentIntelligence />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/integrations" element={<IntegrationMarketplace />} />
