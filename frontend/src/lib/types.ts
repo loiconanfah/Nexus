@@ -89,9 +89,23 @@ export interface PropagationResult {
   estimatedOperationalImpact: number
   affected: BlastNode[]
   estimatedFinancialImpactPerHour: number
-  estimatedFinancialImpact: number
-  durationHours: number
+  worstCaseImpact: number
+  expectedImpact: number
+  maxRecoveryHours: number
+  avgProbability: number
   currency: string
+  nodeDetails: NodeImpact[]
+}
+export interface NodeImpact {
+  id: string
+  name: string
+  type: string
+  depth: number
+  criticality: number
+  hourlyCost: number
+  rtoHours: number
+  probability: number
+  nodeImpact: number
 }
 
 export interface GraphEdge {

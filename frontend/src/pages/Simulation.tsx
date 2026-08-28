@@ -18,14 +18,17 @@ function mergeResults(results: PropagationResult[]): PropagationResult {
   }
   const affected = [...byId.values()]
   const affectedByType: Record<string, number> = {}
-  let impact = 0
-  let perHour = 0
-  for (const n of affected) {
+  let impact = 0, perHour = 0, worst = 0, expected = 0, maxRec = 0, probSum = 0
+  const nodeDetails = affected.map((n) => {
     affectedByType[n.entity.entityType] = (affectedByType[n.entity.entityType] ?? 0) + 1
     impact += n.entity.criticality
-    perHour += costPerHour(n.entity.criticality)
-  }
-  const duration = results[0].durationHours || 8
+    const cost = costPerHour(n.entity.criticality)
+    const rto = rtoHours(n.entity.entityType, n.entity.criticality)
+    const p = failureProbability(n.depth)
+    const ni = Math.round(cost * rto)
+    perHour += cost; worst += ni; expected += cost * rto * p; maxRec = Math.max(maxRec, rto); probSum += p
+    return { id: n.entity.id, name: n.entity.name, type: n.entity.entityType, depth: n.depth, criticality: n.entity.criticality, hourlyCost: cost, rtoHours: rto, probability: p, nodeImpact: ni }
+  })
   return {
     assetId: results[0].assetId,
     scenario: results[0].scenario,
@@ -35,13 +38,16 @@ function mergeResults(results: PropagationResult[]): PropagationResult {
     estimatedOperationalImpact: impact,
     affected,
     estimatedFinancialImpactPerHour: perHour,
-    estimatedFinancialImpact: perHour * duration,
-    durationHours: duration,
+    worstCaseImpact: worst,
+    expectedImpact: Math.round(expected),
+    maxRecoveryHours: affected.length ? Math.round(maxRec * 10) / 10 : 0,
+    avgProbability: affected.length ? Math.round((probSum / affected.length) * 100) / 100 : 0,
     currency: results[0].currency || 'CAD',
+    nodeDetails,
   }
 }
 
-// Miroir déterministe du modèle backend (coût d'arrêt horaire selon criticité).
+// Miroirs déterministes du modèle backend (BusinessImpactModel).
 function costPerHour(c: number): number {
   if (c >= 90) return 50000
   if (c >= 80) return 25000
@@ -50,6 +56,18 @@ function costPerHour(c: number): number {
   if (c >= 40) return 3000
   if (c >= 20) return 800
   return 200
+}
+function rtoHours(type: string, crit: number): number {
+  const b = ['Database', 'System', 'Infrastructure', 'DataStore'].includes(type) ? 8
+    : ['Server', 'CloudResource', 'Network', 'Device'].includes(type) ? 6
+    : ['Application', 'Service'].includes(type) ? 3
+    : ['BusinessProcess', 'BusinessService', 'Process'].includes(type) ? 4
+    : type === 'Supplier' ? 24 : type === 'Contract' ? 72
+    : ['Person', 'Role', 'Team'].includes(type) ? 48 : type === 'Location' ? 12 : 6
+  return Math.round(b * (0.75 + 0.5 * crit / 100) * 10) / 10
+}
+function failureProbability(depth: number): number {
+  return Math.round(Math.min(1, Math.max(0.25, Math.pow(0.92, Math.max(0, depth)))) * 1000) / 1000
 }
 
 const mono = 'var(--font-mono)'
@@ -89,7 +107,6 @@ export function Simulation() {
   const [scenario, setScenario] = useState<ScenarioType>('ServerFailure')
   const [secondary, setSecondary] = useState<{ assetId: string; scenario: ScenarioType } | null>(null)
   const [depth, setDepth] = useState(6)
-  const [duration, setDuration] = useState(24)
   const [result, setResult] = useState<PropagationResult | null>(null)
 
   const nodes = graph.data?.nodes ?? []
@@ -99,9 +116,9 @@ export function Simulation() {
 
   const run = useMutation({
     mutationFn: async () => {
-      const primary = await api.simulate(assetId, scenario, depth, duration)
+      const primary = await api.simulate(assetId, scenario, depth)
       if (!secondary?.assetId) return primary
-      const second = await api.simulate(secondary.assetId, secondary.scenario, depth, duration)
+      const second = await api.simulate(secondary.assetId, secondary.scenario, depth)
       return mergeResults([primary, second])
     },
     onSuccess: (r) => setResult(r),
@@ -152,7 +169,6 @@ export function Simulation() {
               <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
               <Select label={t('Type de perturbation', 'Disruption Type')} value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={scenarioOptions} />
               <Select label={t('Profondeur d’analyse (fenêtre)', 'Analysis depth (window)')} value={String(depth)} onChange={(v) => setDepth(Number(v))} options={[{ value: '3', label: t('Court terme (3 sauts)', 'Short term (3 hops)') }, { value: '6', label: t('Moyen terme (6 sauts)', 'Mid term (6 hops)') }, { value: '10', label: t('Long terme (10 sauts)', 'Long term (10 hops)') }]} />
-              <Select label={t('Durée d’arrêt estimée', 'Estimated outage duration')} value={String(duration)} onChange={(v) => setDuration(Number(v))} options={[{ value: '1', label: t('1 heure', '1 hour') }, { value: '4', label: t('4 heures', '4 hours') }, { value: '24', label: t('24 heures', '24 hours') }, { value: '72', label: t('72 heures', '72 hours') }, { value: '168', label: t('1 semaine', '1 week') }]} />
             </div>
             <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
               <div className="flex items-center justify-between">
@@ -259,9 +275,14 @@ function ResultPanel({ origin, result, redundant }: { origin: string; result: Pr
   const suppliers = byType['Supplier'] ?? 0
 
   const timeline = useMemo(() => {
-    const evts: { d: number; label: string; c: string }[] = [{ d: 0, label: lang === 'fr' ? `Défaillance initiale : ${origin} hors service` : `Initial failure: ${origin} offline`, c: ERR }]
-    ;[...result.affected].sort((a, b) => a.depth - b.depth).slice(0, 7).forEach((a) => {
-      evts.push({ d: a.depth, label: lang === 'fr' ? `${a.entity.name} (${entityTypeLabel(a.entity.entityType, t)}) impacté` : `${a.entity.name} (${a.entity.entityType}) impacted`, c: depthColor(a.depth, result.maxDepth) })
+    const evts: { d: number; label: string; sub?: string; c: string }[] = [{ d: 0, label: lang === 'fr' ? `Défaillance initiale : ${origin} hors service` : `Initial failure: ${origin} offline`, c: ERR }]
+    ;[...result.nodeDetails].sort((a, b) => a.depth - b.depth).slice(0, 7).forEach((n) => {
+      evts.push({
+        d: n.depth,
+        label: lang === 'fr' ? `${n.name} (${entityTypeLabel(n.type, t)}) impacté` : `${n.name} (${n.type}) impacted`,
+        sub: lang === 'fr' ? `RTO ~${n.rtoHours} h · probabilité ${Math.round(n.probability * 100)} %` : `RTO ~${n.rtoHours}h · probability ${Math.round(n.probability * 100)}%`,
+        c: depthColor(n.depth, result.maxDepth),
+      })
     })
     return evts
   }, [result, origin, lang, t])
@@ -270,17 +291,19 @@ function ResultPanel({ origin, result, redundant }: { origin: string; result: Pr
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      {/* Impact financier estimé (P2) */}
+      {/* Impact financier réaliste (P1/P2 : RTO + probabilité) */}
       <div className="rounded-sm border p-4" style={{ background: 'rgba(255,180,171,0.06)', borderColor: 'rgba(255,180,171,0.35)' }}>
-        <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Impact financier estimé', 'Estimated financial impact')}</div>
+        <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Impact attendu (pondéré par la probabilité)', 'Expected impact (probability-weighted)')}</div>
         <div className="mt-0.5 flex items-baseline gap-1">
-          <span style={{ fontFamily: geist, fontSize: 30, lineHeight: 1, color: ERR }}>{fmtMoney(result.estimatedFinancialImpact)}</span>
+          <span style={{ fontFamily: geist, fontSize: 30, lineHeight: 1, color: ERR }}>{fmtMoney(result.expectedImpact)}</span>
           <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{result.currency}</span>
         </div>
-        <div className="mt-1" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
-          {fmtMoney(result.estimatedFinancialImpactPerHour)} {result.currency}{t('/h', '/h')} × {result.durationHours}{t(' h d’arrêt', 'h outage')}
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          <MiniKpi label={t('Pire cas', 'Worst case')} value={`${fmtMoney(result.worstCaseImpact)}`} sub={result.currency} />
+          <MiniKpi label={t('Rétablissement', 'Recovery')} value={`${result.maxRecoveryHours}`} sub={t('h', 'h')} />
+          <MiniKpi label={t('Probabilité', 'Probability')} value={`${Math.round(result.avgProbability * 100)}`} sub="%" />
         </div>
-        <div className="mt-1" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-outline)' }}>{t('Estimé (coût d’arrêt dérivé de la criticité)', 'Estimate (downtime cost derived from criticality)')}</div>
+        <div className="mt-2" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-outline)' }}>{t('Modèle estimé : coût horaire × RTO par actif, pondéré par la probabilité de propagation', 'Estimate: hourly cost × per-asset RTO, weighted by propagation probability')}</div>
       </div>
 
       {/* Metrics */}
@@ -307,6 +330,7 @@ function ResultPanel({ origin, result, redundant }: { origin: string; result: Pr
               <span className="absolute -left-4 top-1 h-2.5 w-2.5 rounded-full" style={{ background: 'var(--nx-panel)', border: `2px solid ${e.c}` }} />
               <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>T+{e.d}h</div>
               <div style={{ fontSize: 13, color: 'var(--nx-text)' }}>{e.label}</div>
+              {e.sub && <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{e.sub}</div>}
             </div>
           ))}
         </div>
@@ -328,6 +352,15 @@ function Select({ label, value, onChange, options, danger }: { label: string; va
         </select>
         <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" style={{ color: danger ? ERR : 'var(--nx-text-muted)' }} />
       </div>
+    </div>
+  )
+}
+
+function MiniKpi({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="rounded-sm border p-2" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
+      <div style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{label}</div>
+      <div className="flex items-baseline gap-0.5"><span style={{ fontFamily: geist, fontSize: 16, color: 'var(--nx-text)' }}>{value}</span><span style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-text-muted)' }}>{sub}</span></div>
     </div>
   )
 }
