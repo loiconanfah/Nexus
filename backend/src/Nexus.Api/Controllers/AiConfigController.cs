@@ -13,6 +13,7 @@ namespace Nexus.Api.Controllers;
 public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatCompletion chat) : ControllerBase
 {
     public sealed record SetKeyRequest(string Provider, string ApiKey, string? Endpoint, string? Model);
+    public sealed record SetModelRequest(string Model);
 
     /// <summary>Statut sans secret : la clé n'est jamais exposée.</summary>
     [HttpGet]
@@ -44,6 +45,15 @@ public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatComple
         return Ok(new { provider, configured, model, endpointHost = host });
     }
 
+    [HttpPatch("model")]
+    public IActionResult SetModel([FromBody] SetModelRequest req)
+    {
+        if (req is null || string.IsNullOrWhiteSpace(req.Model)) return BadRequest(new { error = "model_required" });
+        if (!config.SetModel(req.Model)) return BadRequest(new { error = "no_key_configured" });
+        var (provider, configured, model, host) = config.Status();
+        return Ok(new { provider, configured, model, endpointHost = host });
+    }
+
     [HttpDelete]
     public IActionResult Clear()
     {
@@ -55,6 +65,14 @@ public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatComple
     public async Task<IActionResult> Test(CancellationToken ct)
     {
         var (ok, message) = await chat.TestAsync(ct);
-        return ok ? Ok(new { ok, message }) : StatusCode(200, new { ok, message });
+        return Ok(new { ok, message });
+    }
+
+    /// <summary>Liste les modèles disponibles pour la clé configurée (valide aussi la clé).</summary>
+    [HttpPost("models")]
+    public async Task<IActionResult> Models(CancellationToken ct)
+    {
+        var (ok, message, models) = await chat.ListModelsAsync(ct);
+        return Ok(new { ok, message, models });
     }
 }

@@ -62,12 +62,67 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
     public async Task<(bool Ok, string Message)> TestAsync(CancellationToken ct = default)
     {
         if (!config.IsConfigured) return (false, "Aucun fournisseur configuré.");
+        // Valide d'abord la clé indépendamment du modèle (liste des modèles).
+        var (ok, message, models) = await ListModelsAsync(ct);
+        if (!ok) return (false, message);
+
         var reply = await Resolve().CompleteAsync(
             "Tu es un test de connexion. Réponds uniquement par le mot OK.",
             "Réponds OK.", ct);
-        return reply is not null
-            ? (true, $"Connexion réussie · réponse du modèle : « {reply.Trim()} »")
-            : (false, "Échec : clé invalide, modèle introuvable ou service injoignable.");
+        if (reply is not null) return (true, $"Connexion réussie · réponse du modèle : « {reply.Trim()} »");
+
+        var (_, _, _, model) = config.Snapshot();
+        var known = models.Length > 0 && Array.Exists(models, m => string.Equals(m, model, StringComparison.OrdinalIgnoreCase));
+        return known
+            ? (false, "Clé valide mais l'appel a échoué (quota, région ou service).")
+            : (false, $"Clé valide, mais le modèle « {model} » est introuvable. Choisissez-en un dans la liste.");
+    }
+
+    /// <summary>Valide la clé et liste les modèles disponibles chez le fournisseur.</summary>
+    public async Task<(bool Ok, string Message, string[] Models)> ListModelsAsync(CancellationToken ct = default)
+    {
+        var (provider, apiKey, endpoint, _) = config.Snapshot();
+        if (string.IsNullOrWhiteSpace(apiKey)) return (false, "Aucune clé configurée.", []);
+
+        try
+        {
+            var http = httpFactory.CreateClient("anthropic");
+            if (provider == "anthropic")
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.anthropic.com/v1/models?limit=100");
+                req.Headers.Add("x-api-key", apiKey);
+                req.Headers.Add("anthropic-version", "2023-06-01");
+                return await ReadModels(http, req, "data", "id", ct);
+            }
+            if (provider == "openai")
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.openai.com/v1/models");
+                req.Headers.Add("Authorization", $"Bearer {apiKey}");
+                return await ReadModels(http, req, "data", "id", ct);
+            }
+            // Azure : les « modèles » sont des déploiements, non listables via cette API.
+            var (_, _, _, model) = config.Snapshot();
+            return (true, "Fournisseur Azure : utilisez le nom de votre déploiement.", string.IsNullOrWhiteSpace(model) ? [] : [model]);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            return (false, "Service injoignable.", []);
+        }
+    }
+
+    private static async Task<(bool, string, string[])> ReadModels(HttpClient http, HttpRequestMessage req, string arrayProp, string idProp, CancellationToken ct)
+    {
+        using var res = await http.SendAsync(req, ct);
+        if (res.StatusCode == System.Net.HttpStatusCode.Unauthorized) return (false, "Clé invalide (401).", []);
+        if (!res.IsSuccessStatusCode) return (false, $"Échec du fournisseur ({(int)res.StatusCode}).", []);
+        using var stream = await res.Content.ReadAsStreamAsync(ct);
+        using var doc = await System.Text.Json.JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        var list = new List<string>();
+        if (doc.RootElement.TryGetProperty(arrayProp, out var arr))
+            foreach (var item in arr.EnumerateArray())
+                if (item.TryGetProperty(idProp, out var id) && id.GetString() is { } s) list.Add(s);
+        list.Sort(StringComparer.OrdinalIgnoreCase);
+        return (true, $"Clé valide · {list.Count} modèle(s) disponible(s).", [.. list]);
     }
 }
 

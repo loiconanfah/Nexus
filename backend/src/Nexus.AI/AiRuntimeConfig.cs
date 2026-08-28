@@ -55,6 +55,17 @@ public sealed class AiRuntimeConfig
         }
     }
 
+    /// <summary>Met à jour uniquement le modèle (sans re-saisir la clé).</summary>
+    public bool SetModel(string model)
+    {
+        lock (_lock)
+        {
+            if (string.IsNullOrWhiteSpace(_apiKey) || string.IsNullOrWhiteSpace(model)) return false;
+            _model = model.Trim();
+            return true;
+        }
+    }
+
     public void Clear()
     {
         lock (_lock) { _provider = ""; _apiKey = null; _endpoint = null; _model = ""; }

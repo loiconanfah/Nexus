@@ -75,6 +75,13 @@ export const api = {
   testAiKey: () =>
     fetch(`${BASE}/ai/config/test`, { method: 'POST', headers: headers(false) }).then(handle<{ ok: boolean; message: string }>),
 
+  aiModels: () =>
+    fetch(`${BASE}/ai/config/models`, { method: 'POST', headers: headers(false) }).then(handle<{ ok: boolean; message: string; models: string[] }>),
+
+  setAiModel: (model: string) =>
+    fetch(`${BASE}/ai/config/model`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ model }) })
+      .then(handle<{ provider: string; configured: boolean; model: string; endpointHost: string | null }>),
+
   health: () =>
     fetch('/health/ready', { headers: headers(false) })
       .then((r) => r.json())

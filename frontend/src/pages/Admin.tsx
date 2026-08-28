@@ -92,13 +92,19 @@ function AiIntegration() {
   const [endpoint, setEndpoint] = useState('')
   const [model, setModel] = useState('')
   const [testMsg, setTestMsg] = useState<{ ok: boolean; message: string } | null>(null)
+  const [models, setModels] = useState<string[]>([])
 
+  const loadModels = useMutation({
+    mutationFn: api.aiModels,
+    onSuccess: (r) => { setModels(r.models); if (!r.ok) setTestMsg({ ok: false, message: r.message }) },
+  })
   const save = useMutation({
     mutationFn: () => api.setAiKey({ provider, apiKey, endpoint: endpoint || undefined, model: model || undefined }),
-    onSuccess: () => { setApiKey(''); setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) },
+    onSuccess: () => { setApiKey(''); setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }); loadModels.mutate() },
   })
   const test = useMutation({ mutationFn: api.testAiKey, onSuccess: (r) => setTestMsg(r) })
-  const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
+  const pickModel = useMutation({ mutationFn: (m: string) => api.setAiModel(m), onSuccess: () => { setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
+  const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); setModels([]); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
 
   const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p
   const configured = cfg?.configured
@@ -138,8 +144,18 @@ function AiIntegration() {
             </label>
           )}
           <label className="flex flex-col gap-1">
-            <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Modèle (optionnel)', 'Model (optional)')}</span>
-            <input value={model} onChange={(e) => setModel(e.target.value)} placeholder={provider === 'anthropic' ? 'claude-3-5-sonnet-latest' : 'gpt-4o'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+            <span className="flex items-center justify-between" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
+              {t('Modèle', 'Model')}
+              {configured && <button type="button" onClick={() => loadModels.mutate()} style={{ color: CYAN_T, textTransform: 'none' }}>{loadModels.isPending ? '…' : t('charger la liste', 'load list')}</button>}
+            </span>
+            {models.length > 0 ? (
+              <select value={cfg?.model ?? ''} onChange={(e) => pickModel.mutate(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
+                {!cfg?.model && <option value="">—</option>}
+                {models.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            ) : (
+              <input value={model} onChange={(e) => setModel(e.target.value)} placeholder={configured ? (cfg?.model ?? '') : t('optionnel — laissez vide pour le défaut', 'optional — leave blank for default')} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+            )}
           </label>
         </div>
 
