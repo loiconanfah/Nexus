@@ -64,8 +64,10 @@ export function Simulation() {
   const { t, lang } = useLang()
   const scenarioOptions = SCENARIOS.map((s) => ({ value: s.value, label: lang === 'fr' ? s.fr : s.en }))
   const [params] = useSearchParams()
+  const rawAsset = params.get('asset') ?? ''
+  const rawName = params.get('name') ?? ''
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
-  const [assetId, setAssetId] = useState<string>(params.get('asset') ?? '')
+  const [assetId, setAssetId] = useState<string>('')
   const [scenario, setScenario] = useState<ScenarioType>('ServerFailure')
   const [secondary, setSecondary] = useState<{ assetId: string; scenario: ScenarioType } | null>(null)
   const [depth, setDepth] = useState(6)
@@ -73,6 +75,8 @@ export function Simulation() {
 
   const nodes = graph.data?.nodes ?? []
   const origin = nodes.find((n) => n.id === assetId)
+  // assetId doit être un vrai identifiant de nœud (Guid) — sinon le backend refuse.
+  const validTarget = !!origin
 
   const run = useMutation({
     mutationFn: async () => {
@@ -84,17 +88,24 @@ export function Simulation() {
     onSuccess: (r) => setResult(r),
   })
 
-  // Auto-run si un actif est passé en paramètre.
+  // Résout le paramètre entrant (id direct OU nom) vers un vrai id de nœud ;
+  // sinon présélectionne le premier actif. Corrige les liens qui passent un nom.
   useEffect(() => {
-    if (params.get('asset') && graph.data && !run.isPending && !result) run.mutate()
+    if (!graph.data || assetId) return
+    const resolved =
+      nodes.find((n) => n.id === rawAsset) ??
+      nodes.find((n) => n.name === rawAsset) ??
+      nodes.find((n) => n.name === rawName) ??
+      (!rawAsset && !rawName ? nodes[0] : undefined)
+    if (resolved) setAssetId(resolved.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph.data])
 
-  // Présélectionne le premier actif si aucun.
+  // Auto-run uniquement quand une cible a été passée ET résolue en id valide.
   useEffect(() => {
-    if (!assetId && nodes.length > 0) setAssetId(nodes[0].id)
+    if (validTarget && (rawAsset || rawName) && !run.isPending && !result) run.mutate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes.length])
+  }, [assetId])
 
   return (
     <div className="flex h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
@@ -147,7 +158,7 @@ export function Simulation() {
           </div>
           <div className="mt-auto border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
             <button
-              onClick={() => assetId && run.mutate()} disabled={!assetId || run.isPending}
+              onClick={() => validTarget && run.mutate()} disabled={!validTarget || run.isPending}
               className="nx-pulse flex h-12 w-full items-center justify-center gap-2 rounded-sm transition-all disabled:opacity-50"
               style={{ background: 'transparent', border: `2px solid ${CYAN}`, color: CYAN_T, fontFamily: mono, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
             >
