@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { FileText, FileUp, Loader2, ScanText, Sparkles, Upload } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowRight, CheckCircle2, FileText, FileUp, GitMerge, Loader2, ScanText, Sparkles, Upload } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import type { AiAnswer } from '../lib/types'
+import { entityTypeLabel, relationTypeLabel } from '../lib/labels'
+import type { AiAnswer, ExtractedEntity, ExtractedRelation } from '../lib/types'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -40,6 +41,10 @@ export function DocumentIntelligence() {
     'Our CRM is hosted on CloudProviderX. Only Bob knows how to restart the ERP integration.',
   ]
 
+  const qc = useQueryClient()
+  const [candidates, setCandidates] = useState<{ entities: ExtractedEntity[]; relations: ExtractedRelation[] } | null>(null)
+  const [ingestRes, setIngestRes] = useState<{ entitiesCreated: number; relationsCreated: number; unresolved: number } | null>(null)
+
   const mut = useMutation({
     mutationFn: (doc: string) => api.ask(
       lang === 'fr'
@@ -47,6 +52,15 @@ export function DocumentIntelligence() {
         : `Analyze this operational document and identify the dependencies, single points of failure and risks it describes, cross-referenced with our systems:\n\n"""${doc}"""`,
     ),
     onSuccess: setAnswer,
+  })
+
+  const extract = useMutation({
+    mutationFn: (doc: string) => api.extractDocument(doc),
+    onSuccess: (r) => { setCandidates(r.usedAi ? { entities: r.entities, relations: r.relations } : null); setIngestRes(null); if (!r.usedAi) setFileErr(r.message) },
+  })
+  const ingest = useMutation({
+    mutationFn: () => api.ingestDocument(candidates!),
+    onSuccess: (r) => { setIngestRes(r); setCandidates(null); qc.invalidateQueries() },
   })
 
   return (
@@ -76,9 +90,14 @@ export function DocumentIntelligence() {
               <button key={i} onClick={() => { setText(s); setFileName(null) }} className="rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Exemple', 'Sample')} {i + 1}</button>
             ))}
           </div>
-          <button onClick={() => mut.mutate(text)} disabled={!text.trim() || mut.isPending} className="flex items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: text.trim() ? CYAN : 'var(--nx-surface-high)', color: text.trim() ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
-            {mut.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} {t('Analyser le document', 'Analyze document')}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => mut.mutate(text)} disabled={!text.trim() || mut.isPending} className="flex flex-1 items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: text.trim() ? CYAN : 'var(--nx-surface-high)', color: text.trim() ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
+              {mut.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} {t('Analyser', 'Analyze')}
+            </button>
+            <button onClick={() => extract.mutate(text)} disabled={!text.trim() || extract.isPending} className="flex flex-1 items-center justify-center gap-2 rounded-sm border py-2.5" style={{ borderColor: 'rgba(0,229,255,0.35)', color: CYAN_T, fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed', opacity: text.trim() ? 1 : 0.5 }}>
+              {extract.isPending ? <Loader2 size={16} className="animate-spin" /> : <GitMerge size={16} />} {t('Extraire → graphe', 'Extract → graph')}
+            </button>
+          </div>
         </div>
 
         {/* Resultat */}
@@ -128,6 +147,61 @@ export function DocumentIntelligence() {
           )}
         </div>
       </div>
+
+      {/* Extraction → graphe */}
+      {(extract.isPending || candidates || ingestRes) && (
+        <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'rgba(0,229,255,0.3)' }}>
+          <div className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: CYAN_T }}>
+            <GitMerge size={14} /> {t('Dépendances extraites', 'Extracted dependencies')}
+          </div>
+
+          {extract.isPending && <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}><Loader2 size={14} className="animate-spin" /> {t('Extraction par l’IA…', 'AI extraction…')}</div>}
+
+          {ingestRes && (
+            <div className="flex items-center gap-2 rounded-sm p-3" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid #4ade8040' }}>
+              <CheckCircle2 size={16} style={{ color: '#4ade80' }} />
+              <span style={{ fontSize: 13, color: '#4ade80' }}>{t(`${ingestRes.entitiesCreated} entité(s) et ${ingestRes.relationsCreated} relation(s) ajoutées au graphe (statut « Suggéré par IA »). ${ingestRes.unresolved} non résolue(s).`, `${ingestRes.entitiesCreated} entity(ies) and ${ingestRes.relationsCreated} relation(s) added to the graph ('AI Suggested'). ${ingestRes.unresolved} unresolved.`)}</span>
+            </div>
+          )}
+
+          {candidates && (
+            <div className="flex flex-col gap-4">
+              <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('Vérifiez, puis ajoutez au graphe. Les liens sont marqués « Suggéré par IA » (faible confiance) et apparaîtront dans Confiance & audit pour validation.', 'Review, then add to the graph. Links are marked ‘AI Suggested’ (low confidence) and will appear in Confidence & Audit for validation.')}</p>
+
+              {candidates.entities.length > 0 && (
+                <div>
+                  <div className="mb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Entités', 'Entities')} ({candidates.entities.length})</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {candidates.entities.map((e, i) => <span key={i} className="rounded border px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text)', borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>{e.name} <span style={{ color: 'var(--nx-text-muted)' }}>· {entityTypeLabel(e.type, t)} · c{e.criticality}</span></span>)}
+                  </div>
+                </div>
+              )}
+
+              {candidates.relations.length > 0 && (
+                <div>
+                  <div className="mb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Relations', 'Relations')} ({candidates.relations.length})</div>
+                  <div className="flex flex-col gap-1">
+                    {candidates.relations.map((r, i) => (
+                      <div key={i} className="flex items-center gap-2 rounded-sm p-1.5" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', fontSize: 12 }}>
+                        <span style={{ color: CYAN_T, fontFamily: mono }}>{r.source}</span>
+                        <ArrowRight size={12} style={{ color: 'var(--nx-text-muted)' }} />
+                        <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{relationTypeLabel(r.relationType, t)}</span>
+                        <ArrowRight size={12} style={{ color: 'var(--nx-text-muted)' }} />
+                        <span style={{ color: CYAN_T, fontFamily: mono }}>{r.target}</span>
+                        <span className="ml-auto" style={{ fontFamily: mono, fontSize: 10, color: '#facc15' }}>{Math.round(r.confidence * 100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => ingest.mutate()} disabled={ingest.isPending} className="flex w-fit items-center gap-2 rounded-sm px-3 py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
+                {ingest.isPending ? <Loader2 size={15} className="animate-spin" /> : <GitMerge size={15} />} {t('Ajouter au graphe', 'Add to graph')}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

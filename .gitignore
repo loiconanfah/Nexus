@@ -41,3 +41,4 @@ deploy/data/
 # === Logs ===
 logs/
 *.log
+ai-runtime.local.json

@@ -53,22 +53,55 @@ public sealed class AiRuntimeConfig
             _endpoint = string.IsNullOrWhiteSpace(endpoint) ? null : endpoint.Trim();
             _model = string.IsNullOrWhiteSpace(model) ? DefaultModel(_provider) : model.Trim();
         }
+        Persist();
     }
 
     /// <summary>Met à jour uniquement le modèle (sans re-saisir la clé).</summary>
     public bool SetModel(string model)
     {
+        bool ok;
         lock (_lock)
         {
-            if (string.IsNullOrWhiteSpace(_apiKey) || string.IsNullOrWhiteSpace(model)) return false;
-            _model = model.Trim();
-            return true;
+            ok = !(string.IsNullOrWhiteSpace(_apiKey) || string.IsNullOrWhiteSpace(model));
+            if (ok) _model = model.Trim();
         }
+        if (ok) Persist();
+        return ok;
     }
 
     public void Clear()
     {
         lock (_lock) { _provider = ""; _apiKey = null; _endpoint = null; _model = ""; }
+        try { if (System.IO.File.Exists(FilePath)) System.IO.File.Delete(FilePath); } catch { /* best-effort */ }
+    }
+
+    // Persistance locale (DEV) : la clé survit aux redémarrages. Fichier gitignored,
+    // jamais commité. En production : variable d'environnement / gestionnaire de secrets.
+    private const string FilePath = "ai-runtime.local.json";
+    private sealed record Persisted(string Provider, string? ApiKey, string? Endpoint, string Model);
+
+    private void Persist()
+    {
+        try
+        {
+            var (p, k, e, m) = Snapshot();
+            if (string.IsNullOrWhiteSpace(k)) return;
+            System.IO.File.WriteAllText(FilePath, System.Text.Json.JsonSerializer.Serialize(new Persisted(p, k, e, m)));
+        }
+        catch { /* best-effort */ }
+    }
+
+    private bool LoadFromFile()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(FilePath)) return false;
+            var d = System.Text.Json.JsonSerializer.Deserialize<Persisted>(System.IO.File.ReadAllText(FilePath));
+            if (d is null || string.IsNullOrWhiteSpace(d.ApiKey)) return false;
+            Set(d.Provider, d.ApiKey, d.Endpoint, d.Model);
+            return true;
+        }
+        catch { return false; }
     }
 
     public static string DefaultModel(string provider) => provider switch
@@ -101,6 +134,8 @@ public sealed class AiRuntimeConfig
             Set("gemini", gemini, null, Environment.GetEnvironmentVariable("GEMINI_MODEL"));
             return;
         }
+        // Clé saisie via l'UI et persistée localement (dev).
+        if (LoadFromFile()) return;
         if (azure.IsConfigured)
         {
             Set("azure-openai", azure.ApiKey!, azure.Endpoint, azure.ChatDeployment);

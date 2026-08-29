@@ -6,6 +6,8 @@ import type {
   AuditData,
   EntityRisk,
   ExecutiveReport,
+  ExtractedEntity,
+  ExtractedRelation,
   GraphData,
   GraphEntityRecord,
   HistoryData,
@@ -126,6 +128,14 @@ export const api = {
       headers: headers(),
       body: JSON.stringify({ question }),
     }).then(handle<AiAnswer>),
+
+  extractDocument: (text: string) =>
+    fetch(`${BASE}/documents/extract`, { method: 'POST', headers: headers(), body: JSON.stringify({ text }) })
+      .then(handle<{ usedAi: boolean; message: string; entities: ExtractedEntity[]; relations: ExtractedRelation[] }>),
+
+  ingestDocument: (body: { entities: ExtractedEntity[]; relations: ExtractedRelation[] }) =>
+    fetch(`${BASE}/documents/ingest`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ entitiesCreated: number; relationsCreated: number; unresolved: number }>),
 
   analyzeImport: (sample: string) =>
     fetch(`${BASE}/imports/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ sample }) })

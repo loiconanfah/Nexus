@@ -217,6 +217,9 @@ export interface Snapshot {
 }
 export interface HistoryData { count: number; snapshots: Snapshot[] }
 
+export interface ExtractedEntity { name: string; type: string; criticality: number }
+export interface ExtractedRelation { source: string; sourceType: string; target: string; targetType: string; relationType: string; confidence: number; evidence?: string }
+
 export type ActionStatus = 'Open' | 'InProgress' | 'Done'
 export interface RemediationAction {
   id: string
