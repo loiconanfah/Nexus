@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { FileText, Loader2, ScanText, Sparkles } from 'lucide-react'
+import { FileText, FileUp, Loader2, ScanText, Sparkles, Upload } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { AiAnswer } from '../lib/types'
@@ -14,6 +14,23 @@ export function DocumentIntelligence() {
   const { t, lang } = useLang()
   const [text, setText] = useState('')
   const [answer, setAnswer] = useState<AiAnswer | null>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [fileErr, setFileErr] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function onFile(f: File) {
+    setFileErr(null)
+    // Types texte lisibles côté client (runbooks, notes, exports).
+    const okExt = /\.(txt|md|markdown|log|csv|tsv|json|yaml|yml|html?|xml|conf|ini)$/i.test(f.name)
+    if (!okExt && !f.type.startsWith('text/')) {
+      setFileErr(t('Formats texte pris en charge (.txt, .md, .log, .csv, .json, .html…). PDF/DOCX : bientôt.', 'Text formats supported (.txt, .md, .log, .csv, .json, .html…). PDF/DOCX: coming soon.'))
+      return
+    }
+    if (f.size > 2 * 1024 * 1024) { setFileErr(t('Fichier trop volumineux (max 2 Mo).', 'File too large (max 2 MB).')); return }
+    const content = await f.text()
+    setText(content.slice(0, 20000))   // borne l'envoi au modèle
+    setFileName(f.name)
+  }
 
   const SAMPLES = lang === 'fr' ? [
     'Le traitement de facturation nocturne dépend de l’ERP, qui s’authentifie auprès de AD01 et stocke ses données sur SQL01. Si SQL01 tombe, les factures ne peuvent pas être générées.',
@@ -38,17 +55,25 @@ export function DocumentIntelligence() {
         <h2 className="flex items-center gap-2" style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>
           <ScanText size={22} style={{ color: CYAN }} /> {t('Intelligence documentaire', 'Document Intelligence')}
         </h2>
-        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Collez des runbooks, notes d’incident ou documents d’architecture — NEXUS en extrait les dépendances et risques, recoupés avec votre graphe en direct.', 'Paste runbooks, incident notes or architecture docs — NEXUS extracts the dependencies and risks they reference against your live graph.')}</p>
+        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Importez ou collez des runbooks, notes d’incident ou documents d’architecture — NEXUS en extrait les dépendances et risques, recoupés avec votre graphe en direct.', 'Upload or paste runbooks, incident notes or architecture docs — NEXUS extracts the dependencies and risks they reference against your live graph.')}</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Entree */}
         <div className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}><FileText size={14} /> {t('Document source', 'Source document')}</div>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={10} placeholder={t('Collez du texte opérationnel ici…', 'Paste operational text here…')} className="w-full resize-y rounded-sm p-3 outline-none" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontSize: 13, lineHeight: 1.5 }} />
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}><FileText size={14} /> {t('Document source', 'Source document')}</span>
+            <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'rgba(0,229,255,0.3)', color: CYAN_T }}><Upload size={12} /> {t('Importer un fichier', 'Upload a file')}</button>
+            <input ref={inputRef} type="file" accept=".txt,.md,.markdown,.log,.csv,.tsv,.json,.yaml,.yml,.html,.htm,.xml,.conf,.ini,text/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }} />
+          </div>
+          <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f) }}>
+            <textarea value={text} onChange={(e) => { setText(e.target.value); setFileName(null) }} rows={10} placeholder={t('Collez du texte, ou déposez / importez un fichier (.txt, .md, .log, .csv, .json, .html…)', 'Paste text, or drop / upload a file (.txt, .md, .log, .csv, .json, .html…)')} className="w-full resize-y rounded-sm p-3 outline-none" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontSize: 13, lineHeight: 1.5 }} />
+          </div>
+          {fileName && <div className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, color: '#4ade80' }}><FileUp size={12} /> {fileName} · {text.length.toLocaleString()} {t('caractères', 'chars')}</div>}
+          {fileErr && <div style={{ fontFamily: mono, fontSize: 11, color: '#facc15' }}>{fileErr}</div>}
           <div className="flex flex-wrap gap-2">
             {SAMPLES.map((s, i) => (
-              <button key={i} onClick={() => setText(s)} className="rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Exemple', 'Sample')} {i + 1}</button>
+              <button key={i} onClick={() => { setText(s); setFileName(null) }} className="rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Exemple', 'Sample')} {i + 1}</button>
             ))}
           </div>
           <button onClick={() => mut.mutate(text)} disabled={!text.trim() || mut.isPending} className="flex items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: text.trim() ? CYAN : 'var(--nx-surface-high)', color: text.trim() ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
