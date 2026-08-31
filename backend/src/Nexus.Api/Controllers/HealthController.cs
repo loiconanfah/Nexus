@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Nexus.Graph;
 using Nexus.Infrastructure.Persistence;
 
@@ -9,6 +10,7 @@ namespace Nexus.Api.Controllers;
 /// Utilisé par les healthchecks Docker/Azure.
 /// </summary>
 [ApiController]
+[AllowAnonymous]
 [Route("health")]
 public sealed class HealthController(NexusDbContext db, INeo4jConnection graph) : ControllerBase
 {

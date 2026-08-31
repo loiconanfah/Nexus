@@ -104,6 +104,7 @@ function AiIntegration() {
   })
   const test = useMutation({ mutationFn: api.testAiKey, onSuccess: (r) => setTestMsg(r) })
   const pickModel = useMutation({ mutationFn: (m: string) => api.setAiModel(m), onSuccess: () => { setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
+  const autoPick = useMutation({ mutationFn: api.autoPickModel, onSuccess: (r) => { setTestMsg({ ok: r.ok, message: r.ok ? `Modèle auto-sélectionné : ${r.model}` : (r.message ?? 'Aucun modèle utilisable.') }); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
   const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); setModels([]); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
 
   const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p
@@ -147,7 +148,12 @@ function AiIntegration() {
           <label className="flex flex-col gap-1">
             <span className="flex items-center justify-between" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
               {t('Modèle', 'Model')}
-              {configured && <button type="button" onClick={() => loadModels.mutate()} style={{ color: CYAN_T, textTransform: 'none' }}>{loadModels.isPending ? '…' : t('charger la liste', 'load list')}</button>}
+              {configured && (
+                <span className="flex gap-3">
+                  <button type="button" onClick={() => autoPick.mutate()} style={{ color: CYAN_T, textTransform: 'none' }}>{autoPick.isPending ? '…' : t('auto-choisir', 'auto-pick')}</button>
+                  <button type="button" onClick={() => loadModels.mutate()} style={{ color: CYAN_T, textTransform: 'none' }}>{loadModels.isPending ? '…' : t('charger la liste', 'load list')}</button>
+                </span>
+              )}
             </span>
             {models.length > 0 ? (
               <select value={cfg?.model ?? ''} onChange={(e) => pickModel.mutate(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>

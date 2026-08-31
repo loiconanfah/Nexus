@@ -31,7 +31,7 @@ public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatComple
     }
 
     [HttpPut]
-    public IActionResult Set([FromBody] SetKeyRequest req)
+    public async Task<IActionResult> Set([FromBody] SetKeyRequest req, CancellationToken ct)
     {
         if (req is null || string.IsNullOrWhiteSpace(req.Provider) || string.IsNullOrWhiteSpace(req.ApiKey))
             return BadRequest(new { error = "provider_and_key_required" });
@@ -41,6 +41,13 @@ public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatComple
             return BadRequest(new { error = "endpoint_required_for_azure" });
 
         config.Set(req.Provider, req.ApiKey, req.Endpoint, req.Model);
+        // Si aucun modèle n'est fourni (ou pour Anthropic/OpenAI/Gemini), on choisit
+        // automatiquement un modèle de texte fiable — évite les défauts obsolètes (ex. 404).
+        if (string.IsNullOrWhiteSpace(req.Model) && req.Provider != "azure-openai")
+        {
+            var picked = await chat.PickWorkingModelAsync(ct);
+            if (!string.IsNullOrWhiteSpace(picked)) config.SetModel(picked!);
+        }
         var (provider, configured, model, host) = config.Status();
         return Ok(new { provider, configured, model, endpointHost = host });
     }
@@ -66,6 +73,16 @@ public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatComple
     {
         var (ok, message) = await chat.TestAsync(ct);
         return Ok(new { ok, message });
+    }
+
+    /// <summary>Choisit et applique automatiquement un modèle de texte fiable pour la clé configurée.</summary>
+    [HttpPost("autopick")]
+    public async Task<IActionResult> AutoPick(CancellationToken ct)
+    {
+        var picked = await chat.PickWorkingModelAsync(ct);
+        if (string.IsNullOrWhiteSpace(picked)) return Ok(new { ok = false, message = "Aucun modèle utilisable trouvé." });
+        config.SetModel(picked!);
+        return Ok(new { ok = true, model = picked });
     }
 
     /// <summary>Liste les modèles disponibles pour la clé configurée (valide aussi la clé).</summary>

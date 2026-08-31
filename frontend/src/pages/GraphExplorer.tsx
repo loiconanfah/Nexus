@@ -92,7 +92,7 @@ function CommandBar({ selected, onSimulate }: { selected: string | null; onSimul
     </button>
   )
   return (
-    <div className="flex gap-1 rounded p-1.5 shadow-lg" style={{ background: 'rgba(19,19,20,0.9)', border: '1px solid var(--nx-border)', backdropFilter: 'blur(8px)' }}>
+    <div className="flex gap-1 rounded p-1.5 shadow-lg" style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', border: '1px solid var(--nx-border)', backdropFilter: 'blur(8px)' }}>
       <Btn icon={<ChevronsUpDown size={15} />} label={t('Agrandir', 'Expand')} onClick={() => zoomIn()} />
       <Btn icon={<ChevronsDownUp size={15} />} label={t('Réduire', 'Collapse')} onClick={() => zoomOut()} />
       <div className="mx-1 my-auto h-4 w-px" style={{ background: 'var(--nx-border)' }} />
@@ -149,7 +149,7 @@ function GraphInner() {
       <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,229,255,0.05) 0%, transparent 60%)' }} />
 
       {/* Recherche */}
-      <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded px-2 py-1.5" style={{ background: 'rgba(19,19,20,0.9)', border: '1px solid var(--nx-border)' }}>
+      <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded px-2 py-1.5" style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', border: '1px solid var(--nx-border)' }}>
         <Network size={14} style={{ color: 'var(--nx-text-muted)' }} />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Trouver un nœud…', 'Find a node…')} className="w-40 bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
       </div>
@@ -224,7 +224,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
         {/* Evidence & sources */}
         <Section title={t('Preuves & sources', 'Evidence & Sources')}>
           {deps.data && deps.data.length > 0 ? deps.data.slice(0, 6).map((d) => (
-            <div key={d.target.id} className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'rgba(59,73,76,0.5)', background: 'rgba(19,19,20,0.5)' }}>
+            <div key={d.target.id} className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'rgba(59,73,76,0.5)', background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)' }}>
               <div className="flex h-6 w-6 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-container)' }}>{typeIcon(d.target.entityType, 12)}</div>
               <div className="min-w-0 flex-1">
                 <div className="truncate" style={{ fontSize: 12, fontWeight: 500, color: 'var(--nx-text)' }}>{d.target.name}</div>

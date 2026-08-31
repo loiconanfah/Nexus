@@ -75,9 +75,12 @@ public sealed class AiRuntimeConfig
         try { if (System.IO.File.Exists(FilePath)) System.IO.File.Delete(FilePath); } catch { /* best-effort */ }
     }
 
-    // Persistance locale (DEV) : la clé survit aux redémarrages. Fichier gitignored,
-    // jamais commité. En production : variable d'environnement / gestionnaire de secrets.
-    private const string FilePath = "ai-runtime.local.json";
+    // Persistance locale (DEV) : la clé survit aux redémarrages. Emplacement STABLE
+    // (indépendant du dossier de lancement) : %LOCALAPPDATA%\Nexus (ou ~/.local/share).
+    // Fichier local, jamais commité. En production : variable d'env / gestionnaire de secrets.
+    private static readonly string FilePath = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Nexus", "ai-runtime.local.json");
     private sealed record Persisted(string Provider, string? ApiKey, string? Endpoint, string Model);
 
     private void Persist()
@@ -86,6 +89,7 @@ public sealed class AiRuntimeConfig
         {
             var (p, k, e, m) = Snapshot();
             if (string.IsNullOrWhiteSpace(k)) return;
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FilePath)!);
             System.IO.File.WriteAllText(FilePath, System.Text.Json.JsonSerializer.Serialize(new Persisted(p, k, e, m)));
         }
         catch { /* best-effort */ }

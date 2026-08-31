@@ -1,8 +1,12 @@
 import { getTenantId } from './tenant'
+import { getToken, handleUnauthorized } from './auth'
 import type {
   ActionBoard,
   ActionStatus,
   AiAnswer,
+  DecisionResponse,
+  EnterpriseModel,
+  ScenarioSummary,
   AuditData,
   EntityRisk,
   ExecutiveReport,
@@ -25,13 +29,22 @@ import type {
 const BASE = '/api/v1'
 
 function headers(json = true): HeadersInit {
+  // Le tenant provient du jeton côté serveur ; l'en-tête X-Tenant-Id n'est utilisé
+  // qu'en repli démo (si AllowHeaderTenant est activé). Le Bearer est la source
+  // d'autorité.
   const h: Record<string, string> = { 'X-Tenant-Id': getTenantId() }
+  const token = getToken()
+  if (token) h['Authorization'] = `Bearer ${token}`
   if (json) h['Content-Type'] = 'application/json'
   return h
 }
 
 async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
+    if (res.status === 401) {
+      handleUnauthorized()
+      throw new Error('401 — session expirée, veuillez vous reconnecter')
+    }
     const text = await res.text().catch(() => '')
     throw new Error(`${res.status} ${res.statusText}${text ? ` — ${text}` : ''}`)
   }
@@ -40,6 +53,17 @@ async function handle<T>(res: Response): Promise<T> {
 
 export const api = {
   overview: () => fetch(`${BASE}/overview`, { headers: headers(false) }).then(handle<Overview>),
+
+  enterpriseModel: () => fetch(`${BASE}/enterprise/model`, { headers: headers(false) }).then(handle<EnterpriseModel>),
+
+  decideEnterprise: (text: string, lang: string) =>
+    fetch(`${BASE}/enterprise/decision`, { method: 'POST', headers: headers(), body: JSON.stringify({ text, lang }) }).then(handle<DecisionResponse>),
+
+  listScenarios: () => fetch(`${BASE}/enterprise/scenarios`, { headers: headers(false) }).then(handle<ScenarioSummary[]>),
+  saveScenario: (name: string, payload: string) =>
+    fetch(`${BASE}/enterprise/scenarios`, { method: 'POST', headers: headers(), body: JSON.stringify({ name, payload }) }).then(handle<{ id: string }>),
+  deleteScenario: (id: string) =>
+    fetch(`${BASE}/enterprise/scenarios/${id}`, { method: 'DELETE', headers: headers(false) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
 
   graph: () => fetch(`${BASE}/graph`, { headers: headers(false) }).then(handle<GraphData>),
 
@@ -85,6 +109,9 @@ export const api = {
 
   aiModels: () =>
     fetch(`${BASE}/ai/config/models`, { method: 'POST', headers: headers(false) }).then(handle<{ ok: boolean; message: string; models: string[] }>),
+
+  autoPickModel: () =>
+    fetch(`${BASE}/ai/config/autopick`, { method: 'POST', headers: headers(false) }).then(handle<{ ok: boolean; model?: string; message?: string }>),
 
   setAiModel: (model: string) =>
     fetch(`${BASE}/ai/config/model`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ model }) })

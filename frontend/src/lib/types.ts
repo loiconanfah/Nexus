@@ -297,3 +297,47 @@ export interface ImportResult {
   duration: string
   timeToFirstGraph: string | null
 }
+
+// ── Modèle d'entreprise (couche Decision Intelligence) ──
+export interface EnterpriseModel {
+  configured: boolean
+  isDemo: boolean
+  currency: string
+  company: {
+    name: string; industry: string; employees: number; annualRevenue: number
+    divisions: number; locations: number; customers: number; suppliers: number; projects: number
+  }
+  drivers: {
+    units: number; avgPrice: number; cogsPercent: number; headcount: number; avgSalary: number
+    billableRatio: number; marketing: number; rnD: number; ga: number; depreciation: number
+    taxRate: number; interest: number; cashOnHand: number; churnRate: number
+  }
+  pnl: {
+    revenue: number; cogs: number; grossProfit: number; grossMargin: number
+    opex: { sgaSalaries: number; marketing: number; rnD: number; ga: number; total: number }
+    ebitda: number; ebitdaMargin: number; depreciation: number; ebit: number; tax: number
+    interest: number; netProfit: number; netMargin: number
+  }
+  cash: { operatingCashFlow: number; cashOnHand: number; freeCashFlow: number }
+  trend: { month: string; revenue: number; ebitda: number; netProfit: number; cashFlow: number }[]
+  divisions: { name: string; revenue: number; profit: number; employees: number; margin: number }[]
+  segments: { name: string; revenue: number; customers: number; share: number }[]
+  costStructure: { key: string; amount: number; percent: number }[]
+  kpis: { key: string; value: number; unit: string; deltaPercent: number }[]
+  dataQuality: { finance: number; sales: number; hr: number; operations: number; customers: number }
+}
+
+export interface DecisionEffect {
+  pricePct: number; volumePct: number; headcountDelta: number; salaryPct: number; marketingPct: number; cogsPts: number
+  newService: { name: string; division: string; annualRevenue: number; annualCost: number; headcount: number } | null
+  interpretation: string; assumptions: string[]; risks: string[]; confidence: number; aiUsed: boolean
+}
+
+export interface ScenarioSummary { id: string; name: string; payload: string; createdAt: string }
+
+
+export interface DecisionAnalysis {
+  headline: string; narrative: string; consequences: string[]; risks: string[]
+  recommendation: string; verdict: string; aiUsed: boolean
+}
+export interface DecisionResponse { effect: DecisionEffect; analysis: DecisionAnalysis }

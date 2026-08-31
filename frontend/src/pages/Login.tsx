@@ -1,18 +1,108 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Building2, KeyRound, LogIn, Mail, Share2, ShieldCheck } from 'lucide-react'
-import { login } from '../lib/auth'
+import { login, loginWithEntra, register } from '../lib/auth'
+import { getAuthConfig, signInWithMicrosoft } from '../lib/entra'
 import { useLang } from '../lib/i18n'
 
 export function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { lang, setLang, t } = useLang()
+  const [mode, setMode] = useState<'signin' | 'signup'>(searchParams.get('signup') === '1' ? 'signup' : 'signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [entraEnabled, setEntraEnabled] = useState(false)
+  const [registrationEnabled, setRegistrationEnabled] = useState(false)
 
-  function authenticate() {
-    login()
-    navigate('/')
+  useEffect(() => {
+    getAuthConfig()
+      .then((c) => {
+        setEntraEnabled(c.entraEnabled)
+        setRegistrationEnabled(c.registrationEnabled)
+      })
+      .catch(() => {})
+  }, [])
+
+  function registerError(code: string): string {
+    switch (code) {
+      case 'email_taken':
+        return t('Cet e-mail a déjà un compte.', 'This email already has an account.')
+      case 'weak_password':
+        return t('Mot de passe trop court (8 caractères minimum).', 'Password too short (8 characters minimum).')
+      case 'invalid_email':
+        return t('Adresse e-mail invalide.', 'Invalid email address.')
+      case 'registration_disabled':
+        return t('L’inscription est désactivée.', 'Registration is disabled.')
+      default:
+        return t('Création de compte impossible. Réessayez.', 'Could not create account. Please retry.')
+    }
+  }
+
+  async function authenticateEntra() {
+    if (busy) return
+    setError(null)
+    setBusy(true)
+    try {
+      const msToken = await signInWithMicrosoft()
+      await loginWithEntra(msToken)
+      navigate('/')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : ''
+      if (msg === 'user_cancelled' || msg.includes('cancel')) {
+        // fermeture volontaire de la fenêtre : pas d'erreur affichée
+      } else {
+        setError(t('Connexion Microsoft impossible.', 'Microsoft sign-in failed.'))
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function authenticate(user = email, pass = password) {
+    if (busy) return
+    setError(null)
+    setBusy(true)
+    try {
+      if (mode === 'signup') {
+        await register(user, pass)
+      } else {
+        await login(user, pass)
+      }
+      navigate('/')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : ''
+      if (mode === 'signup') {
+        setError(registerError(msg))
+      } else {
+        setError(
+          msg === 'invalid_credentials'
+            ? t('Identifiants invalides.', 'Invalid credentials.')
+            : t('Connexion impossible. Réessayez.', 'Sign-in failed. Please retry.'),
+        )
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function fillDemo() {
+    if (busy) return
+    setMode('signin')
+    setEmail('admin@cgi.demo')
+    setPassword('nexus-demo-2026')
+    setError(null)
+    setBusy(true)
+    try {
+      await login('admin@cgi.demo', 'nexus-demo-2026')
+      navigate('/')
+    } catch {
+      setError(t('Connexion démo impossible.', 'Demo sign-in failed.'))
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -98,16 +188,26 @@ export function Login() {
           {/* En-tête */}
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-medium" style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text)', letterSpacing: '-0.01em' }}>
-              {t('Connexion à NEXUS', 'Sign in to NEXUS')}
+              {mode === 'signup' ? t('Créer un compte NEXUS', 'Create your NEXUS account') : t('Connexion à NEXUS', 'Sign in to NEXUS')}
             </h2>
             <div className="flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.05em', color: 'var(--nx-cyan-text)' }}>
               <ShieldCheck size={16} />
-              <span>{t('Connexion compatible MFA', 'MFA-ready connection')}</span>
+              <span>{mode === 'signup' ? t('Espace de travail vierge à la création', 'Fresh workspace on sign-up') : t('Connexion compatible MFA', 'MFA-ready connection')}</span>
             </div>
           </div>
 
+          {/* Message d'erreur */}
+          {error && (
+            <div
+              className="rounded border px-3 py-2 text-sm"
+              style={{ borderColor: 'var(--nx-danger, #ef4444)', color: 'var(--nx-danger, #ef4444)', background: 'rgba(239,68,68,0.08)' }}
+            >
+              {error}
+            </div>
+          )}
+
           {/* Formulaire */}
-          <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); authenticate() }}>
+          <form className="flex flex-col gap-5" onSubmit={(e) => { e.preventDefault(); void authenticate() }}>
             <Field label={t('Adresse e-mail', 'Email Address')}>
               <InputRow icon={<Mail size={18} />}>
                 <input
@@ -122,7 +222,7 @@ export function Login() {
               </InputRow>
             </Field>
 
-            <Field label={t('Mot de passe', 'Password')} aside={<a href="#" onClick={(e) => e.preventDefault()} className="transition-colors" style={{ fontSize: 13, color: 'var(--nx-cyan-text)' }}>{t('Mot de passe oublié ?', 'Forgot password?')}</a>}>
+            <Field label={t('Mot de passe', 'Password')} aside={mode === 'signin' ? <a href="#" onClick={(e) => e.preventDefault()} className="transition-colors" style={{ fontSize: 13, color: 'var(--nx-cyan-text)' }}>{t('Mot de passe oublié ?', 'Forgot password?')}</a> : <span style={{ fontSize: 13, color: 'var(--nx-outline)' }}>{t('8 caractères min.', '8 chars min.')}</span>}>
               <InputRow icon={<KeyRound size={18} />}>
                 <input
                   type="password"
@@ -136,18 +236,38 @@ export function Login() {
               </InputRow>
             </Field>
 
-            {/* Action locale (secondaire) */}
+            {/* Action de connexion (primaire) */}
             <button
               type="submit"
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded py-3 transition-colors"
+              disabled={busy}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded py-3 transition-colors disabled:opacity-60"
               style={{
-                background: 'var(--nx-surface-highest)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)',
+                background: 'var(--nx-cyan)', color: 'var(--nx-on-cyan)',
                 fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
+                boxShadow: '0 0 10px rgba(0,229,255,0.15)',
               }}
             >
-              <span>{t('S’authentifier', 'Authenticate')}</span>
+              <span>
+                {busy
+                  ? mode === 'signup' ? t('Création…', 'Creating…') : t('Connexion…', 'Signing in…')
+                  : mode === 'signup' ? t('Créer le compte', 'Create account') : t('S’authentifier', 'Authenticate')}
+              </span>
               <LogIn size={18} />
             </button>
+
+            {/* Bascule connexion / inscription */}
+            {registrationEnabled && (
+              <button
+                type="button"
+                onClick={() => { setError(null); setMode(mode === 'signin' ? 'signup' : 'signin') }}
+                className="text-center transition-colors"
+                style={{ fontSize: 13, color: 'var(--nx-cyan-text)', fontFamily: 'var(--font-inter)' }}
+              >
+                {mode === 'signin'
+                  ? t('Pas de compte ? Créer un compte', 'No account? Create one')
+                  : t('Déjà un compte ? Se connecter', 'Already have an account? Sign in')}
+              </button>
+            )}
           </form>
 
           {/* Séparateur */}
@@ -157,24 +277,42 @@ export function Login() {
             <div className="h-px flex-1" style={{ background: 'var(--nx-border)' }} />
           </div>
 
-          {/* SSO Entra ID (action primaire) */}
+          {/* SSO Entra ID (visible seulement si configuré côté serveur) */}
+          {entraEnabled && (
+            <button
+              type="button"
+              onClick={authenticateEntra}
+              disabled={busy}
+              className="flex w-full items-center justify-center gap-3 rounded py-3 transition-all active:scale-[0.99] disabled:opacity-60"
+              style={{
+                background: 'var(--nx-cyan)', color: 'var(--nx-on-cyan)',
+                fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
+                boxShadow: '0 0 10px rgba(0,229,255,0.15)',
+              }}
+            >
+              <svg className="h-5 w-5 fill-current" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                <rect x="1" y="1" width="9" height="9" />
+                <rect x="11" y="1" width="9" height="9" />
+                <rect x="1" y="11" width="9" height="9" />
+                <rect x="11" y="11" width="9" height="9" />
+              </svg>
+              <span>{t('Se connecter avec Microsoft', 'Sign in with Microsoft')}</span>
+            </button>
+          )}
+
+          {/* Accès démo CGI (identifiants pré-remplis, authentification réelle) */}
           <button
             type="button"
-            onClick={authenticate}
-            className="flex w-full items-center justify-center gap-3 rounded py-3 transition-all active:scale-[0.99]"
+            onClick={fillDemo}
+            disabled={busy}
+            className="flex w-full items-center justify-center gap-3 rounded py-3 transition-all active:scale-[0.99] disabled:opacity-60"
             style={{
-              background: 'var(--nx-cyan)', color: 'var(--nx-on-cyan)',
+              background: 'var(--nx-surface-highest)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)',
               fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
-              boxShadow: '0 0 10px rgba(0,229,255,0.15)',
             }}
           >
-            <svg className="h-5 w-5 fill-current" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="1" width="9" height="9" />
-              <rect x="11" y="1" width="9" height="9" />
-              <rect x="1" y="11" width="9" height="9" />
-              <rect x="11" y="11" width="9" height="9" />
-            </svg>
-            <span>{t('Se connecter avec Entra ID', 'Sign in with Entra ID')}</span>
+            <Building2 size={18} />
+            <span>{t('Accès démo (CGI Inc.)', 'Demo access (CGI Inc.)')}</span>
           </button>
 
           {/* Pied */}

@@ -118,6 +118,55 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
         }
     }
 
+    /// <summary>
+    /// Choisit automatiquement un modèle de TEXTE fiable dans la liste du fournisseur
+    /// (évite les modèles image/tts/preview et les noms obsolètes). Utilisé à l'ajout
+    /// d'une clé pour que ça « marche » sans que l'utilisateur devine le bon modèle.
+    /// </summary>
+    public async Task<string?> PickWorkingModelAsync(CancellationToken ct = default)
+    {
+        var (provider, apiKey, _, _) = config.Snapshot();
+        var (ok, _, models) = await ListModelsAsync(ct);
+        if (!ok || models.Length == 0 || string.IsNullOrWhiteSpace(apiKey)) return null;
+
+        bool textOnly(string m) => new[] { "image", "tts", "audio", "embedding", "vision", "research" }
+            .All(bad => !m.Contains(bad, StringComparison.OrdinalIgnoreCase));
+        double ver(string m)
+        {
+            var mt = System.Text.RegularExpressions.Regex.Match(m, "(\\d+(?:\\.\\d+)?)");
+            return mt.Success && double.TryParse(mt.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0;
+        }
+        // Candidats de texte, plus récents d'abord, en préférant flash-lite puis flash.
+        var candidates = models
+            .Where(m => textOnly(m) && !m.Contains("preview", StringComparison.OrdinalIgnoreCase) && m.Contains("flash", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(ver).ThenByDescending(m => m.Contains("flash-lite", StringComparison.OrdinalIgnoreCase))
+            .Take(3).ToList();
+        if (candidates.Count == 0)
+            candidates = models.Where(textOnly).OrderByDescending(ver).Take(3).ToList();
+        if (candidates.Count == 0) return models.FirstOrDefault();
+
+        // On teste réellement chaque candidat (gemini/anthropic), timeout court par essai.
+        foreach (var m in candidates)
+        {
+            IChatCompletion? c = provider switch
+            {
+                "gemini" => new GeminiChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, m),
+                "anthropic" => new AnthropicChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, m),
+                _ => null,
+            };
+            if (c is null) return candidates[0]; // OpenAI/Azure : pas de test, on prend le meilleur candidat
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(8));
+            try
+            {
+                var reply = await c.CompleteAsync("Test de connexion. Réponds OK.", "OK", cts.Token);
+                if (!string.IsNullOrWhiteSpace(reply)) return m;
+            }
+            catch (OperationCanceledException) { /* candidat trop lent → suivant */ }
+        }
+        return candidates[0];
+    }
+
     private static async Task<(bool, string, string[])> ReadModels(HttpClient http, HttpRequestMessage req, string arrayProp, string idProp, CancellationToken ct)
     {
         using var res = await http.SendAsync(req, ct);

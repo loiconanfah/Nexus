@@ -1,11 +1,47 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X } from 'lucide-react'
 import { api } from '../lib/api'
+
+// Chargé à la demande : Three.js ne pèse que sur cette page.
+const Propagation3D = lazy(() => import('../components/Propagation3D').then((m) => ({ default: m.Propagation3D })))
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { BlastNode, PropagationResult, ScenarioType } from '../lib/types'
+
+/** Agrège les KPIs d'un scénario à partir d'une liste de nœuds affectés. */
+function aggregate(meta: { assetId: string; scenario: ScenarioType; currency: string }, affected: BlastNode[]): PropagationResult {
+  const affectedByType: Record<string, number> = {}
+  let impact = 0, perHour = 0, worst = 0, expected = 0, maxRec = 0, probSum = 0, maxDepth = 0
+  const nodeDetails = affected.map((n) => {
+    affectedByType[n.entity.entityType] = (affectedByType[n.entity.entityType] ?? 0) + 1
+    impact += n.entity.criticality
+    maxDepth = Math.max(maxDepth, n.depth)
+    const cost = costPerHour(n.entity.criticality)
+    const rto = rtoHours(n.entity.entityType, n.entity.criticality)
+    const p = failureProbability(n.depth)
+    const ni = Math.round(cost * rto)
+    perHour += cost; worst += ni; expected += cost * rto * p; maxRec = Math.max(maxRec, rto); probSum += p
+    return { id: n.entity.id, name: n.entity.name, type: n.entity.entityType, depth: n.depth, criticality: n.entity.criticality, hourlyCost: cost, rtoHours: rto, probability: p, nodeImpact: ni }
+  })
+  return {
+    assetId: meta.assetId,
+    scenario: meta.scenario,
+    maxDepth: Math.max(1, maxDepth),
+    affectedTotal: affected.length,
+    affectedByType,
+    estimatedOperationalImpact: impact,
+    affected,
+    estimatedFinancialImpactPerHour: perHour,
+    worstCaseImpact: worst,
+    expectedImpact: Math.round(expected),
+    maxRecoveryHours: affected.length ? Math.round(maxRec * 10) / 10 : 0,
+    avgProbability: affected.length ? Math.round((probSum / affected.length) * 100) / 100 : 0,
+    currency: meta.currency,
+    nodeDetails,
+  }
+}
 
 /** Fusionne plusieurs résultats de propagation en un scénario composé (union). */
 function mergeResults(results: PropagationResult[]): PropagationResult {
@@ -16,35 +52,14 @@ function mergeResults(results: PropagationResult[]): PropagationResult {
       if (!prev || node.depth < prev.depth) byId.set(node.entity.id, node)
     }
   }
-  const affected = [...byId.values()]
-  const affectedByType: Record<string, number> = {}
-  let impact = 0, perHour = 0, worst = 0, expected = 0, maxRec = 0, probSum = 0
-  const nodeDetails = affected.map((n) => {
-    affectedByType[n.entity.entityType] = (affectedByType[n.entity.entityType] ?? 0) + 1
-    impact += n.entity.criticality
-    const cost = costPerHour(n.entity.criticality)
-    const rto = rtoHours(n.entity.entityType, n.entity.criticality)
-    const p = failureProbability(n.depth)
-    const ni = Math.round(cost * rto)
-    perHour += cost; worst += ni; expected += cost * rto * p; maxRec = Math.max(maxRec, rto); probSum += p
-    return { id: n.entity.id, name: n.entity.name, type: n.entity.entityType, depth: n.depth, criticality: n.entity.criticality, hourlyCost: cost, rtoHours: rto, probability: p, nodeImpact: ni }
-  })
-  return {
-    assetId: results[0].assetId,
-    scenario: results[0].scenario,
-    maxDepth: Math.max(...results.map((r) => r.maxDepth)),
-    affectedTotal: affected.length,
-    affectedByType,
-    estimatedOperationalImpact: impact,
-    affected,
-    estimatedFinancialImpactPerHour: perHour,
-    worstCaseImpact: worst,
-    expectedImpact: Math.round(expected),
-    maxRecoveryHours: affected.length ? Math.round(maxRec * 10) / 10 : 0,
-    avgProbability: affected.length ? Math.round((probSum / affected.length) * 100) / 100 : 0,
-    currency: results[0].currency || 'CAD',
-    nodeDetails,
-  }
+  return aggregate({ assetId: results[0].assetId, scenario: results[0].scenario, currency: results[0].currency || 'CAD' }, [...byId.values()])
+}
+
+/** Recalcule le scénario en excluant des nœuds (what-if : « et si on protégeait X ? »). */
+function recompute(result: PropagationResult, removed: Set<string>): PropagationResult {
+  if (removed.size === 0) return result
+  const affected = result.affected.filter((a) => !removed.has(a.entity.id))
+  return aggregate({ assetId: result.assetId, scenario: result.scenario, currency: result.currency }, affected)
 }
 
 // Miroirs déterministes du modèle backend (BusinessImpactModel).
@@ -108,6 +123,9 @@ export function Simulation() {
   const [secondary, setSecondary] = useState<{ assetId: string; scenario: ScenarioType } | null>(null)
   const [depth, setDepth] = useState(6)
   const [result, setResult] = useState<PropagationResult | null>(null)
+  // Nœuds retirés par l'utilisateur (what-if interactif) → impact recalculé.
+  const [removed, setRemoved] = useState<Set<string>>(new Set())
+  const shownResult = useMemo(() => (result ? recompute(result, removed) : null), [result, removed])
 
   const nodes = graph.data?.nodes ?? []
   const origin = nodes.find((n) => n.id === assetId)
@@ -121,7 +139,7 @@ export function Simulation() {
       const second = await api.simulate(secondary.assetId, secondary.scenario, depth)
       return mergeResults([primary, second])
     },
-    onSuccess: (r) => setResult(r),
+    onSuccess: (r) => { setResult(r); setRemoved(new Set()) },
   })
 
   // Résout le paramètre entrant (id direct OU nom) vers un vrai id de nœud ;
@@ -203,7 +221,7 @@ export function Simulation() {
           </div>
         </div>
 
-        {/* ===== Graphe de propagation ===== */}
+        {/* ===== Graphe de propagation (3D) ===== */}
         <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
           <div className="nx-grid absolute inset-0" />
           {!result && (
@@ -211,13 +229,17 @@ export function Simulation() {
               {run.isPending ? t('SIMULATION DE LA PROPAGATION…', 'SIMULATING PROPAGATION…') : origin ? t(`Prêt — lancer la défaillance de ${origin.name}`, `Ready — run failure of ${origin.name}`) : t('Sélectionnez un nœud d’origine', 'Select a target origin node')}
             </div>
           )}
-          {result && <PropagationGraph origin={origin?.name ?? 'ORIGIN'} result={result} />}
-          {result && (
-            <div className="absolute bottom-4 left-4 z-20 flex gap-4 rounded-sm border p-2 backdrop-blur" style={{ background: 'rgba(19,19,20,0.8)', borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10 }}>
-              <Legend color={ERR} label={t('Chemin critique', 'Critical Path')} />
-              <Legend color={ORANGE} label={t('Fort impact', 'High Impact')} />
-              <Legend color={CYAN} label={t('Origine', 'Origin')} />
-            </div>
+          {result && shownResult && (
+            <Suspense fallback={<div className="z-10" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement du moteur 3D…', 'Loading 3D engine…')}</div>}>
+              <Propagation3D
+                origin={origin?.name ?? 'ORIGIN'}
+                affected={shownResult.affected}
+                maxDepth={shownResult.maxDepth}
+                removedCount={removed.size}
+                onRemove={(id) => setRemoved((p) => new Set(p).add(id))}
+                onRestore={() => setRemoved(new Set())}
+              />
+            </Suspense>
           )}
         </div>
 
@@ -226,7 +248,7 @@ export function Simulation() {
           <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
             <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Résultat de la simulation', 'Simulation Result')}</h3>
           </div>
-          {result ? <ResultPanel origin={origin?.name ?? 'origin'} result={result} redundant={false} /> : (
+          {shownResult ? <ResultPanel origin={origin?.name ?? 'origin'} result={shownResult} redundant={false} /> : (
             <div className="p-4" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Lancez une simulation pour voir l’analyse d’impact.', 'Run a simulation to see the impact analysis.')}</div>
           )}
           {run.error && <div className="p-4" style={{ color: ERR, fontSize: 13 }}>{(run.error as Error).message}</div>}
@@ -236,36 +258,6 @@ export function Simulation() {
   )
 }
 
-function PropagationGraph({ origin, result }: { origin: string; result: PropagationResult }) {
-  const nodes = result.affected.slice(0, 24)
-  const n = nodes.length || 1
-  const cx = 400, cy = 300
-  const positions = nodes.map((a, i) => {
-    const ring = 90 + a.depth * 70
-    const ang = (i / n) * 2 * Math.PI - Math.PI / 2
-    return { a, x: cx + Math.cos(ang) * ring, y: cy + Math.sin(ang) * ring }
-  })
-  return (
-    <svg className="z-10 h-full w-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-      {positions.map(({ a, x, y }) => (
-        <line key={`l-${a.entity.id}`} x1={cx} y1={cy} x2={x} y2={y} stroke={depthColor(a.depth, result.maxDepth)} strokeWidth={a.depth <= 1 ? 2 : 1} opacity={0.6} strokeDasharray={a.depth <= 1 ? '4 4' : undefined} />
-      ))}
-      {positions.map(({ a, x, y }) => {
-        const c = depthColor(a.depth, result.maxDepth)
-        return (
-          <g key={a.entity.id}>
-            <circle cx={x} cy={y} r={7} fill="var(--nx-surface-container)" stroke={c} strokeWidth={1.5} />
-            <text x={x} y={y + 20} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="9">{a.entity.name}</text>
-          </g>
-        )
-      })}
-      {/* Origin */}
-      <circle cx={cx} cy={cy} r={26} fill="rgba(255,180,171,0.15)" stroke={ERR} strokeWidth={2} className="animate-pulse" />
-      <text x={cx} y={cy + 4} textAnchor="middle" fill={ERR} fontFamily="JetBrains Mono" fontSize="10" fontWeight="700">FAIL</text>
-      <text x={cx} y={cy + 46} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="10">{origin}</text>
-    </svg>
-  )
-}
 
 function ResultPanel({ origin, result, redundant }: { origin: string; result: PropagationResult; redundant: boolean }) {
   const { t, lang } = useLang()
@@ -381,8 +373,4 @@ function Finding({ icon, color, title, text }: { icon: React.ReactNode; color: s
       <p style={{ fontSize: 13, color: 'var(--nx-text)' }}>{text}</p>
     </div>
   )
-}
-
-function Legend({ color, label }: { color: string; label: string }) {
-  return <div className="flex items-center gap-1.5" style={{ color: 'var(--nx-text)' }}><span className="h-2 w-2 rounded-full" style={{ background: color }} /> {label}</div>
 }

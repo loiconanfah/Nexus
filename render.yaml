@@ -1,0 +1,123 @@
+# =====================================================================
+# NEXUS — Blueprint de déploiement Render.com
+# =====================================================================
+# Déploie la stack complète en un clic depuis ce dépôt :
+#   web (SPA)  +  api (.NET 10)  +  postgres (managé)  +  neo4j (privé)
+#
+# Mode d'emploi (voir DEPLOY-RENDER.md pour le détail) :
+#   1. Pousser ce dépôt sur GitHub.
+#   2. Render → New → Blueprint → sélectionner ce dépôt.
+#   3. Render lit ce fichier et crée les 4 services.
+#   4. Renseigner les secrets marqués « sync: false » (mots de passe, clé Gemini).
+#
+# Render fournit automatiquement : HTTPS/TLS, sauvegardes Postgres,
+# redéploiement à chaque « git push ».
+# =====================================================================
+
+databases:
+  - name: nexus-postgres
+    databaseName: nexus
+    user: nexus
+    plan: free              # DÉMO. Prod : passer à « basic-1gb » (sauvegardes + pas d'expiration).
+    postgresMajorVersion: "16"
+    # pgvector / uuid-ossp / pgcrypto / pg_trgm : à activer une fois après création
+    # (voir DEPLOY-RENDER.md § « Extensions PostgreSQL »).
+
+services:
+  # -------------------------------------------------------------------
+  # Neo4j — service privé (non exposé au public), image officielle + disque
+  # -------------------------------------------------------------------
+  - type: pserv
+    name: nexus-neo4j
+    runtime: image
+    image:
+      url: docker.io/library/neo4j:5-community
+    plan: standard          # 2 Go RAM : nécessaire pour Neo4j + GDS/APOC. Starter (512 Mo) = risque d'OOM.
+    region: oregon          # doit être identique à celle de l'api et du postgres
+    disk:
+      name: neo4j-data
+      mountPath: /data
+      sizeGB: 5             # persiste le graphe entre redéploiements
+    envVars:
+      # Identifiants Neo4j — À DÉFINIR dans le dashboard, format « neo4j/<motdepasse-fort> ».
+      # La MÊME valeur de mot de passe doit être reportée côté api (Nexus__Neo4j__Password).
+      - key: NEO4J_AUTH
+        sync: false
+      - key: NEO4J_PLUGINS
+        value: '["graph-data-science","apoc"]'
+      - key: NEO4J_dbms_security_procedures_unrestricted
+        value: gds.*,apoc.*
+      - key: NEO4J_server_memory_heap_initial__size
+        value: 512m
+      - key: NEO4J_server_memory_heap_max__size
+        value: 1G
+      - key: NEO4J_server_memory_pagecache_size
+        value: 512m
+
+  # -------------------------------------------------------------------
+  # API — backend .NET 10 (Docker), exposé en HTTPS
+  # -------------------------------------------------------------------
+  - type: web
+    name: nexus-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .        # le Dockerfile copie NuGet.config + backend/ depuis la racine
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Nexus__RunMigrationsOnStartup
+        value: "true"
+      # --- PostgreSQL (injecté automatiquement depuis la base managée) ---
+      - key: ConnectionStrings__Postgres
+        fromDatabase:
+          name: nexus-postgres
+          property: connectionString
+      # --- Neo4j (hôte interne = nom du service privé) ---
+      - key: Nexus__Neo4j__Uri
+        value: bolt://nexus-neo4j:7687
+      - key: Nexus__Neo4j__User
+        value: neo4j
+      - key: Nexus__Neo4j__Password
+        sync: false          # reporter ICI le même mot de passe que NEO4J_AUTH ci-dessus
+      # --- Sécurité auth ---
+      - key: NEXUS_JWT_KEY
+        generateValue: true  # Render génère une clé forte et stable (ne jamais la changer après coup)
+      - key: NEXUS_ADMIN_EMAIL
+        value: admin@cgi.demo
+      - key: NEXUS_ADMIN_PASSWORD
+        sync: false          # choisir un mot de passe admin fort
+      - key: NEXUS_ALLOW_REGISTRATION
+        value: "false"       # prod : inscriptions fermées par défaut. Démo ouverte : mettre "true".
+      # --- IA (Gemini) : clé persistante, survit aux redéploiements ---
+      - key: GEMINI_API_KEY
+        sync: false          # coller la clé Gemini (jamais dans Git)
+      - key: GEMINI_MODEL
+        value: gemini-3.6-flash
+
+  # -------------------------------------------------------------------
+  # Web — SPA Vite servie en statique, /api relayé vers l'API (proxy serveur)
+  # -------------------------------------------------------------------
+  - type: web
+    name: nexus-web
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      # Proxy serveur → aucune config CORS nécessaire (même origine côté navigateur).
+      # ⚠️ Si l'URL réelle de l'API diffère, corriger les 3 destinations ci-dessous.
+      - type: rewrite
+        source: /api/*
+        destination: https://nexus-api.onrender.com/api/*
+      - type: rewrite
+        source: /health
+        destination: https://nexus-api.onrender.com/health
+      - type: rewrite
+        source: /openapi/*
+        destination: https://nexus-api.onrender.com/openapi/*
+      # Fallback SPA : toute autre route → index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
