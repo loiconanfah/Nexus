@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -8,7 +8,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import {
   Boxes, ChevronsDownUp, ChevronsUpDown, Crosshair, Database, FileText, Mail,
-  Network, ScanSearch, Server, Share2, Sparkles, Users, X,
+  Maximize2, Minimize2, Network, ScanSearch, Server, Share2, Sparkles, Users, X,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { layoutGraph } from '../lib/layout'
@@ -115,6 +115,18 @@ function GraphInner() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<GraphEntityRecord | null>(null)
   const [view, setView] = useState<'flow' | 'holo'>('flow')
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const [fs, setFs] = useState(false)
+
+  useEffect(() => {
+    const onChange = () => setFs(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', onChange)
+    return () => document.removeEventListener('fullscreenchange', onChange)
+  }, [])
+  function toggleFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen()
+    else canvasRef.current?.requestFullscreen?.()
+  }
 
   // Focus depuis la recherche globale ou le Jumeau numérique (?focus=id).
   useEffect(() => {
@@ -123,7 +135,8 @@ function GraphInner() {
     if (node) { setSelected(node); setQuery(node.name) }
   }, [focusId, data])
 
-  const { nodes, edges } = useMemo(() => {
+  // 1) Mise en page STABLE (ne dépend que des données + recherche).
+  const laidOut = useMemo(() => {
     if (!data) return { nodes: [] as Node[], edges: [] as Edge[] }
     const q = query.trim().toLowerCase()
     const rfNodes: Node[] = data.nodes.map((n) => ({
@@ -140,6 +153,31 @@ function GraphInner() {
     }))
     return { nodes: layoutGraph(rfNodes, rfEdges), edges: rfEdges }
   }, [data, query])
+
+  // 2) MISE EN AVANT à la sélection : le nœud + ses relations liées ressortent,
+  //    le reste est atténué (lecture facilitée des courants). Léger (pas de re-layout).
+  const { nodes, edges } = useMemo(() => {
+    const selId = selected?.id ?? null
+    if (!selId) return laidOut
+    const neighbors = new Set<string>([selId])
+    for (const e of laidOut.edges) {
+      if (e.source === selId) neighbors.add(e.target)
+      if (e.target === selId) neighbors.add(e.source)
+    }
+    const nodes = laidOut.nodes.map((n) => ({
+      ...n, selected: n.id === selId,
+      data: { ...(n.data as NodeData), dim: (n.data as NodeData).dim || !neighbors.has(n.id) } as NodeData,
+    }))
+    const edges = laidOut.edges.map((e) => {
+      const conn = e.source === selId || e.target === selId
+      return {
+        ...e, animated: conn, zIndex: conn ? 10 : 0,
+        style: { ...e.style, stroke: conn ? '#00e5ff' : e.style?.stroke, strokeWidth: conn ? 2.4 : 1.5, opacity: conn ? 0.95 : 0.05 },
+        labelStyle: { ...(e.labelStyle as object), opacity: conn ? 1 : 0.08 },
+      }
+    })
+    return { nodes, edges }
+  }, [laidOut, selected])
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DU GRAPHE…', 'LOADING GRAPH…')}</div>
   if (error) return <div style={{ color: ERR }}>{(error as Error).message}</div>
@@ -160,13 +198,21 @@ function GraphInner() {
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Trouver un nœud…', 'Find a node…')} className="w-40 bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
           </div>
         </div>
-        <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
-          {data.nodes.length} {t('nœuds', 'nodes')} · {data.edges.length} {t('liens', 'links')}
-        </span>
+        <div className="flex items-center gap-3">
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
+            {data.nodes.length} {t('nœuds', 'nodes')} · {data.edges.length} {t('liens', 'links')}
+          </span>
+          <button onClick={toggleFullscreen} title={fs ? t('Quitter le plein écran', 'Exit fullscreen') : t('Plein écran', 'Fullscreen')}
+            aria-label={fs ? t('Quitter le plein écran', 'Exit fullscreen') : t('Plein écran', 'Fullscreen')}
+            className="flex h-8 w-8 items-center justify-center rounded-sm border transition-colors hover:brightness-125"
+            style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)', color: 'var(--nx-cyan-text)' }}>
+            {fs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          </button>
+        </div>
       </div>
 
       {/* Canevas */}
-      <div className="relative flex-1 overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+      <div ref={canvasRef} className="relative flex-1 overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
         <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,229,255,0.05) 0%, transparent 60%)' }} />
 
         {view === 'flow' ? (

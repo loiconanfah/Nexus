@@ -233,10 +233,12 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect }: Props) {
       if (!a || !b) continue
       const suggested = e.status === 'AiSuggested'
       const lgeo = new THREE.BufferGeometry().setFromPoints([a.position.clone(), b.position.clone()])
+      const baseOpacity = (e.confidence ?? 1) < 0.5 ? 0.22 : 0.4
+      const baseColor = new THREE.Color(suggested ? '#e08a3c' : CYAN)
       const line = new THREE.Line(lgeo, new THREE.LineBasicMaterial({
-        color: new THREE.Color(suggested ? '#e08a3c' : CYAN),
-        transparent: true, opacity: (e.confidence ?? 1) < 0.5 ? 0.22 : 0.4,
+        color: baseColor.clone(), transparent: true, opacity: baseOpacity,
       }))
+      line.userData = { baseOpacity, baseColor }
       group.add(line); lines.push({ line, a, b })
     }
 
@@ -255,18 +257,45 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges])
 
-  // ── Mise en évidence : recherche (atténuation) + sélection ──
+  // ── Mise en évidence : recherche (atténuation) + sélection (nœud + relations liées) ──
   useEffect(() => {
     const q = (query ?? '').trim().toLowerCase()
+    const sel = selectedId
+    // Voisins du sélectionné (via les arêtes).
+    const near = new Set<string>()
+    if (sel) {
+      near.add(sel)
+      for (const { a, b } of edgeLinesRef.current) {
+        const ai = a.userData.id as string, bi = b.userData.id as string
+        if (ai === sel) near.add(bi)
+        if (bi === sel) near.add(ai)
+      }
+    }
     for (const m of nodeMeshesRef.current) {
       const mat = m.material as THREE.MeshStandardMaterial
-      const isSel = m.userData.id === selectedId
+      const id = m.userData.id as string
+      const isSel = id === sel
       const match = !q || (m.userData.name as string).toLowerCase().includes(q)
-      mat.opacity = match ? 1 : 0.12
-      mat.emissiveIntensity = isSel ? 0.7 : 0.28
+      const linked = !sel || near.has(id)
+      mat.opacity = !match ? 0.08 : linked ? 1 : 0.07
+      mat.emissiveIntensity = isSel ? 0.75 : linked ? 0.28 : 0.1
       const base = m.userData.baseColor as THREE.Color
       mat.emissive.copy(isSel ? new THREE.Color(CYAN) : base)
       if (!isSel) m.scale.setScalar(m.userData.baseScale ?? 1)
+      // Étiquettes / icônes suivent l'atténuation.
+      const vis = match && linked ? 1 : 0.1
+      m.children.forEach((ch) => { const cm = (ch as THREE.Sprite).material as THREE.SpriteMaterial | undefined; if (cm) cm.opacity = vis })
+    }
+    for (const { line, a, b } of edgeLinesRef.current) {
+      const lm = line.material as THREE.LineBasicMaterial
+      const baseOp = (line.userData.baseOpacity as number) ?? 0.4
+      const baseCol = line.userData.baseColor as THREE.Color
+      if (!sel) { lm.opacity = baseOp; if (baseCol) lm.color.copy(baseCol) }
+      else {
+        const conn = a.userData.id === sel || b.userData.id === sel
+        lm.opacity = conn ? 0.9 : 0.03
+        lm.color.copy(conn ? new THREE.Color(CYAN) : (baseCol ?? new THREE.Color(CYAN)))
+      }
     }
   }, [query, selectedId])
 
