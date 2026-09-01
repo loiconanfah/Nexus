@@ -91,17 +91,17 @@ export function DependencyIntelligence() {
         <Tile label={t('EXPOSITIONS CRITIQUES', 'CRITICAL EXPOSURES')} value={stats.exposures} color={ERR} />
       </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         {/* Table */}
-        <div className="min-w-0 flex-1 overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
-          <div className="flex items-center gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--nx-border)' }}>
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)', maxHeight: 'calc(100vh - 15rem)' }}>
+          <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2" style={{ borderColor: 'var(--nx-border)' }}>
             <Search size={14} style={{ color: 'var(--nx-text-muted)' }} />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Filtrer les dépendances…', 'Filter dependencies…')} className="w-full bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
             <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{rows.length}</span>
           </div>
-          <div className="overflow-x-auto">
+          <div className="min-h-0 flex-1 overflow-auto">
             <table className="w-full text-left">
-              <thead>
+              <thead className="sticky top-0 z-10" style={{ background: 'var(--nx-surface-container)' }}>
                 <tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
                   {[t('Nœud source', 'Source Node'), t('Relation', 'Relationship'), t('Nœud cible', 'Target Node'), t('Criticité', 'Criticality'), t('Confiance', 'Confidence')].map((h, i) => (
                     <th key={h} className={`px-3 py-2 ${i >= 3 ? 'text-right' : ''}`} style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{h}</th>
@@ -151,7 +151,7 @@ function DependencyDetail({ row, onTarget, onMap, onClose }: { row: Row; onTarge
       )
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-5 rounded-sm border p-5 lg:w-[340px]" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+    <aside className="flex w-full shrink-0 flex-col gap-5 rounded-sm border p-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-8rem)] lg:w-[340px] lg:self-start lg:overflow-y-auto" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="flex items-center justify-between">
         <h3 style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{t('Détail de la dépendance', 'Dependency Detail')}</h3>
         <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
