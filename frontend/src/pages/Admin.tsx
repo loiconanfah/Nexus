@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Check, Database, KeyRound, Loader2, LogOut, RotateCcw, Server, Settings, ShieldCheck, Sparkles, X } from 'lucide-react'
@@ -110,6 +110,15 @@ function AiIntegration() {
   const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p
   const configured = cfg?.configured
 
+  // Charge automatiquement la liste des modèles dès qu'une clé est configurée :
+  // on peut ainsi CHANGER de modèle via le menu déroulant, sans re-saisir la clé.
+  const autoLoaded = useRef(false)
+  useEffect(() => {
+    if (configured && !autoLoaded.current) { autoLoaded.current = true; loadModels.mutate() }
+    if (!configured) autoLoaded.current = false
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configured])
+
   return (
     <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: configured ? 'rgba(192,132,252,0.35)' : 'var(--nx-border)' }}>
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
@@ -136,7 +145,10 @@ function AiIntegration() {
             </select>
           </label>
           <label className="flex flex-col gap-1">
-            <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Clé API', 'API key')}</span>
+            <span className="flex items-center justify-between" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
+              {t('Clé API', 'API key')}
+              {configured && <span className="flex items-center gap-1" style={{ color: '#4ade80', textTransform: 'none' }}><Check size={11} /> {t('enregistrée · laissez vide pour la conserver', 'saved · leave blank to keep')}</span>}
+            </span>
             <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : provider === 'gemini' ? 'AIza…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
           </label>
           {provider === 'azure-openai' && (
