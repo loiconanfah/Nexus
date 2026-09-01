@@ -1,8 +1,8 @@
-// Catalogue de connecteurs NEXUS.
+// Catalogue de connecteurs Lenexus.
 // Statuts HONNÊTES :
 //  - active   : opérationnel aujourd'hui (moteur d'ingestion universel).
 //  - assisted : mapping d'ontologie déjà défini ; il suffit de fournir l'export
-//               du fournisseur (CSV/JSON) et NEXUS le normalise — fonctionne dès
+//               du fournisseur (CSV/JSON) et Lenexus le normalise — fonctionne dès
 //               maintenant, sans OAuth.
 //  - key      : intégration IA réelle, activée en ajoutant une clé API.
 //  - roadmap  : nécessite une synchro API/OAuth live (à venir).
@@ -47,7 +47,7 @@ export const CONNECTORS: Connector[] = [
   { id: 'webhook', name: 'Webhook entrant', category: 'files', authType: 'apikey', tier: 'assisted', glyph: 'WH', descFr: 'Recevez des événements poussés (création/mise à jour d’actifs).', descEn: 'Receive pushed events (asset create/update).', bringsFr: 'Mises à jour incrémentales', bringsEn: 'Incremental updates', docUrl: 'https://www.rfc-editor.org/rfc/rfc8935' },
 
   // ---- IA & MCP ----
-  { id: 'mcp-server', name: 'Serveur MCP NEXUS', category: 'ai', authType: 'apikey', tier: 'active', glyph: 'MCP', descFr: 'Exposez NEXUS comme serveur MCP : Claude interroge le graphe et lance des simulations.', descEn: 'Expose NEXUS as an MCP server: Claude queries the graph and runs simulations.', bringsFr: 'Requêtes graphe, risques, what-if', bringsEn: 'Graph queries, risks, what-if', docUrl: 'https://modelcontextprotocol.io/' },
+  { id: 'mcp-server', name: 'Serveur MCP Lenexus', category: 'ai', authType: 'apikey', tier: 'active', glyph: 'MCP', descFr: 'Exposez Lenexus comme serveur MCP : Claude interroge le graphe et lance des simulations.', descEn: 'Expose Lenexus as an MCP server: Claude queries the graph and runs simulations.', bringsFr: 'Requêtes graphe, risques, what-if', bringsEn: 'Graph queries, risks, what-if', docUrl: 'https://modelcontextprotocol.io/' },
   { id: 'claude', name: 'Claude (Anthropic)', category: 'ai', authType: 'apikey', tier: 'key', glyph: 'CL', descFr: 'Moteur d’analyse en langage naturel et de mapping automatique. Ajoutez une clé pour l’activer.', descEn: 'Natural-language analysis and auto-mapping engine. Add a key to enable.', bringsFr: 'Raisonnement, extraction, naturalisation', bringsEn: 'Reasoning, extraction, naturalization', docUrl: 'https://docs.anthropic.com/en/api/getting-started' },
   { id: 'gemini', name: 'Google Gemini', category: 'ai', authType: 'apikey', tier: 'key', glyph: 'GEM', descFr: 'LLM Google avec palier GRATUIT (ex. gemini-1.5-flash). Idéal pour tester sans coût. Activable par clé.', descEn: 'Google LLM with a FREE tier (e.g. gemini-1.5-flash). Ideal to test at no cost. Enable by key.', bringsFr: 'Raisonnement, extraction', bringsEn: 'Reasoning, extraction', docUrl: 'https://ai.google.dev/gemini-api/docs/api-key' },
   { id: 'openai', name: 'OpenAI', category: 'ai', authType: 'apikey', tier: 'key', glyph: 'AI', descFr: 'Fournisseur LLM alternatif pour l’analyse et le mapping. Activable par clé.', descEn: 'Alternative LLM provider for analysis and mapping. Enable by key.', bringsFr: 'Raisonnement, extraction', bringsEn: 'Reasoning, extraction', docUrl: 'https://platform.openai.com/docs' },

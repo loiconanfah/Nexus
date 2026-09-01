@@ -69,7 +69,7 @@ export function DocumentIntelligence() {
         <h2 className="flex items-center gap-2" style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>
           <ScanText size={22} style={{ color: CYAN }} /> {t('Intelligence documentaire', 'Document Intelligence')}
         </h2>
-        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Importez ou collez des runbooks, notes d’incident ou documents d’architecture — NEXUS en extrait les dépendances et risques, recoupés avec votre graphe en direct.', 'Upload or paste runbooks, incident notes or architecture docs — NEXUS extracts the dependencies and risks they reference against your live graph.')}</p>
+        <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Importez ou collez des runbooks, notes d’incident ou documents d’architecture — Lenexus en extrait les dépendances et risques, recoupés avec votre graphe en direct.', 'Upload or paste runbooks, incident notes or architecture docs — Lenexus extracts the dependencies and risks they reference against your live graph.')}</p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

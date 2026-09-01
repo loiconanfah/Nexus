@@ -113,7 +113,7 @@ function ReportPreview({ report, type, threshold }: { report: ExecutiveReport; t
       <header className="flex items-end justify-between border-b p-8" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
         <div>
           <p className="mb-2 uppercase" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.2em', color: CYAN_T }}>{t('Confidentiel interne', 'Internal Confidential')}</p>
-          <h2 style={{ fontFamily: geist, fontSize: 28, fontWeight: 600, color: 'var(--nx-text)', lineHeight: 1.1 }}>{t('RAPPORT STRATÉGIQUE', 'NEXUS STRATEGIC')}<br />{t('DE RÉSILIENCE NEXUS', 'RESILIENCE REPORT')}</h2>
+          <h2 style={{ fontFamily: geist, fontSize: 28, fontWeight: 600, color: 'var(--nx-text)', lineHeight: 1.1 }}>{t('RAPPORT STRATÉGIQUE', 'Lenexus STRATEGIC')}<br />{t('DE RÉSILIENCE Lenexus', 'RESILIENCE REPORT')}</h2>
         </div>
         <div className="text-right">
           <p style={{ fontFamily: mono, fontSize: 14, color: 'var(--nx-text)' }}>{t('T3 2026', 'Q3 2026')}</p>
@@ -202,7 +202,7 @@ function ReportPreview({ report, type, threshold }: { report: ExecutiveReport; t
         )}
 
         <div className="border-t pt-4 text-center" style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>
-          {t('NEXUS — Intelligence opérationnelle des dépendances · Confidentiel', 'NEXUS — Operational Dependency Intelligence · Confidential')}
+          {t('Lenexus — Intelligence opérationnelle des dépendances · Confidentiel', 'Lenexus — Operational Dependency Intelligence · Confidential')}
         </div>
       </div>
     </div>

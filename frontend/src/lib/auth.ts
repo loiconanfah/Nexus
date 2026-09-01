@@ -84,7 +84,7 @@ export async function login(email: string, password: string): Promise<Session> {
   return { email: data.email, role: data.role, tenantId: data.tenantId }
 }
 
-/** Échange un jeton d'identité Microsoft (MSAL) contre un jeton NEXUS. */
+/** Échange un jeton d'identité Microsoft (MSAL) contre un jeton Lenexus. */
 export async function loginWithEntra(msToken: string): Promise<Session> {
   const res = await fetch('/api/v1/auth/entra', {
     method: 'POST',

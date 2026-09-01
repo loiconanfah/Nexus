@@ -155,7 +155,7 @@ export function Login() {
               className="text-4xl font-semibold tracking-tighter"
               style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text)' }}
             >
-              NEXUS
+              Lenexus
             </h1>
           </div>
           <p
@@ -188,7 +188,7 @@ export function Login() {
           {/* En-tête */}
           <div className="flex flex-col gap-2">
             <h2 className="text-2xl font-medium" style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text)', letterSpacing: '-0.01em' }}>
-              {mode === 'signup' ? t('Créer un compte NEXUS', 'Create your NEXUS account') : t('Connexion à NEXUS', 'Sign in to NEXUS')}
+              {mode === 'signup' ? t('Créer un compte Lenexus', 'Create your Lenexus account') : t('Connexion à Lenexus', 'Sign in to Lenexus')}
             </h2>
             <div className="flex items-center gap-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.05em', color: 'var(--nx-cyan-text)' }}>
               <ShieldCheck size={16} />

@@ -31,15 +31,15 @@ const DOCS: readonly Doc[] = [
   {
     id: 'intro',
     icon: BookOpen,
-    title: ['Qu’est-ce que NEXUS', 'What is NEXUS'],
+    title: ['Qu’est-ce que Lenexus', 'What is Lenexus'],
     blocks: [
       { kind: 'p', text: [
-        'NEXUS est une plateforme d’intelligence des dépendances opérationnelles. Elle modélise vos systèmes, applications, infrastructures, fournisseurs, personnes et processus sous forme d’un graphe de dépendances, puis analyse ce graphe pour révéler ce qui casse — avant que l’activité n’en souffre.',
-        'NEXUS is an operational dependency intelligence platform. It models your systems, applications, infrastructure, suppliers, people and processes as a dependency graph, then analyzes that graph to reveal what breaks — before the business feels it.',
+        'Lenexus est une plateforme d’intelligence des dépendances opérationnelles. Elle modélise vos systèmes, applications, infrastructures, fournisseurs, personnes et processus sous forme d’un graphe de dépendances, puis analyse ce graphe pour révéler ce qui casse — avant que l’activité n’en souffre.',
+        'Lenexus is an operational dependency intelligence platform. It models your systems, applications, infrastructure, suppliers, people and processes as a dependency graph, then analyzes that graph to reveal what breaks — before the business feels it.',
       ] },
       { kind: 'p', text: [
-        'La devise résume la promesse : « Savoir ce qui casse avant que l’activité n’en pâtisse ». Concrètement, NEXUS répond à trois questions : où sont mes points uniques de défaillance ? que se passe-t-il si tel élément tombe ? combien ça coûte et combien de temps pour récupérer ?',
-        'The tagline sums up the promise: “Know what breaks before the business does.” In practice, NEXUS answers three questions: where are my single points of failure? what happens if a given element fails? how much does it cost and how long to recover?',
+        'La devise résume la promesse : « Savoir ce qui casse avant que l’activité n’en pâtisse ». Concrètement, Lenexus répond à trois questions : où sont mes points uniques de défaillance ? que se passe-t-il si tel élément tombe ? combien ça coûte et combien de temps pour récupérer ?',
+        'The tagline sums up the promise: “Know what breaks before the business does.” In practice, Lenexus answers three questions: where are my single points of failure? what happens if a given element fails? how much does it cost and how long to recover?',
       ] },
       { kind: 'h', text: ['À qui ça s’adresse', 'Who it is for'] },
       { kind: 'ul', items: [
@@ -73,8 +73,8 @@ const DOCS: readonly Doc[] = [
     title: ['Modèle de données : le graphe', 'Data model: the graph'],
     blocks: [
       { kind: 'p', text: [
-        'Tout dans NEXUS est soit une entité (un nœud), soit une relation (une arête orientée entre deux entités). C’est ce qui permet de suivre une dépendance de bout en bout.',
-        'Everything in NEXUS is either an entity (a node) or a relation (a directed edge between two entities). That is what makes it possible to trace a dependency end to end.',
+        'Tout dans Lenexus est soit une entité (un nœud), soit une relation (une arête orientée entre deux entités). C’est ce qui permet de suivre une dépendance de bout en bout.',
+        'Everything in Lenexus is either an entity (a node) or a relation (a directed edge between two entities). That is what makes it possible to trace a dependency end to end.',
       ] },
       { kind: 'h', text: ['Entités', 'Entities'] },
       { kind: 'ul', items: [
@@ -152,8 +152,8 @@ const DOCS: readonly Doc[] = [
         ['≤ 20 Faible · ≤ 40 Modéré · ≤ 60 Élevé · ≤ 80 Haut · > 80 Critique.', '≤ 20 Low · ≤ 40 Moderate · ≤ 60 Elevated · ≤ 80 High · > 80 Critical.'],
       ] },
       { kind: 'p', text: [
-        'Un point unique de défaillance (SPOF) est un élément dont beaucoup dépendent sans alternative : sa panne se propage largement. NEXUS les détecte structurellement et les met en tête.',
-        'A single point of failure (SPOF) is an element that many depend on with no alternative: its failure propagates widely. NEXUS detects them structurally and surfaces them first.',
+        'Un point unique de défaillance (SPOF) est un élément dont beaucoup dépendent sans alternative : sa panne se propage largement. Lenexus les détecte structurellement et les met en tête.',
+        'A single point of failure (SPOF) is an element that many depend on with no alternative: its failure propagates widely. Lenexus detects them structurally and surfaces them first.',
       ] },
     ],
   },
@@ -184,12 +184,12 @@ const DOCS: readonly Doc[] = [
     title: ['Connecteurs & import de données', 'Connectors & data import'],
     blocks: [
       { kind: 'p', text: [
-        'NEXUS accepte les données par import — vous gardez le contrôle de ce que vous partagez, sans donner d’accès privilégié à vos systèmes. Le catalogue distingue quatre niveaux.',
-        'NEXUS accepts data by import — you keep control of what you share, without granting privileged access to your systems. The catalogue has four tiers.',
+        'Lenexus accepte les données par import — vous gardez le contrôle de ce que vous partagez, sans donner d’accès privilégié à vos systèmes. Le catalogue distingue quatre niveaux.',
+        'Lenexus accepts data by import — you keep control of what you share, without granting privileged access to your systems. The catalogue has four tiers.',
       ] },
       { kind: 'ul', items: [
         ['Actif — fonctionne immédiatement : CSV/Excel, JSON (fichier ou URL), Import assisté par IA, Serveur MCP.', 'Active — works immediately: CSV/Excel, JSON (file or URL), AI-assisted import, MCP server.'],
-        ['Assisté — vous exportez depuis la plateforme source (M365, ServiceNow, AWS…) puis importez ; NEXUS guide le mapping.', 'Assisted — you export from the source platform (M365, ServiceNow, AWS…) then import; NEXUS guides the mapping.'],
+        ['Assisté — vous exportez depuis la plateforme source (M365, ServiceNow, AWS…) puis importez ; Lenexus guide le mapping.', 'Assisted — you export from the source platform (M365, ServiceNow, AWS…) then import; Lenexus guides the mapping.'],
         ['Prêt pour clé — modèles IA qui s’activent dès qu’une clé est fournie.', 'Key-ready — AI models that activate as soon as a key is provided.'],
         ['Roadmap — annoncés, pas encore construits.', 'Roadmap — announced, not built yet.'],
       ] },
@@ -200,8 +200,8 @@ const DOCS: readonly Doc[] = [
       ] },
       { kind: 'h', text: ['Résolution tolérante', 'Tolerant resolution'] },
       { kind: 'p', text: [
-        'À l’import, NEXUS reconnaît les synonymes et variantes de types (ex. « depends on », « DependsOn » → DEPENDS_ON) au lieu de rejeter la ligne. Les cas inconnus retombent sur des valeurs sûres.',
-        'On import, NEXUS recognizes synonyms and type variants (e.g. “depends on”, “DependsOn” → DEPENDS_ON) instead of dropping the row. Unknown cases fall back to safe defaults.',
+        'À l’import, Lenexus reconnaît les synonymes et variantes de types (ex. « depends on », « DependsOn » → DEPENDS_ON) au lieu de rejeter la ligne. Les cas inconnus retombent sur des valeurs sûres.',
+        'On import, Lenexus recognizes synonyms and type variants (e.g. “depends on”, “DependsOn” → DEPENDS_ON) instead of dropping the row. Unknown cases fall back to safe defaults.',
       ] },
     ],
   },
@@ -227,8 +227,8 @@ const DOCS: readonly Doc[] = [
     title: ['L’assistant IA', 'The AI Analyst'],
     blocks: [
       { kind: 'p', text: [
-        'L’Assistant IA répond en langage naturel, mais les chiffres viennent toujours des moteurs déterministes de NEXUS. L’IA ne fait que formuler la réponse — elle n’invente aucune donnée.',
-        'The AI Analyst answers in natural language, but the numbers always come from NEXUS’s deterministic engines. The AI only phrases the answer — it invents no data.',
+        'L’Assistant IA répond en langage naturel, mais les chiffres viennent toujours des moteurs déterministes de Lenexus. L’IA ne fait que formuler la réponse — elle n’invente aucune donnée.',
+        'The AI Analyst answers in natural language, but the numbers always come from Lenexus’s deterministic engines. The AI only phrases the answer — it invents no data.',
       ] },
       { kind: 'ul', items: [
         ['Fonctionne sans clé (réponses ancrées, non « naturalisées »).', 'Works without a key (grounded answers, not “naturalized”).'],
@@ -250,7 +250,7 @@ const DOCS: readonly Doc[] = [
         ['Authentification par jeton (JWT) : sans jeton valide, l’API est fermée.', 'Token authentication (JWT): without a valid token, the API is closed.'],
         ['Chaque compte est rattaché à un espace de travail (tenant) ; le tenant est inscrit dans le jeton par le serveur, pas falsifiable côté client.', 'Each account is bound to a workspace (tenant); the tenant is stamped into the token by the server, not client-falsifiable.'],
         ['Inscription libre : chaque nouveau compte ouvre un espace vierge et isolé, dont il est administrateur.', 'Self-registration: each new account opens a blank, isolated workspace it administers.'],
-        ['SSO Entra ID (Microsoft) disponible : connexion avec le compte professionnel, sans mot de passe NEXUS (activé par l’administrateur du déploiement).', 'Entra ID (Microsoft) SSO available: sign in with the corporate account, no NEXUS password (enabled by the deployment admin).'],
+        ['SSO Entra ID (Microsoft) disponible : connexion avec le compte professionnel, sans mot de passe Lenexus (activé par l’administrateur du déploiement).', 'Entra ID (Microsoft) SSO available: sign in with the corporate account, no Lenexus password (enabled by the deployment admin).'],
         ['Les mots de passe ne sont jamais stockés en clair (empreinte PBKDF2).', 'Passwords are never stored in clear text (PBKDF2 hash).'],
       ] },
       { kind: 'p', text: [
@@ -271,8 +271,8 @@ const DOCS: readonly Doc[] = [
       ] },
       { kind: 'h', text: ['Dois-je donner accès à mes systèmes ?', 'Do I have to grant access to my systems?'] },
       { kind: 'p', text: [
-        'Non. NEXUS fonctionne par import : vous n’exposez que ce que vous choisissez de partager. Les connexions directes en lecture seule sont une étape ultérieure et optionnelle.',
-        'No. NEXUS works by import: you only expose what you choose to share. Direct read-only connections are a later, optional step.',
+        'Non. Lenexus fonctionne par import : vous n’exposez que ce que vous choisissez de partager. Les connexions directes en lecture seule sont une étape ultérieure et optionnelle.',
+        'No. Lenexus works by import: you only expose what you choose to share. Direct read-only connections are a later, optional step.',
       ] },
       { kind: 'h', text: ['Les chiffres de risque sont-ils fiables ?', 'Are the risk numbers trustworthy?'] },
       { kind: 'p', text: [
@@ -281,8 +281,8 @@ const DOCS: readonly Doc[] = [
       ] },
       { kind: 'h', text: ['Comment obtenir de l’aide ?', 'How do I get help?'] },
       { kind: 'p', text: [
-        'Écrivez à support@nexus.io. Pour un déploiement (SSO, clés, connexions directes), contactez votre administrateur NEXUS.',
-        'Email support@nexus.io. For a deployment (SSO, keys, direct connections), contact your NEXUS administrator.',
+        'Écrivez à support@nexus.io. Pour un déploiement (SSO, clés, connexions directes), contactez votre administrateur Lenexus.',
+        'Email support@nexus.io. For a deployment (SSO, keys, direct connections), contact your Lenexus administrator.',
       ] },
     ],
   },
@@ -314,7 +314,7 @@ export function Help() {
           <BookOpen size={22} style={{ color: CYAN }} /> {t('Documentation & guide d’usage', 'Documentation & usage guide')}
         </h2>
         <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
-          {t('Tout ce qu’il faut savoir pour prendre NEXUS en main — concepts, modules, calcul du risque, sécurité.', 'Everything you need to get started with NEXUS — concepts, modules, risk computation, security.')}
+          {t('Tout ce qu’il faut savoir pour prendre Lenexus en main — concepts, modules, calcul du risque, sécurité.', 'Everything you need to get started with Lenexus — concepts, modules, risk computation, security.')}
         </p>
       </div>
 

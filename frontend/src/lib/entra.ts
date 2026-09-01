@@ -1,7 +1,7 @@
 // SSO Entra ID (OpenID Connect) via MSAL — activé dynamiquement selon la config
 // serveur (/api/v1/auth/config). Aucun secret ici : clientId/tenantId sont des
 // identifiants PUBLICS d'application. Le jeton Microsoft obtenu est échangé côté
-// backend contre un jeton NEXUS (voir lib/auth.loginWithEntra).
+// backend contre un jeton Lenexus (voir lib/auth.loginWithEntra).
 
 import { PublicClientApplication } from '@azure/msal-browser'
 

@@ -1,4 +1,4 @@
-// Types miroir des DTO de l'API NEXUS.
+// Types miroir des DTO de l'API Lenexus.
 
 export type RiskBand = 'Low' | 'Moderate' | 'Elevated' | 'High' | 'Critical'
 

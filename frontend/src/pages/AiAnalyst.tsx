@@ -63,7 +63,7 @@ export function AiAnalyst() {
       <section className="flex flex-1 flex-col overflow-hidden border-r" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
         <header className="flex h-16 shrink-0 flex-col justify-center border-b px-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
           <h2 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>
-            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN, boxShadow: '0 0 8px #00e5ff' }} /> {t('Analyste NEXUS', 'NEXUS Analyst')}
+            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN, boxShadow: '0 0 8px #00e5ff' }} /> {t('Analyste Lenexus', 'Lenexus Analyst')}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Posez des questions sur les dépendances opérationnelles de votre organisation.', "Ask questions about your organization's operational dependencies.")}</p>
         </header>
@@ -73,7 +73,7 @@ export function AiAnalyst() {
           {turns.length === 0 && (
             <div className="m-auto max-w-md text-center">
               <div className="mx-auto mb-3 w-fit rounded-sm p-3" style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)' }}><Sparkles size={24} style={{ color: CYAN }} /></div>
-              <div style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{t('Analyste NEXUS', 'NEXUS Analyst')}</div>
+              <div style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{t('Analyste Lenexus', 'Lenexus Analyst')}</div>
               <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chaque réponse s’appuie sur les moteurs déterministes, avec ses preuves et son niveau de confiance.', 'Every answer is grounded in the deterministic engines, with its evidence and confidence.')}</p>
             </div>
           )}
@@ -114,7 +114,7 @@ export function AiAnalyst() {
           </div>
           <form className="relative flex items-center" onSubmit={(e) => { e.preventDefault(); submit(input) }}>
             <Terminal size={18} className="absolute left-4" style={{ color: 'var(--nx-text-muted)' }} />
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('Demandez n’importe quoi à NEXUS…', 'Ask NEXUS anything… (e.g. ⌘+K)')}
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('Demandez n’importe quoi à Lenexus…', 'Ask Lenexus anything… (e.g. ⌘+K)')}
               className="w-full rounded-sm border py-3 pl-12 pr-14 outline-none" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 13 }} />
             <button type="submit" disabled={ask.isPending || !input.trim()} className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-sm disabled:opacity-40"
               style={{ background: 'rgba(0,229,255,0.2)', border: '1px solid rgba(0,229,255,0.5)', color: CYAN }}><Send size={15} /></button>

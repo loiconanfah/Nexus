@@ -54,7 +54,7 @@ export function Landing() {
           <div className="flex h-8 w-8 items-center justify-center" style={{ background: '#6a86ff', clipPath: 'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)' }}>
             <Share2 size={16} strokeWidth={2.4} style={{ color: '#070714' }} />
           </div>
-          <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>NEXUS</span>
+          <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexus</span>
         </div>
         <nav className="slb-nav-links">
           <a href="#essentiel">{t('L’essentiel', 'Essentials')}</a>
@@ -89,8 +89,8 @@ export function Landing() {
             <span className="slb-accent">{t('avant', 'before')}</span> {t('que l’activité n’en pâtisse.', 'the business does.')}
           </h1>
           <p className="slb-sub">
-            {t('NEXUS cartographie vos systèmes, fournisseurs et personnes en un graphe vivant, révèle vos points uniques de défaillance, simule les pannes et en chiffre l’impact.',
-               'NEXUS maps your systems, suppliers and people into a living graph, reveals your single points of failure, simulates outages and quantifies their impact.')}
+            {t('Lenexus cartographie vos systèmes, fournisseurs et personnes en un graphe vivant, révèle vos points uniques de défaillance, simule les pannes et en chiffre l’impact.',
+               'Lenexus maps your systems, suppliers and people into a living graph, reveals your single points of failure, simulates outages and quantifies their impact.')}
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <BoxBtn onClick={() => navigate('/login?signup=1')} label={t('Créer un compte', 'Create an account')} primary />
@@ -102,7 +102,7 @@ export function Landing() {
       {/* ══════════ L'ESSENTIEL — 3 numéros ══════════ */}
       <Section id="essentiel">
         <Label>{t('L’essentiel', 'The essentials')}</Label>
-        <SectionH>{t('Comment NEXUS révèle vos angles morts.', 'How NEXUS reveals your blind spots.')}</SectionH>
+        <SectionH>{t('Comment Lenexus révèle vos angles morts.', 'How Lenexus reveals your blind spots.')}</SectionH>
         <div className="mt-14 grid gap-px md:grid-cols-3" style={{ background: '#1c1c22' }}>
           <NumCard n="01" tag={t('Cartographie', 'Mapping')} title={t('Cartographier', 'Map')}
             body={t('Systèmes, fournisseurs et personnes dans un graphe unique et navigable.', 'Systems, suppliers and people in a single, navigable graph.')} />
@@ -127,8 +127,8 @@ export function Landing() {
       <Section>
         <DeepRow reverse tag="02 · " kicker={t('Simulation', 'Simulation')}
           title={t('Rejouez une panne, mesurez l’impact.', 'Replay an outage, measure the impact.')}
-          body={t('Coupez virtuellement un élément ou testez une décision : NEXUS calcule la cascade, le délai de reprise et l’impact financier, puis l’IA l’explique en langage clair.',
-                  'Virtually cut an element or test a decision: NEXUS computes the cascade, the recovery time and the financial impact, then the AI explains it in plain language.')}
+          body={t('Coupez virtuellement un élément ou testez une décision : Lenexus calcule la cascade, le délai de reprise et l’impact financier, puis l’IA l’explique en langage clair.',
+                  'Virtually cut an element or test a decision: Lenexus computes the cascade, the recovery time and the financial impact, then the AI explains it in plain language.')}
           points={[t('Propagation multi-niveaux', 'Multi-level propagation'), t('RTO et impact chiffré', 'RTO and quantified impact'), t('Comparaison de scénarios', 'Scenario comparison')]}
           visual={<ImpactBars />} />
         <div className="mt-10 flex flex-wrap gap-2">
@@ -188,10 +188,10 @@ export function Landing() {
         <Label>FAQ</Label>
         <SectionH>{t('Questions fréquentes.', 'Frequent questions.')}</SectionH>
         <div className="mt-10 mx-auto max-w-3xl">
-          <Faq q={t('Faut-il connecter NEXUS à nos systèmes ?', 'Do we need to connect NEXUS to our systems?')}
-            a={t('Non. NEXUS fonctionne par import : fichier, JSON ou données collées que l’IA structure. Aucun accès privilégié requis.', 'No. NEXUS works by import: file, JSON or pasted data the AI structures. No privileged access required.')} />
+          <Faq q={t('Faut-il connecter Lenexus à nos systèmes ?', 'Do we need to connect Lenexus to our systems?')}
+            a={t('Non. Lenexus fonctionne par import : fichier, JSON ou données collées que l’IA structure. Aucun accès privilégié requis.', 'No. Lenexus works by import: file, JSON or pasted data the AI structures. No privileged access required.')} />
           <Faq q={t('L’IA invente-t-elle des chiffres ?', 'Does the AI make up numbers?')}
-            a={t('Jamais. Le moteur déterministe calcule ; l’IA interprète et explique. Sans clé, NEXUS bascule sur des règles et reste fonctionnel.', 'Never. The deterministic engine computes; the AI interprets and explains. Without a key, NEXUS falls back to rules and stays functional.')} />
+            a={t('Jamais. Le moteur déterministe calcule ; l’IA interprète et explique. Sans clé, Lenexus bascule sur des règles et reste fonctionnel.', 'Never. The deterministic engine computes; the AI interprets and explains. Without a key, Lenexus falls back to rules and stays functional.')} />
           <Faq q={t('Nos données sont-elles isolées ?', 'Is our data isolated?')}
             a={t('Oui. Un espace de travail cloisonné par client, mots de passe hachés, SSO Entra ID disponible.', 'Yes. A partitioned workspace per client, hashed passwords, Entra ID SSO available.')} />
           <Faq q={t('Combien de temps pour un premier résultat ?', 'How long to a first result?')}
@@ -221,7 +221,7 @@ export function Landing() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2">
             <Share2 size={15} style={{ color: '#6a86ff' }} />
-            <span style={{ fontFamily: geist, fontSize: 14 }}>NEXUS</span>
+            <span style={{ fontFamily: geist, fontSize: 14 }}>Lenexus</span>
             <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· MJ Corp</span>
           </div>
           <p style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>{t('Savoir ce qui casse avant que l’activité n’en pâtisse.', 'Know what breaks before the business does.')}</p>

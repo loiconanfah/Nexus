@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
-  NEXUS — thème enterprise sobre et dense, désormais CLAIR (light).
+  Lenexus — thème enterprise sobre et dense, désormais CLAIR (light).
   Palette : gris clairs + accent cyan/teal, couleurs de risque assombries
   pour rester lisibles sur fond clair.
 */
@@ -73,7 +73,7 @@ body {
 }
 
 /* =====================================================================
-   NEXUS Operational Design System (source : Stitch)
+   Lenexus Operational Design System (source : Stitch)
    Palette « deep space » + accent cyan électrique, fonts Geist/Inter/Mono.
    ===================================================================== */
 :root {

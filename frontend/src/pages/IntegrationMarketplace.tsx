@@ -40,7 +40,7 @@ export function IntegrationMarketplace() {
         </h2>
         <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
           {t(`${CONNECTORS.length} connecteurs · ${usable} exploitables aujourd’hui`, `${CONNECTORS.length} connectors · ${usable} usable today`)}
-          {' — '}{t('alimentez NEXUS depuis vos systèmes existants.', 'feed NEXUS from your existing systems.')}
+          {' — '}{t('alimentez Lenexus depuis vos systèmes existants.', 'feed Lenexus from your existing systems.')}
         </p>
       </div>
 
