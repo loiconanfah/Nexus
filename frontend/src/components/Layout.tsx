@@ -5,7 +5,7 @@ import {
   AlertTriangle, Blocks, Boxes, Building2, Database, FileSearch, GitBranch, GitPullRequest,
   ClipboardList, HelpCircle, History, LayoutDashboard, Moon, Network, PanelLeftClose, PanelLeftOpen,
   Radar, Radio, ScanText, ScrollText, Search,
-  Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Zap,
+  Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Waypoints, Zap,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
@@ -19,6 +19,7 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
       { to: '/', fr: 'Vue d’ensemble', en: 'Overview', icon: LayoutDashboard },
       { to: '/enterprise', fr: 'Modèle d’entreprise', en: 'Enterprise Model', icon: Building2 },
       { to: '/decision', fr: 'Décision & simulation', en: 'Decision & Sim', icon: Sparkles },
+      { to: '/impact', fr: 'Impact transversal', en: 'Cross-system Impact', icon: Waypoints },
       { to: '/graph', fr: 'Graphe', en: 'Graph', icon: Network },
       { to: '/twin', fr: 'Jumeau numérique', en: 'Digital Twin', icon: Radio },
       { to: '/history', fr: 'Historique du jumeau', en: 'Twin History', icon: History },

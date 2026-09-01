@@ -341,3 +341,26 @@ export interface DecisionAnalysis {
   recommendation: string; verdict: string; aiUsed: boolean
 }
 export interface DecisionResponse { effect: DecisionEffect; analysis: DecisionAnalysis }
+
+export interface ResolvedTarget { id: string; name: string; entityType: string; criticality: number; matchScore: number; resolved: boolean }
+export interface ImpactCriticalItem { id: string; name: string; type: string; depth: number; criticality: number; nodeImpact: number }
+export interface DangerousDependency { id: string; name: string; type: string; directDependents: number }
+export interface FuzzyMatch { id: string; name: string; entityType: string; score: number }
+export interface ImpactAnalysis {
+  target: ResolvedTarget
+  scenario: string
+  affectedTotal: number
+  maxDepth: number
+  affectedByType: Record<string, number>
+  perHourImpact: number
+  worstCaseImpact: number
+  expectedImpact: number
+  maxRecoveryHours: number
+  currency: string
+  criticalItems: ImpactCriticalItem[]
+  dangerousDependencies: DangerousDependency[]
+  mitigations: string[]
+  narrative: string
+  aiUsed: boolean
+  alternatives: FuzzyMatch[]
+}

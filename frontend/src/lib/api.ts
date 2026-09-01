@@ -6,6 +6,7 @@ import type {
   AiAnswer,
   DecisionResponse,
   EnterpriseModel,
+  ImpactAnalysis,
   ScenarioSummary,
   AuditData,
   EntityRisk,
@@ -60,6 +61,9 @@ export const api = {
 
   decideEnterprise: (text: string, lang: string) =>
     fetch(`${BASE}/enterprise/decision`, { method: 'POST', headers: headers(), body: JSON.stringify({ text, lang }) }).then(handle<DecisionResponse>),
+
+  analyzeImpact: (question: string, lang: string) =>
+    fetch(`${BASE}/impact/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ question, lang }) }).then(handle<ImpactAnalysis>),
 
   listScenarios: () => fetch(`${BASE}/enterprise/scenarios`, { headers: headers(false) }).then(handle<ScenarioSummary[]>),
   saveScenario: (name: string, payload: string) =>

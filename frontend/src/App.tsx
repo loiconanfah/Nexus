@@ -23,6 +23,7 @@ import { Admin } from './pages/Admin'
 import { ActionPlan } from './pages/ActionPlan'
 import { EnterpriseModel } from './pages/EnterpriseModel'
 import { DecisionSim } from './pages/DecisionSim'
+import { ImpactIntelligence } from './pages/ImpactIntelligence'
 import { Help } from './pages/Help'
 import { Landing } from './pages/Landing'
 import { DemoChoice } from './pages/DemoChoice'
@@ -34,6 +35,7 @@ const TITLES: Record<string, string> = {
   '/': 'Overview',
   '/enterprise': 'Enterprise Model',
   '/decision': 'Decision & Simulation',
+  '/impact': 'Cross-system Impact',
   '/graph': 'Graph Explorer',
   '/assets': 'Assets',
   '/dependencies': 'Dependencies',
@@ -101,6 +103,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/enterprise" element={<EnterpriseModel />} />
         <Route path="/decision" element={<DecisionSim />} />
+        <Route path="/impact" element={<ImpactIntelligence />} />
         <Route path="/graph" element={<GraphExplorer />} />
         <Route path="/dependencies" element={<DependencyIntelligence />} />
         <Route path="/suppliers" element={<SupplierIntelligence />} />
