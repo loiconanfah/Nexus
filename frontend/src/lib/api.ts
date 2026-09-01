@@ -9,6 +9,8 @@ import type {
   ImpactAnalysis,
   InferenceResult,
   ProposedRelation,
+  RestSource,
+  RestPreview,
   ScenarioSummary,
   AuditData,
   EntityRisk,
@@ -66,6 +68,11 @@ export const api = {
 
   analyzeImpact: (question: string, lang: string) =>
     fetch(`${BASE}/impact/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ question, lang }) }).then(handle<ImpactAnalysis>),
+
+  restPreview: (source: RestSource) =>
+    fetch(`${BASE}/imports/rest/preview`, { method: 'POST', headers: headers(), body: JSON.stringify(source) }).then(handle<RestPreview>),
+  restImport: (source: RestSource, profile: unknown) =>
+    fetch(`${BASE}/imports/rest`, { method: 'POST', headers: headers(), body: JSON.stringify({ source, profile }) }).then(handle<ImportResult>),
 
   inferRelations: () =>
     fetch(`${BASE}/inference/relations`, { method: 'POST', headers: headers() }).then(handle<InferenceResult>),

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Tenancy;
 using Nexus.Connectors;
 using Nexus.Connectors.Files;
+using Nexus.Connectors.Rest;
 using Nexus.Ingestion;
 using Nexus.Ingestion.Mapping;
 
@@ -24,7 +25,8 @@ public sealed class ImportForm
 [Route("api/v1/imports")]
 public sealed class ImportsController(
     ITenantProvider tenantProvider,
-    ImportPipeline pipeline) : NexusController(tenantProvider)
+    ImportPipeline pipeline,
+    IHttpClientFactory httpFactory) : NexusController(tenantProvider)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -35,6 +37,48 @@ public sealed class ImportsController(
     [HttpPost("excel")]
     public Task<IActionResult> ImportExcel([FromForm] ImportForm form, CancellationToken ct) =>
         RunAsync(form, path => new ExcelConnector(new ExcelConnectorConfig(path, form.HasHeader)), ct);
+
+    // ── Connecteur REST/JSON live ──
+    public sealed record RestSource(string Url, string? AuthHeaderName, string? AuthHeaderValue, string? RecordsPath, string? Dataset);
+    public sealed record RestImportRequest(RestSource Source, MappingProfile Profile);
+
+    private HttpClient NewHttp()
+    {
+        var c = httpFactory.CreateClient("rest-connector");
+        c.Timeout = TimeSpan.FromSeconds(30);
+        return c;
+    }
+
+    private RestConnector Connector(RestSource s) => new(NewHttp(),
+        new RestConnectorConfig(s.Url, s.AuthHeaderName, s.AuthHeaderValue, s.RecordsPath, string.IsNullOrWhiteSpace(s.Dataset) ? "rest" : s.Dataset!));
+
+    /// <summary>Teste une source REST et découvre ses colonnes (aide à construire le mapping) — n'écrit rien.</summary>
+    [HttpPost("rest/preview")]
+    public async Task<IActionResult> RestPreview([FromBody] RestSource source, CancellationToken ct)
+    {
+        if (!TryGetTenant(out _, out var error)) return error;
+        if (source is null || string.IsNullOrWhiteSpace(source.Url)) return BadRequest(new { error = "url_required" });
+
+        var connector = Connector(source);
+        var valid = await connector.ValidateConnectionAsync(ct);
+        if (valid.IsFailure) return ToProblem(valid.Error);
+
+        var datasets = await connector.DiscoverAsync(ct);
+        var d = datasets.Count > 0 ? datasets[0] : null;
+        return Ok(new { ok = true, dataset = d?.Name, columns = d?.Columns ?? [], estimatedRows = d?.EstimatedRows });
+    }
+
+    /// <summary>Ingère une source REST/JSON live via le pipeline (read-only, ADR-0008).</summary>
+    [HttpPost("rest")]
+    public async Task<IActionResult> ImportRest([FromBody] RestImportRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (req?.Source is null || string.IsNullOrWhiteSpace(req.Source.Url)) return BadRequest(new { error = "url_required" });
+        if (req.Profile is null) return BadRequest(new { error = "profile_required" });
+
+        var result = await pipeline.ExecuteAsync(tenant, Connector(req.Source), req.Profile, ct: ct);
+        return result.IsSuccess ? Ok(result.Value) : ToProblem(result.Error);
+    }
 
     private async Task<IActionResult> RunAsync(ImportForm form, Func<string, IConnector> connectorFactory, CancellationToken ct)
     {

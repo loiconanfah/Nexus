@@ -5,6 +5,7 @@ import { CheckCircle2, Database, FileUp, GitBranch, Loader2, Sparkles, Upload, W
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { CONNECTORS } from '../lib/connectors'
+import { RestLiveImport } from '../components/RestLiveImport'
 import type { ImportResult } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -246,6 +247,8 @@ export function Onboarding() {
           <div className="px-4 py-3" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{t('Graphe rafraîchi dans tous les centres. Explorez-le dans les vues Graphe et Jumeau numérique.', 'Graph refreshed across all centers. Explore it in the Graph and Digital Twin views.')}</div>
         </div>
       )}
+
+      <RestLiveImport />
     </div>
   )
 }

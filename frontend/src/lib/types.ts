@@ -374,3 +374,8 @@ export interface InferenceResult {
   entitiesScanned?: number; existingRelations?: number
   proposals: ProposedRelation[]
 }
+
+export interface RestSource {
+  url: string; authHeaderName?: string; authHeaderValue?: string; recordsPath?: string; dataset?: string
+}
+export interface RestPreview { ok: boolean; dataset: string; columns: string[]; estimatedRows?: number }
