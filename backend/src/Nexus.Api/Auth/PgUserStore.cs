@@ -67,10 +67,21 @@ public sealed class PgUserStore(NexusDbContext db)
         return rows > 0;
     }
 
-    /// <summary>Amorce l'admin de démo s'il n'existe pas déjà (idempotent).</summary>
+    /// <summary>Amorce l'admin d'amorçage et réaligne son mot de passe / rôle sur la
+    /// valeur configurée (NEXUS_ADMIN_PASSWORD). Le tenant existant est préservé.
+    /// Idempotent : permet de piloter le mot de passe admin par l'environnement.</summary>
     public async Task EnsureSeedAsync(string email, string password, Guid tenant, string role, CancellationToken ct)
     {
-        if (await ExistsAsync(email, ct)) return;
-        await AddAsync(new NexusUser(email, PasswordHasher.Hash(password), tenant, role), ct);
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO app_users (email, password_hash, tenant_id, role)
+            VALUES (@e, @h, @t, @r)
+            ON CONFLICT (email) DO UPDATE
+                SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role;
+            """;
+        P(cmd, "@e", email.Trim()); P(cmd, "@h", PasswordHasher.Hash(password));
+        P(cmd, "@t", tenant); P(cmd, "@r", role);
+        await cmd.ExecuteNonQueryAsync(ct);
     }
 }
