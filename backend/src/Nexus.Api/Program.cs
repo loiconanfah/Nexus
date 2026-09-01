@@ -180,6 +180,15 @@ try
     var store = scope.ServiceProvider.GetRequiredService<PgUserStore>();
     var adminTenant = Guid.TryParse(authCfg.AdminTenantId, out var atid) ? atid : Guid.Empty;
     await store.EnsureSeedAsync(authCfg.AdminEmail, authCfg.AdminPassword, adminTenant, "admin", CancellationToken.None);
+
+    // Comptes de DÉMO dédiés (un par jeu de données), mot de passe démo fixe et
+    // indépendant du mot de passe admin. Chaque compte est sur SON tenant : la page
+    // d'onboarding laisse le visiteur choisir le jeu, puis se connecte au bon espace.
+    const string demoPwd = "lenexus-demo-2026";
+    var cgiTenant = Guid.Parse("c6100000-cf1c-4000-8000-000000000001");
+    var bellTenant = Guid.Parse("be110000-cf1c-4000-8000-000000000002");
+    await store.EnsureSeedAsync("demo-cgi@lenexus.demo", demoPwd, cgiTenant, "admin", CancellationToken.None);
+    await store.EnsureSeedAsync("demo-bell@lenexus.demo", demoPwd, bellTenant, "admin", CancellationToken.None);
 }
 catch (Exception ex)
 {

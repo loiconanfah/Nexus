@@ -88,21 +88,9 @@ export function Login() {
     }
   }
 
-  async function fillDemo() {
-    if (busy) return
-    setMode('signin')
-    setEmail('admin@cgi.demo')
-    setPassword('nexus-demo-2026')
-    setError(null)
-    setBusy(true)
-    try {
-      await login('admin@cgi.demo', 'nexus-demo-2026')
-      navigate('/')
-    } catch {
-      setError(t('Connexion démo impossible.', 'Demo sign-in failed.'))
-    } finally {
-      setBusy(false)
-    }
+  function fillDemo() {
+    // Le choix du jeu de démo se fait sur la page d'onboarding dédiée.
+    navigate('/demo')
   }
 
   return (
@@ -312,7 +300,7 @@ export function Login() {
             }}
           >
             <Building2 size={18} />
-            <span>{t('Accès démo (CGI Inc.)', 'Demo access (CGI Inc.)')}</span>
+            <span>{t('Accès démo — choisir un jeu', 'Demo access — choose a dataset')}</span>
           </button>
 
           {/* Pied */}

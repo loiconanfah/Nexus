@@ -25,6 +25,7 @@ import { EnterpriseModel } from './pages/EnterpriseModel'
 import { DecisionSim } from './pages/DecisionSim'
 import { Help } from './pages/Help'
 import { Landing } from './pages/Landing'
+import { DemoChoice } from './pages/DemoChoice'
 import { Login } from './pages/Login'
 import { getTenantId } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -63,6 +64,9 @@ export default function App() {
   // Pages publiques plein écran (hors du layout applicatif).
   if (pathname === '/welcome') {
     return <Landing />
+  }
+  if (pathname === '/demo') {
+    return <DemoChoice />
   }
   if (pathname === '/login') {
     return <Login />

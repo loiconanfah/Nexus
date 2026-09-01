@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Share2, ArrowRight, ArrowUpRight, PlayCircle, ShieldCheck,
@@ -6,7 +5,6 @@ import {
   Activity, Briefcase, Landmark, HeartPulse, Building2, Factory, Zap, ChevronDown, KeyRound,
   Scale, Menu,
 } from 'lucide-react'
-import { login } from '../lib/auth'
 import { useLang } from '../lib/i18n'
 
 const mono = 'var(--font-mono)'
@@ -34,15 +32,6 @@ const DARK_VARS: React.CSSProperties = {
 export function Landing() {
   const navigate = useNavigate()
   const { lang, setLang, t } = useLang()
-  const [busy, setBusy] = useState(false)
-
-  async function tryDemo() {
-    if (busy) return
-    setBusy(true)
-    try { await login('admin@cgi.demo', 'nexus-demo-2026'); navigate('/') }
-    catch { navigate('/login') }
-    finally { setBusy(false) }
-  }
 
   return (
     <div className="slb h-full overflow-y-auto" style={{ ...DARK_VARS, background: '#050506', color: '#f3f3f6', fontFamily: 'var(--font-inter)' }}>
@@ -94,7 +83,7 @@ export function Landing() {
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <BoxBtn onClick={() => navigate('/login?signup=1')} label={t('Créer un compte', 'Create an account')} primary />
-            <BoxBtn onClick={tryDemo} label={busy ? t('Ouverture…', 'Opening…') : t('Explorer la démo', 'Explore the demo')} icon={<PlayCircle size={15} />} />
+            <BoxBtn onClick={() => navigate('/demo')} label={t('Explorer la démo', 'Explore the demo')} icon={<PlayCircle size={15} />} />
           </div>
         </div>
       </section>
@@ -211,7 +200,7 @@ export function Landing() {
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <BoxBtn onClick={() => navigate('/login?signup=1')} label={t('Créer un compte', 'Create an account')} primary />
-            <BoxBtn onClick={tryDemo} label={t('Explorer la démo', 'Explore the demo')} icon={<PlayCircle size={15} />} />
+            <BoxBtn onClick={() => navigate('/demo')} label={t('Explorer la démo', 'Explore the demo')} icon={<PlayCircle size={15} />} />
           </div>
         </div>
       </section>
