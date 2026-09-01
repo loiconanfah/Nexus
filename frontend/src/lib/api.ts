@@ -172,9 +172,12 @@ export const api = {
     const form = new FormData()
     form.append('file', file, filename)
     form.append('profile', profile)
+    // headers(false) = X-Tenant-Id + Authorization Bearer, sans Content-Type
+    // (le navigateur pose lui-même la frontière multipart). Sans le Bearer,
+    // l'API renvoie 401 en production (tout est protégé par défaut).
     return fetch(`${BASE}/imports/csv`, {
       method: 'POST',
-      headers: { 'X-Tenant-Id': getTenantId() },
+      headers: headers(false),
       body: form,
     }).then(handle<ImportResult>)
   },
