@@ -110,13 +110,13 @@ services:
       # ⚠️ Si l'URL réelle de l'API diffère, corriger les 3 destinations ci-dessous.
       - type: rewrite
         source: /api/*
-        destination: https://nexus-api.onrender.com/api/*
+        destination: https://nexus-api-rzh9.onrender.com/api/*
       - type: rewrite
         source: /health
-        destination: https://nexus-api.onrender.com/health
+        destination: https://nexus-api-rzh9.onrender.com/health
       - type: rewrite
         source: /openapi/*
-        destination: https://nexus-api.onrender.com/openapi/*
+        destination: https://nexus-api-rzh9.onrender.com/openapi/*
       # Fallback SPA : toute autre route → index.html
       - type: rewrite
         source: /*
