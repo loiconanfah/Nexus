@@ -57,6 +57,7 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
     items: [
       { to: '/assets', fr: 'Actifs', en: 'Assets', icon: Boxes },
       { to: '/onboarding', fr: 'Intégration', en: 'Onboarding', icon: Upload },
+      { to: '/inference', fr: 'Dépendances inférées', en: 'Inferred Deps', icon: GitBranch },
       { to: '/integrations', fr: 'Connecteurs', en: 'Integrations', icon: Blocks },
     ],
   },

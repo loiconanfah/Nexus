@@ -364,3 +364,13 @@ export interface ImpactAnalysis {
   aiUsed: boolean
   alternatives: FuzzyMatch[]
 }
+
+export interface ProposedRelation {
+  source: string; sourceType: string; target: string; targetType: string
+  relationType: string; confidence: number; rationale: string
+}
+export interface InferenceResult {
+  usedAi: boolean; message: string
+  entitiesScanned?: number; existingRelations?: number
+  proposals: ProposedRelation[]
+}

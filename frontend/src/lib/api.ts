@@ -7,6 +7,8 @@ import type {
   DecisionResponse,
   EnterpriseModel,
   ImpactAnalysis,
+  InferenceResult,
+  ProposedRelation,
   ScenarioSummary,
   AuditData,
   EntityRisk,
@@ -64,6 +66,11 @@ export const api = {
 
   analyzeImpact: (question: string, lang: string) =>
     fetch(`${BASE}/impact/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ question, lang }) }).then(handle<ImpactAnalysis>),
+
+  inferRelations: () =>
+    fetch(`${BASE}/inference/relations`, { method: 'POST', headers: headers() }).then(handle<InferenceResult>),
+  ingestInferredRelations: (relations: ProposedRelation[]) =>
+    fetch(`${BASE}/inference/relations/ingest`, { method: 'POST', headers: headers(), body: JSON.stringify({ relations }) }).then(handle<{ created: number; unresolved: number }>),
 
   listScenarios: () => fetch(`${BASE}/enterprise/scenarios`, { headers: headers(false) }).then(handle<ScenarioSummary[]>),
   saveScenario: (name: string, payload: string) =>
