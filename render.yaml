@@ -115,6 +115,9 @@ services:
         source: /health
         destination: https://nexus-api-rzh9.onrender.com/health
       - type: rewrite
+        source: /health/*
+        destination: https://nexus-api-rzh9.onrender.com/health/*
+      - type: rewrite
         source: /openapi/*
         destination: https://nexus-api-rzh9.onrender.com/openapi/*
       # Fallback SPA : toute autre route → index.html

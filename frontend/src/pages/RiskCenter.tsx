@@ -71,7 +71,7 @@ export function RiskCenter() {
       </div>
 
       {/* Zone dynamique */}
-      <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         {/* Colonne centrale : matrice + table */}
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <RiskMatrix rows={rows} selectedId={selected?.id} onSelect={setSelectedId} />
@@ -138,9 +138,9 @@ function RiskMatrix({ rows, selectedId, onSelect }: { rows: RiskRow[]; selectedI
 function RiskTable({ rows, selectedId, onSelect }: { rows: RiskRow[]; selectedId?: string; onSelect: (id: string) => void }) {
   const { t } = useLang()
   return (
-    <div className="overflow-x-auto rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+    <div className="overflow-auto rounded-sm border" style={{ borderColor: 'var(--nx-border)', maxHeight: '26rem' }}>
       <table className="w-full text-left">
-        <thead>
+        <thead className="sticky top-0 z-10" style={{ background: 'var(--nx-surface-container)' }}>
           <tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
             {[t('Risque', 'Risk'), t('Actif', 'Asset'), t('Impact métier', 'Business Impact'), t('Propagation', 'Propagation'), t('Dépendants', 'Dependents'), t('Score', 'Score'), t('Statut', 'Status')].map((h, i) => (
               <th key={h} className={`px-3 py-2 ${i >= 3 && i <= 5 ? 'text-right' : ''}`} style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{h}</th>
@@ -188,7 +188,7 @@ function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onCl
   ]
 
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-6 rounded-sm border p-5 lg:w-[320px]" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
+    <aside className="flex w-full shrink-0 flex-col gap-6 rounded-sm border p-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-8rem)] lg:w-[320px] lg:self-start lg:overflow-y-auto" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
       <div className="flex items-center justify-between">
         <h3 style={{ fontFamily: geist, fontSize: 18, fontWeight: 600, color: 'var(--nx-text)' }}>{t('Risque prioritaire', 'Priority Risk')}</h3>
         <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>

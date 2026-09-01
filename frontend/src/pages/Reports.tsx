@@ -108,7 +108,7 @@ function ReportPreview({ report, type, threshold }: { report: ExecutiveReport; t
     .filter((r) => type !== 'infra' || INFRA_TYPES.has(r.entityType))
   const recos = report.recommendations.filter((_, i) => threshold === 'LOW' || i < (threshold === 'HIGH' ? 2 : 4))
   return (
-    <div className="relative w-full max-w-4xl overflow-hidden rounded-lg border shadow-2xl" style={{ background: '#1a1a1e', borderColor: 'var(--nx-border)' }}>
+    <div className="relative w-full max-w-4xl overflow-hidden rounded-lg border shadow-2xl" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
       {/* Header */}
       <header className="flex items-end justify-between border-b p-8" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
         <div>
