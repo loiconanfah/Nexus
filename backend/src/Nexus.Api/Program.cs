@@ -131,6 +131,18 @@ builder.Services.AddCors(o => o.AddPolicy("nexus", p =>
 // --- Modules NEXUS ---
 var postgres = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("La chaîne de connexion 'Postgres' est requise.");
+// Render (et d'autres hébergeurs) fournissent l'URL au format postgres://user:pass@host/db.
+// Npgsql attend le format « Host=...;Port=...;Database=... » : on convertit si nécessaire.
+if (postgres.StartsWith("postgres://") || postgres.StartsWith("postgresql://"))
+{
+    var pgUri = new Uri(postgres);
+    var pgUserInfo = pgUri.UserInfo.Split(':', 2);
+    var pgUser = Uri.UnescapeDataString(pgUserInfo[0]);
+    var pgPass = pgUserInfo.Length > 1 ? Uri.UnescapeDataString(pgUserInfo[1]) : "";
+    var pgDb = Uri.UnescapeDataString(pgUri.AbsolutePath.TrimStart('/'));
+    var pgPort = pgUri.Port > 0 ? pgUri.Port : 5432;
+    postgres = $"Host={pgUri.Host};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPass};SSL Mode=Prefer;Trust Server Certificate=true";
+}
 builder.Services.AddNexusInfrastructure(postgres);
 builder.Services.AddNexusGraph(options =>
     builder.Configuration.GetSection(Neo4jOptions.SectionName).Bind(options));

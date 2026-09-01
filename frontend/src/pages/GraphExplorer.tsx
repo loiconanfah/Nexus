@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
@@ -15,6 +15,8 @@ import { layoutGraph } from '../lib/layout'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
+
+const Graph3D = lazy(() => import('../components/Graph3D').then((m) => ({ default: m.Graph3D })))
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -112,6 +114,7 @@ function GraphInner() {
   const { data, isLoading, error } = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<GraphEntityRecord | null>(null)
+  const [view, setView] = useState<'flow' | 'holo'>('flow')
 
   // Focus depuis la recherche globale ou le Jumeau numérique (?focus=id).
   useEffect(() => {
@@ -144,29 +147,64 @@ function GraphInner() {
     return <div className="rounded-sm border p-6" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Le graphe est vide — importez des données depuis la Vue d’ensemble.', 'Graph is empty — import data from the Overview.')}</div>
 
   return (
-    <div className="relative h-[calc(100vh-7rem)] overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
-      {/* Glow de fond */}
-      <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,229,255,0.05) 0%, transparent 60%)' }} />
-
-      {/* Recherche */}
-      <div className="absolute left-3 top-3 z-20 flex items-center gap-2 rounded px-2 py-1.5" style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', border: '1px solid var(--nx-border)' }}>
-        <Network size={14} style={{ color: 'var(--nx-text-muted)' }} />
-        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Trouver un nœud…', 'Find a node…')} className="w-40 bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
+    <div className="flex h-[calc(100vh-7rem)] flex-col gap-2">
+      {/* En-tête : bascule de vue + recherche */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-sm border p-0.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+            <ViewTab active={view === 'flow'} onClick={() => setView('flow')} icon={<Network size={14} />} label={t('Plan 2D', '2D map')} />
+            <ViewTab active={view === 'holo'} onClick={() => setView('holo')} icon={<Boxes size={14} />} label={t('Hologramme 3D', '3D hologram')} />
+          </div>
+          <div className="flex items-center gap-2 rounded px-2 py-1.5" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)' }}>
+            <ScanSearch size={14} style={{ color: 'var(--nx-text-muted)' }} />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('Trouver un nœud…', 'Find a node…')} className="w-40 bg-transparent outline-none" style={{ color: 'var(--nx-text)', fontSize: 13 }} />
+          </div>
+        </div>
+        <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
+          {data.nodes.length} {t('nœuds', 'nodes')} · {data.edges.length} {t('liens', 'links')}
+        </span>
       </div>
 
-      <ReactFlow
-        nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView minZoom={0.2}
-        proOptions={{ hideAttribution: true }}
-        onNodeClick={(_, n) => setSelected((n.data as NodeData).rec)}
-        onPaneClick={() => setSelected(null)}
-        style={{ background: 'var(--nx-panel)' }}
-      >
-        <Background variant={BackgroundVariant.Lines} gap={40} color="rgba(59,73,76,0.15)" />
-        <Panel position="top-center"><CommandBar selected={selected?.id ?? null} onSimulate={() => selected && navigate(`/simulations?asset=${selected.id}&name=${encodeURIComponent(selected.name)}`)} /></Panel>
-      </ReactFlow>
+      {/* Canevas */}
+      <div className="relative flex-1 overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+        <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,229,255,0.05) 0%, transparent 60%)' }} />
 
-      {selected && <Inspector rec={selected} onClose={() => setSelected(null)} onAnalyze={() => navigate(`/simulations?asset=${selected.id}&name=${encodeURIComponent(selected.name)}`)} />}
+        {view === 'flow' ? (
+          <ReactFlow
+            nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView minZoom={0.2}
+            proOptions={{ hideAttribution: true }}
+            onNodeClick={(_, n) => setSelected((n.data as NodeData).rec)}
+            onPaneClick={() => setSelected(null)}
+            style={{ background: 'var(--nx-panel)' }}
+          >
+            <Background variant={BackgroundVariant.Lines} gap={40} color="rgba(59,73,76,0.15)" />
+            <Panel position="top-center"><CommandBar selected={selected?.id ?? null} onSimulate={() => selected && navigate(`/simulations?asset=${selected.id}&name=${encodeURIComponent(selected.name)}`)} /></Panel>
+          </ReactFlow>
+        ) : (
+          <Suspense fallback={<div className="flex h-full items-center justify-center" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DE L’HOLOGRAMME…', 'LOADING HOLOGRAM…')}</div>}>
+            <Graph3D
+              nodes={data.nodes}
+              edges={data.edges.map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
+              query={query}
+              selectedId={selected?.id ?? null}
+              onSelect={(id) => setSelected(data.nodes.find((n) => n.id === id) ?? null)}
+            />
+          </Suspense>
+        )}
+
+        {selected && <Inspector rec={selected} onClose={() => setSelected(null)} onAnalyze={() => navigate(`/simulations?asset=${selected.id}&name=${encodeURIComponent(selected.name)}`)} />}
+      </div>
     </div>
+  )
+}
+
+function ViewTab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 transition-colors"
+      style={{ fontSize: 12.5, fontWeight: 500, fontFamily: mono, letterSpacing: '0.02em',
+        color: active ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', background: active ? CYAN : 'transparent' }}>
+      {icon}{label}
+    </button>
   )
 }
 
