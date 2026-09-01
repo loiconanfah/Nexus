@@ -41,12 +41,23 @@ public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatComple
             return BadRequest(new { error = "endpoint_required_for_azure" });
 
         config.Set(req.Provider, req.ApiKey, req.Endpoint, req.Model);
-        // Si aucun modèle n'est fourni (ou pour Anthropic/OpenAI/Gemini), on choisit
-        // automatiquement un modèle de texte fiable — évite les défauts obsolètes (ex. 404).
-        if (string.IsNullOrWhiteSpace(req.Model) && req.Provider != "azure-openai")
+        // Garantit un modèle qui répond VRAIMENT. Si aucun modèle n'est fourni, ou si
+        // celui saisi échoue à l'appel réel (ex. gemini-2.5-pro : indisponible/quota sur
+        // le palier gratuit → repli silencieux sur les règles), on bascule automatiquement
+        // sur un modèle de texte fiable (flash). Un modèle payant qui fonctionne est conservé.
+        if (req.Provider != "azure-openai")
         {
-            var picked = await chat.PickWorkingModelAsync(ct);
-            if (!string.IsNullOrWhiteSpace(picked)) config.SetModel(picked!);
+            var needPick = string.IsNullOrWhiteSpace(req.Model);
+            if (!needPick)
+            {
+                var (works, _) = await chat.TestAsync(ct);
+                needPick = !works;
+            }
+            if (needPick)
+            {
+                var picked = await chat.PickWorkingModelAsync(ct);
+                if (!string.IsNullOrWhiteSpace(picked)) config.SetModel(picked!);
+            }
         }
         var (provider, configured, model, host) = config.Status();
         return Ok(new { provider, configured, model, endpointHost = host });
