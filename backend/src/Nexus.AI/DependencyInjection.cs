@@ -15,7 +15,9 @@ public static class DependencyInjection
         // l'environnement / la section Nexus:AI au démarrage.
         services.AddSingleton(sp =>
         {
-            var cfg = new AiRuntimeConfig();
+            // ICurrentTenant / IAiConfigStore sont fournis par la couche API (Postgres).
+            // Optionnels : sans eux, la config reste globale en memoire (tests, outils).
+            var cfg = new AiRuntimeConfig(sp.GetService<ICurrentTenant>(), sp.GetService<IAiConfigStore>());
             cfg.SeedFromEnvironment(sp.GetRequiredService<IOptions<AiOptions>>().Value);
             return cfg;
         });

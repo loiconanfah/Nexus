@@ -122,7 +122,7 @@ function AiIntegration() {
 
       <div className="flex flex-col gap-3 p-4">
         <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>
-          {t('Ajoutez une clé pour activer la naturalisation des réponses de l’Analyste IA et le mapping assisté. La clé est stockée côté serveur en mémoire — jamais dans le navigateur, jamais renvoyée.', 'Add a key to enable AI Analyst naturalization and assisted mapping. The key is stored server-side in memory — never in the browser, never returned.')}
+          {t('Ajoutez votre clé pour activer la naturalisation des réponses de l’Analyste IA et le mapping assisté. Elle est enregistrée côté serveur, propre à votre espace de travail — elle persiste entre les sessions et les redéploiements, n’est jamais renvoyée au navigateur ni partagée avec les autres tenants.', 'Add your key to enable AI Analyst naturalization and assisted mapping. It is stored server-side, scoped to your workspace — it persists across sessions and redeploys, is never returned to the browser and never shared with other tenants.')}
         </p>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -184,7 +184,7 @@ function AiIntegration() {
             <X size={14} /> {t('Effacer', 'Clear')}
           </button>
         </div>
-        <p style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('Production : préférez une variable d’environnement (ANTHROPIC_API_KEY) ou un gestionnaire de secrets.', 'Production: prefer an environment variable (ANTHROPIC_API_KEY) or a secrets manager.')}</p>
+        <p style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('Votre clé est conservée dans la base privée du serveur, rattachée à votre espace de travail. L’administrateur peut aussi définir une clé globale (variable d’environnement) comme repli.', 'Your key is kept in the server’s private database, scoped to your workspace. An operator may also set a global key (environment variable) as a fallback.')}</p>
       </div>
     </div>
   )
