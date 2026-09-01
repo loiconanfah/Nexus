@@ -55,6 +55,8 @@ export const api = {
   overview: () => fetch(`${BASE}/overview`, { headers: headers(false) }).then(handle<Overview>),
 
   enterpriseModel: () => fetch(`${BASE}/enterprise/model`, { headers: headers(false) }).then(handle<EnterpriseModel>),
+  saveEnterpriseModel: (body: { companyName: string; industry: string; drivers: Record<string, number> }) =>
+    fetch(`${BASE}/enterprise/model`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) }).then(handle<EnterpriseModel>),
 
   decideEnterprise: (text: string, lang: string) =>
     fetch(`${BASE}/enterprise/decision`, { method: 'POST', headers: headers(), body: JSON.stringify({ text, lang }) }).then(handle<DecisionResponse>),

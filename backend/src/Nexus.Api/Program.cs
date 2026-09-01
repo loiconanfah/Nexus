@@ -65,6 +65,7 @@ builder.Services.AddScoped<Nexus.Api.History.HistoryService>();
 builder.Services.AddScoped<Nexus.Api.Business.DecisionInterpreter>();
 builder.Services.AddScoped<Nexus.Api.Business.DecisionAnalyzer>();
 builder.Services.AddScoped<Nexus.Api.Business.ScenarioStore>();
+builder.Services.AddScoped<Nexus.Api.Business.BusinessStore>();
 
 // --- Authentification / autorisation (durcissement, article 41) ---
 var authCfg = new AuthConfig();

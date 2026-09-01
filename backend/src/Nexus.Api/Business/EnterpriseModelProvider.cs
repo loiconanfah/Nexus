@@ -123,4 +123,16 @@ public static class EnterpriseModelProvider
         };
         return Build(company, BellDrivers(), divisions, segments, new DomainQuality(92, 85, 88, 90, 84));
     }
+
+    // ── Modele PERSONNALISE (saisi via le formulaire, stocke par tenant) ──
+    public static EnterpriseModel BuildCustom(string name, string industry, BusinessDrivers d)
+    {
+        var company = new CompanyProfile(
+            string.IsNullOrWhiteSpace(name) ? "Mon organisation" : name.Trim(),
+            string.IsNullOrWhiteSpace(industry) ? "—" : industry.Trim(),
+            Employees: d.Headcount, AnnualRevenue: 0,
+            Divisions: 0, Locations: 0, Customers: d.Units, Suppliers: 0, Projects: 0);
+        // Pas de repartition divisions/segments saisie : le socle financier suffit.
+        return Build(company, d, [], [], new DomainQuality(75, 75, 75, 75, 75));
+    }
 }

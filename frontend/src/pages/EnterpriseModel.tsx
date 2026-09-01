@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
@@ -43,7 +44,7 @@ const QUALITY_LABEL: [keyof EM['dataQuality'], string, string][] = [
 export function EnterpriseModel() {
   const { t, lang } = useLang()
   const nav = useNavigate()
-  const { data, isLoading, error } = useQuery({ queryKey: ['enterprise-model'], queryFn: api.enterpriseModel })
+  const { data, isLoading, error, refetch } = useQuery({ queryKey: ['enterprise-model'], queryFn: api.enterpriseModel })
 
   const nf = new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA')
   function money(v: number, cur: string): string {
@@ -58,15 +59,7 @@ export function EnterpriseModel() {
   if (!data) return null
 
   if (!data.configured) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border p-16 text-center" style={{ borderColor: 'var(--nx-border)' }}>
-        <Building2 size={40} style={{ color: 'var(--nx-outline)' }} />
-        <h2 style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{t('Modèle d’entreprise non configuré', 'Enterprise model not configured')}</h2>
-        <p style={{ fontSize: 14, color: 'var(--nx-text-muted)', maxWidth: 460 }}>
-          {t('Importez vos données financières et opérationnelles pour construire le jumeau décisionnel de votre entreprise.', 'Import your financial and operational data to build your decision twin.')}
-        </p>
-      </div>
-    )
+    return <ModelWizard onDone={() => refetch()} />
   }
 
   const { company, pnl, cash, currency } = data
@@ -285,5 +278,191 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
       <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{title}</h3>
       {children}
     </div>
+  )
+}
+
+// ── Formulaire multi-étapes : créer un modèle d'entreprise quand il n'existe pas ──
+type WField = { key: string; fr: string; en: string; pct?: boolean }
+const WIZARD_STEPS: { title: [string, string]; hint: [string, string]; fields: WField[] }[] = [
+  {
+    title: ['Revenus', 'Revenue'],
+    hint: ['Combien vend l’entreprise, et à quel prix.', 'How much the company sells, and at what price.'],
+    fields: [
+      { key: 'units', fr: 'Unités / abonnés (par an)', en: 'Units / subscribers (per year)' },
+      { key: 'avgPrice', fr: 'Prix moyen unitaire', en: 'Average unit price' },
+      { key: 'cogsPercent', fr: 'Coût des ventes (% du revenu)', en: 'Cost of sales (% of revenue)', pct: true },
+      { key: 'churnRate', fr: 'Attrition annuelle (%)', en: 'Annual churn (%)', pct: true },
+    ],
+  },
+  {
+    title: ['Effectif', 'Workforce'],
+    hint: ['La masse salariale et sa part facturable.', 'Payroll and its billable share.'],
+    fields: [
+      { key: 'headcount', fr: 'Effectif total', en: 'Total headcount' },
+      { key: 'avgSalary', fr: 'Salaire moyen chargé', en: 'Average loaded salary' },
+      { key: 'billableRatio', fr: 'Taux facturable (%)', en: 'Billable ratio (%)', pct: true },
+    ],
+  },
+  {
+    title: ['Dépenses (OPEX)', 'Operating expenses'],
+    hint: ['Dépenses annuelles hors salaires.', 'Annual expenses excluding salaries.'],
+    fields: [
+      { key: 'marketing', fr: 'Marketing', en: 'Marketing' },
+      { key: 'rnd', fr: 'R&D', en: 'R&D' },
+      { key: 'ga', fr: 'Frais généraux & admin', en: 'General & admin' },
+    ],
+  },
+  {
+    title: ['Capital & impôts', 'Capital & taxes'],
+    hint: ['Amortissements, dette, fiscalité, trésorerie.', 'Depreciation, debt, taxes, cash.'],
+    fields: [
+      { key: 'depreciation', fr: 'Amortissements', en: 'Depreciation' },
+      { key: 'interest', fr: 'Charges d’intérêts', en: 'Interest expense' },
+      { key: 'taxRate', fr: 'Taux d’imposition (%)', en: 'Tax rate (%)', pct: true },
+      { key: 'cashOnHand', fr: 'Trésorerie disponible', en: 'Cash on hand' },
+    ],
+  },
+]
+
+function ModelWizard({ onDone }: { onDone: () => void }) {
+  const { t } = useLang()
+  const [step, setStep] = useState(0) // 0 = identité, 1..4 = leviers
+  const [form, setForm] = useState<Record<string, string>>({ company: '', industry: '' })
+  const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
+
+  const save = useMutation({
+    mutationFn: api.saveEnterpriseModel,
+    onSuccess: () => onDone(),
+  })
+
+  const TOTAL = WIZARD_STEPS.length + 1 // +1 pour l'étape identité
+  const num = (k: string) => Number.parseFloat(form[k] || '') || 0
+  const identityOk = form.company.trim().length > 0
+  const revenueOk = num('units') > 0 && num('avgPrice') > 0
+  const canNext = step === 0 ? identityOk : step === 1 ? revenueOk : true
+
+  function submit() {
+    const pct = (k: string) => num(k) / 100
+    const drivers = {
+      units: num('units'), avgPrice: num('avgPrice'), cogsPercent: pct('cogsPercent'),
+      headcount: num('headcount'), avgSalary: num('avgSalary'), billableRatio: pct('billableRatio'),
+      marketing: num('marketing'), rnd: num('rnd'), ga: num('ga'),
+      depreciation: num('depreciation'), taxRate: pct('taxRate'), interest: num('interest'),
+      cashOnHand: num('cashOnHand'), churnRate: pct('churnRate'),
+    }
+    save.mutate({ companyName: form.company.trim(), industry: form.industry.trim(), drivers })
+  }
+
+  const wz = step >= 1 ? WIZARD_STEPS[step - 1] : null
+
+  return (
+    <div className="mx-auto flex max-w-xl flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Building2 size={22} style={{ color: CYAN }} />
+          <h2 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>
+            {t('Créer le modèle d’entreprise', 'Create the enterprise model')}
+          </h2>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
+          {t(
+            'Renseignez les leviers de votre organisation. Le jumeau décisionnel (P&L, trésorerie, KPIs) est ensuite calculé automatiquement.',
+            'Enter your organization’s drivers. The decision twin (P&L, cash, KPIs) is then computed automatically.',
+          )}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-1.5">
+        {Array.from({ length: TOTAL }).map((_, i) => (
+          <div key={i} className="h-1 flex-1 rounded-full" style={{ background: i <= step ? CYAN : 'var(--nx-border)' }} />
+        ))}
+      </div>
+
+      <div className="rounded-lg border p-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+        <div className="mb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>
+          {t('Étape', 'Step')} {step + 1} / {TOTAL}
+        </div>
+        {step === 0 ? (
+          <>
+            <h3 className="mb-4" style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{t('Identité', 'Identity')}</h3>
+            <WInput label={t('Nom de l’entreprise', 'Company name')} value={form.company} onChange={(v) => set('company', v)} placeholder={t('Mon organisation', 'My organization')} />
+            <WInput label={t('Secteur d’activité', 'Industry')} value={form.industry} onChange={(v) => set('industry', v)} placeholder={t('ex. Télécommunications', 'e.g. Telecommunications')} />
+          </>
+        ) : wz ? (
+          <>
+            <h3 style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{t(wz.title[0], wz.title[1])}</h3>
+            <p className="mb-4" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t(wz.hint[0], wz.hint[1])}</p>
+            {wz.fields.map((f) => (
+              <WInput
+                key={f.key} numeric suffix={f.pct ? '%' : undefined}
+                label={t(f.fr, f.en)} value={form[f.key] || ''} onChange={(v) => set(f.key, v)}
+                placeholder={f.pct ? '0–100' : '0'}
+              />
+            ))}
+          </>
+        ) : null}
+
+        {step === 1 && !revenueOk && (
+          <p style={{ fontSize: 12, color: 'var(--nx-outline)' }}>
+            {t('Unités et prix moyen sont requis (> 0).', 'Units and average price are required (> 0).')}
+          </p>
+        )}
+        {save.isError && (
+          <p style={{ fontSize: 12, color: NEG }}>{(save.error as Error).message}</p>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0}
+          className="rounded-md border px-4 py-2 text-sm"
+          style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', opacity: step === 0 ? 0.4 : 1 }}
+        >
+          {t('Précédent', 'Back')}
+        </button>
+        {step < TOTAL - 1 ? (
+          <button
+            onClick={() => canNext && setStep((s) => s + 1)}
+            disabled={!canNext}
+            className="flex items-center gap-1.5 rounded-md px-5 py-2 text-sm font-medium"
+            style={{ background: canNext ? CYAN : 'var(--nx-border)', color: canNext ? '#04121a' : 'var(--nx-text-muted)' }}
+          >
+            {t('Suivant', 'Next')} <ArrowRight size={15} />
+          </button>
+        ) : (
+          <button
+            onClick={submit}
+            disabled={save.isPending || !revenueOk}
+            className="rounded-md px-5 py-2 text-sm font-medium"
+            style={{ background: CYAN, color: '#04121a', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}
+          >
+            {save.isPending ? t('Création…', 'Creating…') : t('Créer le modèle', 'Create model')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function WInput({ label, value, onChange, placeholder, numeric, suffix }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; numeric?: boolean; suffix?: string
+}) {
+  return (
+    <label className="mb-3 block">
+      <span className="mb-1 block" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{label}</span>
+      <div className="flex items-center rounded-md border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)' }}>
+        <input
+          type={numeric ? 'number' : 'text'}
+          inputMode={numeric ? 'decimal' : undefined}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-transparent px-3 py-2 outline-none"
+          style={{ fontFamily: numeric ? mono : 'inherit', fontSize: 14, color: 'var(--nx-text)' }}
+        />
+        {suffix && <span className="px-3" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-outline)' }}>{suffix}</span>}
+      </div>
+    </label>
   )
 }

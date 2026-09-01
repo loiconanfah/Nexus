@@ -13,14 +13,39 @@ public sealed class EnterpriseController(
     ITenantProvider tenantProvider,
     DecisionInterpreter interpreter,
     DecisionAnalyzer analyzer,
-    ScenarioStore scenarios) : NexusController(tenantProvider)
+    ScenarioStore scenarios,
+    BusinessStore business) : NexusController(tenantProvider)
 {
+    // Modèle personnalisé (saisi via le formulaire) prioritaire ; sinon jeux de démo (CGI/Bell).
+    private async Task<EnterpriseModel> ResolveModelAsync(Guid tenant, CancellationToken ct)
+    {
+        var stored = await business.GetAsync(tenant, ct);
+        return stored is not null
+            ? EnterpriseModelProvider.BuildCustom(stored.CompanyName, stored.Industry, stored.Drivers)
+            : EnterpriseModelProvider.ForTenant(tenant);
+    }
+
     /// <summary>État courant du modèle d'entreprise (leviers → états dérivés).</summary>
     [HttpGet("model")]
-    public IActionResult GetModel()
+    public async Task<IActionResult> GetModel(CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
-        return Ok(EnterpriseModelProvider.ForTenant(tenant));
+        return Ok(await ResolveModelAsync(tenant, ct));
+    }
+
+    public sealed record SaveModelRequest(string CompanyName, string Industry, BusinessDrivers Drivers);
+
+    /// <summary>Crée / met à jour le modèle d'entreprise du tenant depuis le formulaire.</summary>
+    [HttpPut("model")]
+    public async Task<IActionResult> SaveModel([FromBody] SaveModelRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (req is null || req.Drivers is null || string.IsNullOrWhiteSpace(req.CompanyName))
+            return BadRequest(new { error = "company_and_drivers_required" });
+        if (req.Drivers.Units <= 0 || req.Drivers.AvgPrice <= 0)
+            return BadRequest(new { error = "revenue_drivers_required" });
+        await business.SaveAsync(tenant, req.CompanyName, req.Industry ?? "", req.Drivers, ct);
+        return Ok(await ResolveModelAsync(tenant, ct));
     }
 
     public sealed record DecisionRequest(string Text, string? Lang);
@@ -36,7 +61,7 @@ public sealed class EnterpriseController(
         if (!TryGetTenant(out var tenant, out var error)) return error;
         if (req is null || string.IsNullOrWhiteSpace(req.Text)) return BadRequest(new { error = "text_required" });
 
-        var model = EnterpriseModelProvider.ForTenant(tenant);
+        var model = await ResolveModelAsync(tenant, ct);
         if (!model.Configured) return BadRequest(new { error = "model_not_configured" });
 
         var lang = req.Lang == "en" ? "en" : "fr";
