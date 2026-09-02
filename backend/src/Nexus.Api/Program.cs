@@ -85,6 +85,13 @@ authCfg.AdminEmail = Environment.GetEnvironmentVariable("NEXUS_ADMIN_EMAIL") ?? 
 authCfg.AdminPassword = Environment.GetEnvironmentVariable("NEXUS_ADMIN_PASSWORD") ?? authCfg.AdminPassword;
 authCfg.AdminTenantId = Environment.GetEnvironmentVariable("NEXUS_ADMIN_TENANT") ?? authCfg.AdminTenantId;
 if (Environment.GetEnvironmentVariable("NEXUS_ALLOW_HEADER_TENANT") is "true" or "1") authCfg.AllowHeaderTenant = true;
+// Ceinture de sécurité : le tenant par en-tête (contournement d'isolation) est
+// INTERDIT en production, même s'il a été activé par erreur via la variable.
+if (builder.Environment.IsProduction() && authCfg.AllowHeaderTenant)
+{
+    authCfg.AllowHeaderTenant = false;
+    Log.Warning("NEXUS_ALLOW_HEADER_TENANT ignoré en Production (isolation multi-tenant forcée).");
+}
 if (Environment.GetEnvironmentVariable("NEXUS_ALLOW_REGISTRATION") is "false" or "0") authCfg.AllowSelfRegistration = false;
 
 var usingDevJwt = string.IsNullOrWhiteSpace(authCfg.JwtKey);
