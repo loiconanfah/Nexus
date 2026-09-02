@@ -150,14 +150,17 @@ interface Props {
   selectedId?: string | null
   onSelect?: (id: string) => void
   sim?: SimCascade | null
+  /** Impact € par nœud (affiché dans l'infobulle pendant une simulation). */
+  impactById?: Record<string, number>
 }
 
 interface Hover { name: string; sub: string; x: number; y: number }
 
-export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim }: Props) {
+export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impactById }: Props) {
   const { t } = useLang()
   const mountRef = useRef<HTMLDivElement>(null)
   const simRef = useRef<SimState | null>(null)
+  const impactRef = useRef<Record<string, number>>({}); impactRef.current = impactById ?? {}
   const sceneRef = useRef<THREE.Scene | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const orbitRef = useRef<OrbitControls | null>(null)
@@ -232,8 +235,13 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim }: Prop
         renderer.domElement.style.cursor = hoveredMesh ? 'pointer' : 'grab'
         orbit.enableRotate = !hoveredMesh
       }
-      if (mesh) setHover({ name: mesh.userData.name as string, sub: mesh.userData.sub as string, x: px, y: py })
-      else setHover(null)
+      if (mesh) {
+        const id = mesh.userData.id as string
+        const imp = impactRef.current[id]
+        const baseSub = mesh.userData.sub as string
+        const sub = imp !== undefined ? `${baseSub} · ${imp.toLocaleString('fr-CA')} $` : baseSub
+        setHover({ name: mesh.userData.name as string, sub, x: px, y: py })
+      } else setHover(null)
     }
     let downPos: { x: number; y: number } | null = null
     function onPointerDown(e: PointerEvent) { downPos = { x: e.clientX, y: e.clientY } }

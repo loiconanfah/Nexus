@@ -1,9 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import {
   Bolt, ChevronDown, Plus, X, Trash2, Bug, ShieldAlert,
-  Power, WifiOff, Database, Truck, CloudOff, UserMinus, Maximize2, Minimize2,
+  Power, WifiOff, Database, Truck, CloudOff, UserMinus, Maximize2, Minimize2, GripVertical,
 } from 'lucide-react'
 import { api } from '../lib/api'
 
@@ -268,127 +268,140 @@ export function Simulation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assetId])
 
+  const impactById = modeled ? Object.fromEntries(modeled.cards.map((c) => [c.id, c.euro])) : undefined
+  const rootClass = focus
+    ? 'fixed inset-0 z-50 overflow-hidden'
+    : 'relative h-[calc(100vh-7rem)] overflow-hidden rounded-sm border'
+
   return (
-    <div className="flex h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
-      {/* Context header */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b px-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
-        <div className="flex items-baseline gap-4">
-          <h1 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>{t('ET SI ?', 'WHAT IF?')}</h1>
-          <span className="hidden md:inline" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Simulez une perturbation opérationnelle avant qu’elle ne survienne.', 'Simulate operational disruption before it happens.')}</span>
+    <div className={rootClass} style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+      {/* Hologramme plein-cadre (fond) */}
+      <div className="nx-grid absolute inset-0" />
+      {nodes.length > 0 ? (
+        <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement de l’hologramme…', 'Loading hologram…')}</div>}>
+          <Graph3D
+            nodes={nodes}
+            edges={(graph.data?.edges ?? []).map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
+            selectedId={assetId}
+            onSelect={(id) => { setAssetId(id); setResult(null); setModeled(null); setSim(null) }}
+            sim={sim}
+            impactById={impactById}
+          />
+        </Suspense>
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>
+          {graph.isLoading ? t('CHARGEMENT DU GRAPHE…', 'LOADING GRAPH…') : t('Aucun graphe — importez des données', 'No graph — import data first')}
         </div>
-        <span className="flex items-center gap-1 rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 12, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: CYAN }} /> {t('MOTEUR PRÊT', 'ENGINE READY')}
-        </span>
-      </div>
+      )}
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* ===== Config ===== */}
-        <div className={`${focus ? 'hidden' : 'flex'} w-80 shrink-0 flex-col overflow-y-auto border-r`} style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
-          <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
-            <h3 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN_T }}>
-              <Bolt size={14} /> {t('Configuration du scénario', 'Scenario Configuration')}
-            </h3>
-          </div>
-          <div className="flex flex-col gap-6 p-4">
-            <div className="flex flex-col gap-4">
-              <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
-              <Select label={t('Type de perturbation', 'Disruption Type')} value={scenario} onChange={(v) => setScenario(v as ScenarioType)} options={scenarioOptions} />
-              <Select label={t('Profondeur d’analyse (fenêtre)', 'Analysis depth (window)')} value={String(depth)} onChange={(v) => setDepth(Number(v))} options={[{ value: '3', label: t('Court terme (3 sauts)', 'Short term (3 hops)') }, { value: '6', label: t('Moyen terme (6 sauts)', 'Mid term (6 hops)') }, { value: '10', label: t('Long terme (10 sauts)', 'Long term (10 hops)') }]} />
-            </div>
-            <div className="flex flex-col gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
+      {/* Plein écran complet */}
+      <button
+        onClick={() => setFocus((f) => !f)}
+        title={focus ? t('Quitter le plein écran', 'Exit fullscreen') : t('Plein écran', 'Fullscreen')}
+        className="absolute left-1/2 top-3 z-40 flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-sm border px-2.5 transition-colors hover:brightness-125"
+        style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)', fontFamily: mono, fontSize: 11 }}
+      >
+        {focus ? <><Minimize2 size={14} /> {t('Réduire', 'Exit')}</> : <><Maximize2 size={14} /> {t('Plein écran', 'Fullscreen')}</>}
+      </button>
+
+      {/* Panneau CONFIG flottant & déplaçable */}
+      <DraggablePanel title={t('Scénario', 'Scenario')} side="left" top={12} width={288}>
+        <div className="flex flex-col gap-4 p-3">
+          <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+          <Select label={t('Profondeur d’analyse', 'Analysis depth')} value={String(depth)} onChange={(v) => setDepth(Number(v))} options={[{ value: '3', label: t('Court terme (3 sauts)', 'Short (3 hops)') }, { value: '6', label: t('Moyen terme (6 sauts)', 'Mid (6 hops)') }, { value: '10', label: t('Long terme (10 sauts)', 'Long (10 hops)') }]} />
+          {secondary ? (
+            <div className="flex flex-col gap-2 rounded-sm border p-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
               <div className="flex items-center justify-between">
-                <label style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Modificateurs en cascade', 'Cascading Modifiers')}</label>
-                <span className="rounded border px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)', borderColor: 'var(--nx-border)' }}>{secondary ? t('1 actif', '1 Active') : t('0 actif', '0 Active')}</span>
+                <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: ORANGE }}>{t('Événement secondaire', 'Secondary event')}</span>
+                <button onClick={() => setSecondary(null)} style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>
               </div>
-              {secondary && (
-                <div className="flex flex-col gap-3 rounded-sm border p-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
-                  <div className="flex items-center justify-between">
-                    <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: ORANGE }}>{t('Événement secondaire', 'Secondary event')}</span>
-                    <button onClick={() => setSecondary(null)} style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>
-                  </div>
-                  <Select label={t('Nœud d’origine', 'Origin node')} value={secondary.assetId} onChange={(v) => setSecondary({ ...secondary, assetId: v })} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
-                  <Select label={t('Type de perturbation', 'Disruption type')} value={secondary.scenario} onChange={(v) => setSecondary({ ...secondary, scenario: v as ScenarioType })} options={scenarioOptions} />
-                </div>
-              )}
-              {!secondary && (
-                <button onClick={() => setSecondary({ assetId: nodes.find((n) => n.id !== assetId)?.id ?? assetId, scenario: 'ApplicationFailure' })} className="flex h-8 items-center justify-center gap-2 rounded-sm border border-dashed transition-colors" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
-                  <Plus size={14} /> {t('Ajouter un événement', 'Add Secondary Event')}
-                </button>
-              )}
+              <Select label={t('Nœud', 'Node')} value={secondary.assetId} onChange={(v) => setSecondary({ ...secondary, assetId: v })} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+              <Select label={t('Type', 'Type')} value={secondary.scenario} onChange={(v) => setSecondary({ ...secondary, scenario: v as ScenarioType })} options={scenarioOptions} />
             </div>
-          </div>
-          <div className="mt-auto border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-            <button
-              onClick={() => launch('fail')} disabled={!validTarget || run.isPending}
-              className="nx-pulse flex h-12 w-full items-center justify-center gap-2 rounded-sm transition-all disabled:opacity-50"
-              style={{ background: 'transparent', border: `2px solid ${CYAN}`, color: CYAN_T, fontFamily: mono, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
-            >
-              <Bolt size={18} /> {run.isPending ? t('En cours…', 'Running…') : t('Lancer la simulation', 'Run Simulation')}
-            </button>
-            <p className="mt-2" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>
-              {t('Astuce : cliquez un nœud dans l’hologramme, puis agissez directement dessus.', 'Tip: click a node in the hologram, then act on it directly.')}
-            </p>
-          </div>
-        </div>
-
-        {/* ===== Hologramme interactif (cliquer un nœud → agir → cascade animée) ===== */}
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
-          <div className="nx-grid absolute inset-0" />
-
-          {/* Agrandir : masque les panneaux latéraux */}
-          <button
-            onClick={() => setFocus((f) => !f)}
-            title={focus ? t('Réduire', 'Shrink') : t('Agrandir l’hologramme', 'Enlarge hologram')}
-            className="absolute left-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-sm border transition-colors hover:brightness-125"
-            style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)' }}
-          >
-            {focus ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-          </button>
-          {nodes.length > 0 ? (
-            <Suspense fallback={<div className="z-10" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement de l’hologramme…', 'Loading hologram…')}</div>}>
-              <Graph3D
-                nodes={nodes}
-                edges={(graph.data?.edges ?? []).map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
-                selectedId={assetId}
-                onSelect={(id) => { setAssetId(id); setResult(null); setSim(null) }}
-                sim={sim}
-              />
-            </Suspense>
           ) : (
-            <div className="z-10 text-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>
-              {graph.isLoading ? t('CHARGEMENT DU GRAPHE…', 'LOADING GRAPH…') : t('Aucun graphe — importez des données', 'No graph — import data first')}
-            </div>
+            <button onClick={() => setSecondary({ assetId: nodes.find((n) => n.id !== assetId)?.id ?? assetId, scenario: 'ApplicationFailure' })} className="flex h-8 items-center justify-center gap-2 rounded-sm border border-dashed" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+              <Plus size={14} /> {t('Événement secondaire', 'Secondary event')}
+            </button>
           )}
-
-          {/* Barre d'actions flottante : 10 perturbations à appliquer sur le nœud ciblé */}
-          {origin && (
-            <div className="absolute bottom-4 left-1/2 z-20 flex max-w-[92%] -translate-x-1/2 flex-col items-center gap-1.5 rounded-lg border px-3 py-2 backdrop-blur"
-              style={{ background: 'color-mix(in srgb, var(--nx-panel) 90%, transparent)', borderColor: 'var(--nx-border)' }}>
-              <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>
-                {t('Cible', 'Target')} : <span style={{ color: 'var(--nx-text)' }}>{origin.name}</span>
-                {run.isPending && <span style={{ color: CYAN }}> · {t('propagation…', 'propagating…')}</span>}
-              </span>
-              <div className={`flex flex-wrap justify-center gap-1.5 ${focus ? 'max-w-[860px]' : 'max-w-[620px]'}`}>
-                {ACTIONS.map((a) => (
-                  <ActionBtn key={a.key} onClick={() => launch(a.key)} busy={run.isPending} showLabel={focus}
-                    icon={<a.icon size={15} />} label={t(a.fr, a.en)} color={a.color} active={actionRef.current === a.key && !!modeled} />
-                ))}
-              </div>
-            </div>
-          )}
+          <p style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>
+            {t('Cliquez un nœud dans l’hologramme, puis choisissez une perturbation en bas.', 'Click a node in the hologram, then pick a disruption below.')}
+          </p>
         </div>
+      </DraggablePanel>
 
-        {/* ===== Résultats : cartes par élément impacté ===== */}
-        <div className="flex w-96 shrink-0 flex-col overflow-y-auto border-l" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
-          <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
-            <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Impact par élément', 'Impact by element')}</h3>
+      {/* Panneau IMPACT flottant & déplaçable */}
+      {modeled && (
+        <DraggablePanel title={t('Impact par élément', 'Impact by element')} side="right" top={52} width={340} onClose={() => { setModeled(null); setSim(null) }}>
+          <ImpactPanel origin={origin?.name ?? 'origin'} originType={origin?.entityType ?? '—'} action={actionRef.current} modeled={modeled} />
+        </DraggablePanel>
+      )}
+      {run.error && (
+        <div className="absolute right-3 top-14 z-40 rounded-sm border px-3 py-2" style={{ borderColor: '#ffb4ab55', color: ERR, fontSize: 12, background: 'var(--nx-panel)' }}>{(run.error as Error).message}</div>
+      )}
+
+      {/* Barre d'actions flottante : 10 perturbations à appliquer sur le nœud ciblé */}
+      {origin && (
+        <div className="absolute bottom-4 left-1/2 z-30 flex max-w-[92%] -translate-x-1/2 flex-col items-center gap-1.5 rounded-lg border px-3 py-2 backdrop-blur"
+          style={{ background: 'color-mix(in srgb, var(--nx-panel) 90%, transparent)', borderColor: 'var(--nx-border)' }}>
+          <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>
+            {t('Cible', 'Target')} : <span style={{ color: 'var(--nx-text)' }}>{origin.name}</span>
+            {run.isPending && <span style={{ color: CYAN }}> · {t('propagation…', 'propagating…')}</span>}
+          </span>
+          <div className="flex max-w-[860px] flex-wrap justify-center gap-1.5">
+            {ACTIONS.map((a) => (
+              <ActionBtn key={a.key} onClick={() => launch(a.key)} busy={run.isPending} showLabel={focus}
+                icon={<a.icon size={15} />} label={t(a.fr, a.en)} color={a.color} active={actionRef.current === a.key && !!modeled} />
+            ))}
           </div>
-          {modeled ? <ImpactPanel origin={origin?.name ?? 'origin'} originType={origin?.entityType ?? '—'} action={actionRef.current} modeled={modeled} /> : (
-            <div className="p-4" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Lancez une perturbation pour voir l’impact, élément par élément.', 'Run a disruption to see the impact, element by element.')}</div>
-          )}
-          {run.error && <div className="p-4" style={{ color: ERR, fontSize: 13 }}>{(run.error as Error).message}</div>}
         </div>
+      )}
+    </div>
+  )
+}
+
+/** Panneau flottant déplaçable par sa poignée (positionné dans l'hologramme). */
+function DraggablePanel({ title, side, top, width, onClose, children }: {
+  title: string; side: 'left' | 'right'; top: number; width: number; onClose?: () => void; children: React.ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const drag = useRef<{ dx: number; dy: number } | null>(null)
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const parent = el.offsetParent as HTMLElement | null
+    const pw = parent?.clientWidth ?? window.innerWidth
+    setPos({ x: side === 'right' ? Math.max(12, pw - el.offsetWidth - 12) : 12, y: top })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  function onMove(e: PointerEvent) {
+    if (!drag.current) return
+    setPos({ x: e.clientX - drag.current.dx, y: e.clientY - drag.current.dy })
+  }
+  function onUp() {
+    drag.current = null
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+  }
+  function onDown(e: React.PointerEvent) {
+    if (!pos) return
+    drag.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  return (
+    <div ref={ref} className="absolute z-30 flex flex-col rounded-lg border shadow-xl"
+      style={{ left: pos?.x ?? (side === 'right' ? undefined : 12), right: pos ? undefined : (side === 'right' ? 12 : undefined), top: pos?.y ?? top, width, maxHeight: 'calc(100% - 96px)', background: 'color-mix(in srgb, var(--nx-panel) 95%, transparent)', borderColor: 'var(--nx-border)', backdropFilter: 'blur(6px)' }}>
+      <div onPointerDown={onDown} className="flex shrink-0 cursor-move items-center justify-between gap-2 border-b px-3 py-2 select-none" style={{ borderColor: 'var(--nx-border)' }}>
+        <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+          <GripVertical size={12} /> {title}
+        </span>
+        {onClose && <button onClick={onClose} title="×" style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>}
       </div>
+      <div className="overflow-y-auto">{children}</div>
     </div>
   )
 }
