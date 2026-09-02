@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Share2, ArrowRight, ArrowUpRight, PlayCircle, ShieldCheck,
@@ -32,6 +33,7 @@ const DARK_VARS: React.CSSProperties = {
 export function Landing() {
   const navigate = useNavigate()
   const { lang, setLang, t } = useLang()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div className="slb h-full overflow-y-auto" style={{ ...DARK_VARS, background: '#050506', color: '#f3f3f6', fontFamily: 'var(--font-inter)' }}>
@@ -60,8 +62,19 @@ export function Landing() {
             ))}
           </div>
           <BoxBtn onClick={() => navigate('/login')} label={t('Se connecter', 'Sign in')} small />
-          <button className="slb-burger" aria-label="menu"><Menu size={18} /></button>
+          <button className="slb-burger" aria-label="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}><Menu size={18} /></button>
         </div>
+
+        {/* Menu mobile (déroulant sous l'en-tête, < 900px) */}
+        {menuOpen && (
+          <div className="slb-mobile-menu">
+            <a href="#essentiel" onClick={() => setMenuOpen(false)}>{t('L’essentiel', 'Essentials')}</a>
+            <a href="#detail" onClick={() => setMenuOpen(false)}>{t('Fonctionnalités', 'Features')}</a>
+            <a href="#secteurs" onClick={() => setMenuOpen(false)}>{t('Secteurs', 'Industries')}</a>
+            <a href="/docs" onClick={(e) => { e.preventDefault(); setMenuOpen(false); navigate('/docs') }}>Documentation</a>
+            <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
+          </div>
+        )}
       </header>
 
       {/* ══════════ HERO ══════════ */}
@@ -377,6 +390,10 @@ const SILBER_CSS = `
 .slb-nav-links a:hover { color: #fff; }
 .slb-burger { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid #2a2a33; color: #c8c8d2; }
 @media (min-width: 900px) { .slb-burger { display: none; } }
+.slb-mobile-menu { position: absolute; top: 100%; left: 0; right: 0; display: flex; flex-direction: column; padding: 8px 20px 16px; background: #0b0b12; border-bottom: 1px solid #2a2a33; box-shadow: 0 12px 24px rgba(0,0,0,0.4); }
+.slb-mobile-menu a { padding: 11px 2px; font-size: 15px; color: #d5d5df; border-bottom: 1px solid #17171f; }
+.slb-mobile-menu a:hover { color: #fff; }
+@media (min-width: 900px) { .slb-mobile-menu { display: none; } }
 
 /* Boutons encadres a deux parties (label | fleche) facon Silber */
 .slb-btn { display: inline-flex; align-items: stretch; border: 1px solid #2e2e38; background: #0f0f14; color: #f3f3f6; }
