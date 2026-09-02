@@ -83,6 +83,19 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
         }, ct);
     }
 
+    public async Task<bool> DeleteEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    {
+        // Suppression définitive, filtrée par tenant, avec ses relations (DETACH).
+        const string cypher = """
+            OPTIONAL MATCH (n:Entity { id: $id, tenantId: $tenantId })
+            WITH n, n IS NOT NULL AS existed
+            DETACH DELETE n
+            RETURN existed
+            """;
+        var res = await connection.WriteAsync(cypher, new { id = id.ToString(), tenantId = tenantId.ToString() }, ct);
+        return res.Count > 0 && res[0]["existed"].As<bool>();
+    }
+
     public async Task<GraphEntityRecord?> GetEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default)
     {
         const string cypher = """

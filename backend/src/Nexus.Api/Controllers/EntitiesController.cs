@@ -24,6 +24,15 @@ public sealed class EntitiesController(
         return Ok(await repository.GetEntitiesAsync(tenant, ct: ct));
     }
 
+    /// <summary>Supprime définitivement une entité (et ses relations) du tenant.</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var deleted = await repository.DeleteEntityAsync(tenant, id, ct);
+        return deleted ? NoContent() : NotFound(new { error = "entity_not_found" });
+    }
+
     /// <summary>Résout une entité par nom exact (+ type), ou renvoie des suggestions floues.</summary>
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string name, [FromQuery] string type, CancellationToken ct)

@@ -14,6 +14,9 @@ public interface IGraphRepository
     /// <summary>Crée ou met à jour une relation (MERGE sur id ; les extrémités doivent exister).</summary>
     Task UpsertRelationAsync(GraphRelation relation, CancellationToken ct = default);
 
+    /// <summary>Supprime définitivement une entité et ses relations (DETACH DELETE), filtrée par tenant.</summary>
+    Task<bool> DeleteEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
     /// <summary>Lit une entité active par identifiant (filtrée par tenant).</summary>
     Task<GraphEntityRecord?> GetEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
