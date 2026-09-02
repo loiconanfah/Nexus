@@ -25,8 +25,8 @@ const DARK_VARS: React.CSSProperties = {
   ['--nx-outline' as string]: '#6b6b78',
   ['--nx-text' as string]: '#f3f3f6',
   ['--nx-text-muted' as string]: '#a2a2b0',
-  ['--nx-cyan' as string]: '#6a86ff',
-  ['--nx-cyan-text' as string]: '#a9b8ff',
+  ['--nx-cyan' as string]: '#22d3ee',
+  ['--nx-cyan-text' as string]: '#7fe8f7',
   ['--nx-on-cyan' as string]: '#070714',
 }
 
@@ -42,7 +42,7 @@ export function Landing() {
       {/* ══════════ NAV ══════════ */}
       <header className="slb-nav">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center" style={{ background: '#6a86ff', clipPath: 'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)' }}>
+          <div className="flex h-8 w-8 items-center justify-center" style={{ background: '#22d3ee', clipPath: 'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)' }}>
             <Share2 size={16} strokeWidth={2.4} style={{ color: '#070714' }} />
           </div>
           <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexus</span>
@@ -58,7 +58,7 @@ export function Landing() {
           <div className="flex items-center border" style={{ borderColor: '#2a2a33' }}>
             {(['fr', 'en'] as const).map((l) => (
               <button key={l} onClick={() => setLang(l)} className="px-2 py-1"
-                style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: lang === l ? '#070714' : '#a2a2b0', background: lang === l ? '#6a86ff' : 'transparent' }}>{l}</button>
+                style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: lang === l ? '#070714' : '#a2a2b0', background: lang === l ? '#22d3ee' : 'transparent' }}>{l}</button>
             ))}
           </div>
           <BoxBtn onClick={() => navigate('/login')} label={t('Se connecter', 'Sign in')} small />
@@ -223,7 +223,7 @@ export function Landing() {
       <footer className="border-t px-6 py-10" style={{ borderColor: '#1c1c22' }}>
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2">
-            <Share2 size={15} style={{ color: '#6a86ff' }} />
+            <Share2 size={15} style={{ color: '#22d3ee' }} />
             <span style={{ fontFamily: geist, fontSize: 14 }}>Lenexus</span>
             <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· MJ Corp</span>
           </div>
@@ -232,7 +232,7 @@ export function Landing() {
             <a href="/legal?doc=terms" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=terms') }} style={{ color: '#8a8a98' }}>{t('Conditions', 'Terms')}</a>
             <a href="/legal?doc=privacy" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=privacy') }} style={{ color: '#8a8a98' }}>{t('Confidentialité', 'Privacy')}</a>
             <a href="/legal?doc=dpa" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=dpa') }} style={{ color: '#8a8a98' }}>DPA</a>
-            <button onClick={() => navigate('/login')} className="flex items-center gap-1" style={{ color: '#a9b8ff' }}>{t('Se connecter', 'Sign in')} <ArrowUpRight size={14} /></button>
+            <button onClick={() => navigate('/login')} className="flex items-center gap-1" style={{ color: '#7fe8f7' }}>{t('Se connecter', 'Sign in')} <ArrowUpRight size={14} /></button>
           </div>
         </div>
       </footer>
@@ -278,11 +278,11 @@ function DeepRow({ tag, kicker, title, body, points, visual, reverse }:
   return (
     <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
       <div className={reverse ? 'md:order-2' : ''}>
-        <Label><span style={{ color: '#6a86ff' }}>{tag}</span>{kicker}</Label>
+        <Label><span style={{ color: '#22d3ee' }}>{tag}</span>{kicker}</Label>
         <h3 className="slb-h2" style={{ fontFamily: geist }}>{title}</h3>
         <p className="mt-4 text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>{body}</p>
         <ul className="mt-6 flex flex-col gap-2.5">
-          {points.map((p) => <li key={p} className="flex items-center gap-2.5" style={{ fontSize: 14.5, color: '#f3f3f6' }}><CheckCircle2 size={16} style={{ color: '#6a86ff', flexShrink: 0 }} /> {p}</li>)}
+          {points.map((p) => <li key={p} className="flex items-center gap-2.5" style={{ fontSize: 14.5, color: '#f3f3f6' }}><CheckCircle2 size={16} style={{ color: '#22d3ee', flexShrink: 0 }} /> {p}</li>)}
         </ul>
       </div>
       <div className={reverse ? 'md:order-1' : ''}>
@@ -297,7 +297,7 @@ function Chip({ children }: { children: React.ReactNode }) {
 function Persona({ icon: Icon, role, body }: { icon: typeof Shield; role: string; body: string }) {
   return (
     <div className="slb-cell">
-      <Icon size={22} style={{ color: '#6a86ff' }} />
+      <Icon size={22} style={{ color: '#22d3ee' }} />
       <h3 className="mt-4 text-lg font-medium" style={{ fontFamily: geist }}>{role}</h3>
       <p className="mt-1.5" style={{ fontSize: 13.5, color: '#a2a2b0', lineHeight: 1.55 }}>{body}</p>
     </div>
@@ -306,7 +306,7 @@ function Persona({ icon: Icon, role, body }: { icon: typeof Shield; role: string
 function Sector({ icon: Icon, label }: { icon: typeof Briefcase; label: string }) {
   return (
     <div className="flex items-center gap-3 border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
-      <Icon size={19} style={{ color: '#a9b8ff' }} />
+      <Icon size={19} style={{ color: '#7fe8f7' }} />
       <span className="font-medium" style={{ fontFamily: geist, fontSize: 15 }}>{label}</span>
     </div>
   )
@@ -314,7 +314,7 @@ function Sector({ icon: Icon, label }: { icon: typeof Briefcase; label: string }
 function Sec({ icon: Icon, title, body }: { icon: typeof Lock; title: string; body: string }) {
   return (
     <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
-      <Icon size={18} style={{ color: '#6a86ff' }} />
+      <Icon size={18} style={{ color: '#22d3ee' }} />
       <h3 className="mt-3 font-medium" style={{ fontFamily: geist, fontSize: 15 }}>{title}</h3>
       <p className="mt-1" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>{body}</p>
     </div>
@@ -325,7 +325,7 @@ function Faq({ q, a }: { q: string; a: string }) {
     <details className="slb-faq border-b" style={{ borderColor: '#1c1c22' }}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5">
         <span className="font-medium" style={{ fontFamily: geist, fontSize: 17 }}>{q}</span>
-        <ChevronDown size={18} className="slb-faq-chev shrink-0" style={{ color: '#6a86ff' }} />
+        <ChevronDown size={18} className="slb-faq-chev shrink-0" style={{ color: '#22d3ee' }} />
       </summary>
       <p className="pb-5 pr-8" style={{ fontSize: 15, color: '#a2a2b0', lineHeight: 1.65 }}>{a}</p>
     </details>
@@ -339,14 +339,14 @@ function RiskBars() {
     <div>
       <div className="flex items-baseline justify-between">
         <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b78' }}>Score de risque</span>
-        <span style={{ fontFamily: geist, fontSize: 30, color: '#ff897d' }}>79<span style={{ fontSize: 14, color: '#6b6b78' }}>/100</span></span>
+        <span style={{ fontFamily: geist, fontSize: 30, color: '#d15b54' }}>79<span style={{ fontSize: 14, color: '#6b6b78' }}>/100</span></span>
       </div>
       <div className="mt-4 flex flex-col gap-2.5">
         {factors.map(([name, v]) => (
           <div key={name} className="flex items-center gap-3">
             <span className="w-24 shrink-0" style={{ fontSize: 12, color: '#a2a2b0' }}>{name}</span>
             <div className="h-2 flex-1 overflow-hidden rounded-full" style={{ background: '#1b1b21' }}>
-              <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: v > 75 ? '#ff897d' : v > 50 ? '#e0a33c' : '#6a86ff' }} />
+              <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: v > 75 ? '#d15b54' : v > 50 ? '#e0a458' : '#22d3ee' }} />
             </div>
             <span className="w-7 text-right" style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>{v}</span>
           </div>
@@ -361,14 +361,14 @@ function ImpactBars() {
     <div>
       <div className="mb-3 flex items-center gap-4" style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: '#3a3a44' }} />Actuel</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: '#6a86ff' }} />Simulé</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: '#22d3ee' }} />Simulé</span>
       </div>
       <div className="flex items-end justify-around gap-3" style={{ height: 130 }}>
         {rows.map(([label, a, b]) => (
           <div key={label} className="flex flex-1 flex-col items-center gap-2">
             <div className="flex items-end gap-1.5" style={{ height: 100 }}>
               <div style={{ width: 14, height: `${a}%`, borderRadius: '3px 3px 0 0', background: '#2a2a33' }} />
-              <div style={{ width: 14, height: `${b}%`, borderRadius: '3px 3px 0 0', background: '#6a86ff' }} />
+              <div style={{ width: 14, height: `${b}%`, borderRadius: '3px 3px 0 0', background: '#22d3ee' }} />
             </div>
             <span style={{ fontFamily: mono, fontSize: 10, color: '#6b6b78' }}>{label}</span>
           </div>
@@ -398,9 +398,9 @@ const SILBER_CSS = `
 /* Boutons encadres a deux parties (label | fleche) facon Silber */
 .slb-btn { display: inline-flex; align-items: stretch; border: 1px solid #2e2e38; background: #0f0f14; color: #f3f3f6; }
 .slb-btn-label { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .04em; text-transform: uppercase; }
-.slb-btn-arrow { display: inline-flex; align-items: center; padding: 0 12px; border-left: 1px solid #2e2e38; color: #a9b8ff; transition: background .16s; }
+.slb-btn-arrow { display: inline-flex; align-items: center; padding: 0 12px; border-left: 1px solid #2e2e38; color: #7fe8f7; transition: background .16s; }
 .slb-btn:hover .slb-btn-arrow { background: #17171f; }
-.slb-btn-primary { background: #6a86ff; border-color: #6a86ff; color: #070714; }
+.slb-btn-primary { background: #22d3ee; border-color: #22d3ee; color: #070714; }
 .slb-btn-primary .slb-btn-arrow { border-left-color: rgba(7,7,20,.25); color: #070714; }
 .slb-btn-primary:hover .slb-btn-arrow { background: rgba(7,7,20,.12); }
 .slb-btn-sm .slb-btn-label { padding: 8px 12px; font-size: 11px; }
@@ -413,10 +413,10 @@ const SILBER_CSS = `
 
 /* Label de section */
 .slb-label { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #2a2a33; padding: 5px 11px;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #a9b8ff; }
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7fe8f7; }
 
 .slb-h1 { font-weight: 600; letter-spacing: -.03em; line-height: 1.02; color: #fbfbfe; font-size: clamp(2.6rem, 7.4vw, 6.4rem); }
-.slb-accent { background: linear-gradient(100deg, #6a86ff 0%, #9a6bff 60%, #c58bff 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.slb-accent { background: linear-gradient(100deg, #22d3ee 0%, #0aa5bd 60%, #7fe8f7 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 .slb-h2 { margin-top: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.06; color: #f7f7fb; font-size: clamp(1.9rem, 3.6vw, 3.2rem); max-width: 22ch; }
 .slb-sub { max-width: 620px; margin-top: 26px; font-size: clamp(1rem, 1.3vw, 1.18rem); line-height: 1.6; color: #a2a2b0; }
 
@@ -431,12 +431,12 @@ const SILBER_CSS = `
 .slb-light { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
 .slb-silk { position: absolute; border-radius: 50%; filter: blur(80px); mix-blend-mode: screen; will-change: transform; opacity: .8; }
 .slb-silk-1 { width: 120vw; height: 60vh; left: -10vw; bottom: -22vh;
-  background: linear-gradient(120deg, rgba(60,90,255,0) 8%, rgba(70,110,255,.55) 38%, rgba(150,100,255,.7) 62%, rgba(120,140,255,0) 92%);
+  background: linear-gradient(120deg, rgba(34,211,238,0) 8%, rgba(34,211,238,.5) 38%, rgba(10,165,189,.6) 62%, rgba(34,211,238,0) 92%);
   transform: rotate(-8deg); animation: slbSilk1 20s ease-in-out infinite; }
 .slb-silk-2 { width: 90vw; height: 50vh; right: -12vw; bottom: -10vh;
-  background: radial-gradient(closest-side, rgba(150,100,255,.5), rgba(150,100,255,0) 72%); animation: slbSilk2 16s ease-in-out infinite; }
+  background: radial-gradient(closest-side, rgba(34,211,238,.42), rgba(34,211,238,0) 72%); animation: slbSilk2 16s ease-in-out infinite; }
 .slb-silk-3 { width: 70vw; height: 40vh; left: 30vw; bottom: -18vh;
-  background: linear-gradient(80deg, rgba(0,200,255,0) 12%, rgba(80,140,255,.4) 50%, rgba(0,200,255,0) 88%); animation: slbSilk3 24s ease-in-out infinite; }
+  background: linear-gradient(80deg, rgba(127,232,247,0) 12%, rgba(34,211,238,.4) 50%, rgba(127,232,247,0) 88%); animation: slbSilk3 24s ease-in-out infinite; }
 @keyframes slbSilk1 { 0%,100% { transform: translate(0,0) rotate(-8deg) scale(1); } 50% { transform: translate(4%,-4%) rotate(-4deg) scale(1.12); } }
 @keyframes slbSilk2 { 0%,100% { transform: translate(0,0) scale(1); opacity:.7; } 50% { transform: translate(-6%,-3%) scale(1.18); opacity:.9; } }
 @keyframes slbSilk3 { 0%,100% { transform: translate(0,0) scale(1.05); } 50% { transform: translate(6%,-5%) scale(1.2); } }
@@ -456,7 +456,7 @@ const SILBER_CSS = `
 /* STAT */
 .slb-stat { position: relative; overflow: hidden; padding: 120px 0; background: #050506; }
 .slb-stat-num { margin-top: 14px; font-weight: 600; letter-spacing: -.03em; line-height: 1; font-size: clamp(3.4rem, 9vw, 8rem);
-  background: linear-gradient(100deg, #6a86ff, #9a6bff 55%, #c58bff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  background: linear-gradient(100deg, #22d3ee, #0aa5bd 55%, #7fe8f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* CTA */
 .slb-cta { position: relative; overflow: hidden; padding: 130px 0; background: #050506; border-top: 1px solid #14141a; }
