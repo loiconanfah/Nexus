@@ -29,6 +29,21 @@ const SHOTS = [
   ['/risks', 'risks.png', 2500, false],
   ['/enterprise', 'enterprise.png', 2500, false],
   ['/legal?doc=privacy', 'legal.png', 1200, true],
+  // Écrans complémentaires
+  ['/incidents', 'incidents.png', 2500, false],
+  ['/change', 'change.png', 2500, false],
+  ['/audit', 'audit.png', 2500, false],
+  ['/suppliers', 'suppliers.png', 2500, false],
+  ['/human', 'human.png', 2500, false],
+  ['/actions', 'actions.png', 2500, false],
+  ['/twin', 'twin.png', 3500, false],
+  ['/decision', 'decision.png', 2500, false],
+  ['/ai', 'ai.png', 2000, false],
+  ['/documents', 'documents.png', 2000, false],
+  ['/reports', 'reports.png', 2500, false],
+  ['/onboarding', 'onboarding.png', 2000, false],
+  ['/integrations', 'integrations.png', 2500, false],
+  ['/admin', 'admin.png', 2000, false],
 ]
 
 async function cdp(ws, method, params = {}) {
