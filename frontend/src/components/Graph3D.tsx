@@ -54,7 +54,7 @@ function renderSimFrame(
     const baseScale = (m.userData.baseScale as number) ?? 1
     if (id === s.originId) {
       const pulse = 1 + Math.sin(tt * 10) * 0.12
-      if (s.action === 'remove') {
+      if (s.style === 'dissolve') {
         const shrink = Math.max(0.12, 1 - tt * 0.5)
         m.scale.setScalar(baseScale * shrink)
         mat.opacity = Math.max(0.12, 1 - tt * 0.4)
@@ -62,7 +62,8 @@ function renderSimFrame(
         m.scale.setScalar(baseScale * 1.45 * pulse)
         mat.opacity = 1
       }
-      mat.color.copy(s.originColor); mat.emissive.copy(s.originColor); mat.emissiveIntensity = 0.95
+      mat.color.copy(s.originColor); mat.emissive.copy(s.originColor)
+      mat.emissiveIntensity = 0.95 + (s.style === 'flicker' ? 0.4 * Math.sin(tt * 24) : 0)
       setSpriteOpacity(m, 1)
       continue
     }
@@ -74,9 +75,9 @@ function renderSimFrame(
         const mix = Math.min(1, d / Math.max(1, s.maxDepth))
         const col = s.waveHot.clone().lerp(s.waveCold, mix)
         mat.color.copy(col); mat.emissive.copy(col)
-        const errFlicker = s.action === 'error' ? 0.3 + 0.3 * Math.sin(tt * 20 + d) : 0
+        const errFlicker = s.style === 'flicker' ? 0.3 + 0.3 * Math.sin(tt * 20 + d) : 0
         mat.emissiveIntensity = 0.4 + flash * 0.8 + errFlicker
-        mat.opacity = s.action === 'remove' ? 0.55 : 1
+        mat.opacity = s.style === 'dissolve' ? 0.55 : 1
         m.scale.setScalar(baseScale * (1 + flash * 0.4))
         setSpriteOpacity(m, 1)
       } else {
@@ -107,14 +108,18 @@ function renderSimFrame(
 
 export interface Graph3DEdge { id: string; source: string; target: string; type?: string; status?: string; confidence?: number }
 
-export type SimAction = 'fail' | 'remove' | 'error'
+export type SimAction =
+  | 'fail' | 'error' | 'remove' | 'cyber' | 'power'
+  | 'network' | 'data' | 'supplier' | 'cloud' | 'employee'
 /** Cascade de simulation à animer : origine + dépendants affectés (id→profondeur). */
 export interface SimCascade { originId: string; affected: Record<string, number>; action: SimAction; nonce: number }
+
+type SimStyle = 'wave' | 'flicker' | 'dissolve'
 
 interface SimState {
   originId: string
   affected: Map<string, number>
-  action: SimAction
+  style: SimStyle
   maxDepth: number
   startAt: number
   active: boolean
@@ -124,10 +129,18 @@ interface SimState {
   edgeColor: THREE.Color
 }
 
-const SIM_PALETTE: Record<SimAction, { origin: string; hot: string; cold: string; edge: string }> = {
-  fail: { origin: '#ff2d2d', hot: '#ff5a3c', cold: '#e0a44e', edge: '#ff6b4a' },
-  remove: { origin: '#7a8790', hot: '#9aa7b0', cold: '#5f6b73', edge: '#8892a0' },
-  error: { origin: '#f5c542', hot: '#ffd24a', cold: '#f59e0b', edge: '#ffcf5a' },
+// Chaque action = un style d'animation + une palette (déterministe, purement visuel).
+const SIM_CONFIG: Record<SimAction, { style: SimStyle; origin: string; hot: string; cold: string; edge: string }> = {
+  fail: { style: 'wave', origin: '#ff2d2d', hot: '#ff5a3c', cold: '#e0a44e', edge: '#ff6b4a' },
+  error: { style: 'flicker', origin: '#f5c542', hot: '#ffd24a', cold: '#f59e0b', edge: '#ffcf5a' },
+  remove: { style: 'dissolve', origin: '#7a8790', hot: '#9aa7b0', cold: '#5f6b73', edge: '#8892a0' },
+  cyber: { style: 'flicker', origin: '#ff2d6b', hot: '#ff4d8d', cold: '#b3245a', edge: '#ff5a9e' },
+  power: { style: 'wave', origin: '#ff8a3c', hot: '#ffb03c', cold: '#c96a1e', edge: '#ffa24a' },
+  network: { style: 'wave', origin: '#3ca0ff', hot: '#4ab8ff', cold: '#2a6fb3', edge: '#5ab0ff' },
+  data: { style: 'dissolve', origin: '#a26bff', hot: '#b98aff', cold: '#6f4ab3', edge: '#b07aff' },
+  supplier: { style: 'wave', origin: '#d98c3c', hot: '#e0a44e', cold: '#9a6a2e', edge: '#e0994a' },
+  cloud: { style: 'wave', origin: '#2fd0c0', hot: '#4ae0d0', cold: '#1e9a90', edge: '#3fd6c6' },
+  employee: { style: 'flicker', origin: '#ff6bb0', hot: '#ff8ac6', cold: '#b3457e', edge: '#ff7ab8' },
 }
 
 interface Props {
@@ -361,11 +374,11 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim }: Prop
   // ── Déclenchement de la cascade de simulation ──
   useEffect(() => {
     if (!sim) { if (simRef.current) simRef.current.active = false; return }
-    const pal = SIM_PALETTE[sim.action]
+    const pal = SIM_CONFIG[sim.action] ?? SIM_CONFIG.fail
     const affected = new Map<string, number>(Object.entries(sim.affected))
     const maxDepth = affected.size ? Math.max(...affected.values()) : 1
     simRef.current = {
-      originId: sim.originId, affected, action: sim.action, maxDepth,
+      originId: sim.originId, affected, style: pal.style, maxDepth,
       startAt: performance.now(), active: true,
       originColor: new THREE.Color(pal.origin), waveHot: new THREE.Color(pal.hot),
       waveCold: new THREE.Color(pal.cold), edgeColor: new THREE.Color(pal.edge),

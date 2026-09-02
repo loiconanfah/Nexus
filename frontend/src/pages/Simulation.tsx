@@ -1,7 +1,10 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X, Trash2, Zap } from 'lucide-react'
+import {
+  AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X, Trash2, Bug, ShieldAlert,
+  Power, WifiOff, Database, Truck, CloudOff, UserMinus, Maximize2, Minimize2,
+} from 'lucide-react'
 import { api } from '../lib/api'
 
 // Chargé à la demande : Three.js ne pèse que sur cette page.
@@ -106,6 +109,20 @@ const SCENARIOS: { value: ScenarioType; fr: string; en: string }[] = [
   { value: 'DataLoss', fr: 'Perte de données', en: 'Data Loss' },
 ]
 
+// 10 actions de simulation : chacune anime la cascade différemment et fixe le scénario.
+const ACTIONS: { key: SimAction; fr: string; en: string; icon: typeof Bolt; color: string; scenario: ScenarioType }[] = [
+  { key: 'fail', fr: 'Faire tomber', en: 'Fail', icon: Bolt, color: '#ff5a3c', scenario: 'ServerFailure' },
+  { key: 'error', fr: 'Injecter une erreur', en: 'Inject error', icon: Bug, color: '#f5c542', scenario: 'ApplicationFailure' },
+  { key: 'remove', fr: 'Supprimer', en: 'Remove', icon: Trash2, color: '#9aa7b0', scenario: 'ServerFailure' },
+  { key: 'cyber', fr: 'Cyberattaque', en: 'Cyber attack', icon: ShieldAlert, color: '#ff4d8d', scenario: 'CyberIncident' },
+  { key: 'power', fr: 'Panne électrique', en: 'Power outage', icon: Power, color: '#ffb03c', scenario: 'PowerOutage' },
+  { key: 'network', fr: 'Coupure réseau', en: 'Network loss', icon: WifiOff, color: '#4ab8ff', scenario: 'NetworkFailure' },
+  { key: 'data', fr: 'Perte de données', en: 'Data loss', icon: Database, color: '#b98aff', scenario: 'DataLoss' },
+  { key: 'supplier', fr: 'Défaillance fournisseur', en: 'Supplier failure', icon: Truck, color: '#e0a44e', scenario: 'SupplierFailure' },
+  { key: 'cloud', fr: 'Panne région cloud', en: 'Cloud region down', icon: CloudOff, color: '#4ae0d0', scenario: 'CloudRegionFailure' },
+  { key: 'employee', fr: 'Perte employé clé', en: 'Key employee loss', icon: UserMinus, color: '#ff8ac6', scenario: 'EmployeeLoss' },
+]
+
 function depthColor(depth: number, max: number): string {
   if (depth <= 1) return ERR
   if (depth <= Math.ceil(max / 2)) return ORANGE
@@ -131,6 +148,10 @@ export function Simulation() {
   const [sim, setSim] = useState<SimCascade | null>(null)
   const actionRef = useRef<SimAction>('fail')
   const nonceRef = useRef(0)
+  const pendingScenarioRef = useRef<ScenarioType | null>(null)
+  // Plein écran de l'hologramme.
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const [fs, setFs] = useState(false)
 
   const nodes = graph.data?.nodes ?? []
   const origin = nodes.find((n) => n.id === assetId)
@@ -139,7 +160,8 @@ export function Simulation() {
 
   const run = useMutation({
     mutationFn: async () => {
-      const primary = await api.simulate(assetId, scenario, depth)
+      const sc = pendingScenarioRef.current ?? scenario
+      const primary = await api.simulate(assetId, sc, depth)
       if (!secondary?.assetId) return primary
       const second = await api.simulate(secondary.assetId, secondary.scenario, depth)
       return mergeResults([primary, second])
@@ -157,8 +179,22 @@ export function Simulation() {
   function launch(action: SimAction) {
     if (!validTarget) return
     actionRef.current = action
+    const cfg = ACTIONS.find((a) => a.key === action)
+    if (cfg) { pendingScenarioRef.current = cfg.scenario; setScenario(cfg.scenario) }
     run.mutate()
   }
+
+  function toggleFullscreen() {
+    const el = canvasRef.current
+    if (!el) return
+    if (!document.fullscreenElement) el.requestFullscreen?.()
+    else document.exitFullscreen?.()
+  }
+  useEffect(() => {
+    const on = () => setFs(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', on)
+    return () => document.removeEventListener('fullscreenchange', on)
+  }, [])
 
   // Résout le paramètre entrant (id direct OU nom) vers un vrai id de nœud ;
   // sinon présélectionne le premier actif. Corrige les liens qui passent un nom.
@@ -243,8 +279,18 @@ export function Simulation() {
         </div>
 
         {/* ===== Hologramme interactif (cliquer un nœud → agir → cascade animée) ===== */}
-        <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
+        <div ref={canvasRef} className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
           <div className="nx-grid absolute inset-0" />
+
+          {/* Plein écran */}
+          <button
+            onClick={toggleFullscreen}
+            title={fs ? t('Quitter le plein écran', 'Exit fullscreen') : t('Agrandir (plein écran)', 'Enlarge (fullscreen)')}
+            className="absolute left-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-sm border transition-colors hover:brightness-125"
+            style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)' }}
+          >
+            {fs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          </button>
           {nodes.length > 0 ? (
             <Suspense fallback={<div className="z-10" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement de l’hologramme…', 'Loading hologram…')}</div>}>
               <Graph3D
@@ -261,16 +307,20 @@ export function Simulation() {
             </div>
           )}
 
-          {/* Barre d'actions flottante : agir directement sur le nœud ciblé */}
+          {/* Barre d'actions flottante : 10 perturbations à appliquer sur le nœud ciblé */}
           {origin && (
-            <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-lg border px-3 py-2 backdrop-blur"
+            <div className="absolute bottom-4 left-1/2 z-20 flex max-w-[92%] -translate-x-1/2 flex-col items-center gap-1.5 rounded-lg border px-3 py-2 backdrop-blur"
               style={{ background: 'color-mix(in srgb, var(--nx-panel) 90%, transparent)', borderColor: 'var(--nx-border)' }}>
-              <span className="mr-1 hidden sm:inline" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
+              <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>
                 {t('Cible', 'Target')} : <span style={{ color: 'var(--nx-text)' }}>{origin.name}</span>
+                {run.isPending && <span style={{ color: CYAN }}> · {t('propagation…', 'propagating…')}</span>}
               </span>
-              <ActionBtn onClick={() => launch('fail')} busy={run.isPending} icon={<Bolt size={14} />} label={t('Faire tomber', 'Fail')} color="#ff5a3c" />
-              <ActionBtn onClick={() => launch('error')} busy={run.isPending} icon={<Zap size={14} />} label={t('Injecter une erreur', 'Inject error')} color="#f5c542" />
-              <ActionBtn onClick={() => launch('remove')} busy={run.isPending} icon={<Trash2 size={14} />} label={t('Supprimer', 'Remove')} color="#9aa7b0" />
+              <div className="flex max-w-[620px] flex-wrap justify-center gap-1.5">
+                {ACTIONS.map((a) => (
+                  <ActionBtn key={a.key} onClick={() => launch(a.key)} busy={run.isPending}
+                    icon={<a.icon size={15} />} label={t(a.fr, a.en)} color={a.color} active={actionRef.current === a.key && !!result} />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -364,14 +414,19 @@ function ResultPanel({ origin, result, redundant }: { origin: string; result: Pr
 }
 
 /* ---------- primitives ---------- */
-function ActionBtn({ onClick, busy, icon, label, color }: { onClick: () => void; busy: boolean; icon: React.ReactNode; label: string; color: string }) {
+function ActionBtn({ onClick, busy, icon, label, color, active }: { onClick: () => void; busy: boolean; icon: React.ReactNode; label: string; color: string; active?: boolean }) {
   return (
     <button
-      onClick={onClick} disabled={busy}
-      className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 transition-all hover:brightness-125 disabled:opacity-50"
-      style={{ borderColor: `color-mix(in srgb, ${color} 55%, transparent)`, color, fontFamily: mono, fontSize: 12, background: `color-mix(in srgb, ${color} 10%, transparent)` }}
+      onClick={onClick} disabled={busy} title={label} aria-label={label}
+      className="flex h-9 items-center gap-1.5 rounded-md border px-2 transition-all hover:brightness-125 disabled:opacity-50"
+      style={{
+        borderColor: active ? color : `color-mix(in srgb, ${color} 45%, transparent)`,
+        color, background: `color-mix(in srgb, ${color} ${active ? 22 : 10}%, transparent)`,
+        boxShadow: active ? `0 0 10px color-mix(in srgb, ${color} 45%, transparent)` : 'none',
+      }}
     >
-      {icon} {label}
+      {icon}
+      <span className="hidden xl:inline" style={{ fontFamily: mono, fontSize: 11, whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   )
 }
