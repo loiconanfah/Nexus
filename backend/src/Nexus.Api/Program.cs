@@ -99,6 +99,18 @@ var usingDevJwt = string.IsNullOrWhiteSpace(authCfg.JwtKey);
 if (usingDevJwt) authCfg.JwtKey = "dev-only-insecure-key-change-in-production-please-32b+";
 var usingDevPwd = string.IsNullOrWhiteSpace(authCfg.AdminPassword);
 if (usingDevPwd) authCfg.AdminPassword = "nexus-demo-2026";
+
+// Refus de démarrer en PRODUCTION avec des secrets de dev : une clé JWT connue
+// permettrait de forger des jetons ; un mot de passe admin par défaut est trivial.
+if (builder.Environment.IsProduction() && (usingDevJwt || usingDevPwd))
+{
+    var missing = string.Join(", ",
+        new[] { usingDevJwt ? "NEXUS_JWT_KEY" : null, usingDevPwd ? "NEXUS_ADMIN_PASSWORD" : null }
+            .Where(x => x is not null));
+    throw new InvalidOperationException(
+        $"Démarrage refusé en Production : secret(s) obligatoire(s) manquant(s) : {missing}. " +
+        "Définissez-les via des variables d'environnement.");
+}
 builder.Services.Configure<AuthConfig>(o =>
 {
     o.JwtKey = authCfg.JwtKey; o.Issuer = authCfg.Issuer; o.Audience = authCfg.Audience;

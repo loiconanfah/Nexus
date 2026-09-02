@@ -37,10 +37,26 @@ travaux restants avant la mise en marché générale (GA).
 
 ## Durcissement en place
 
-- Rate limiting (limitation de débit) applicatif.
+- **Authentification requise par défaut** (FallbackPolicy) ; seuls login/health
+  sont anonymes. Mots de passe hachés en PBKDF2-SHA256 salé.
+- **Refus de démarrer en Production** avec des secrets de dev (`NEXUS_JWT_KEY`,
+  `NEXUS_ADMIN_PASSWORD` obligatoires).
+- **Aucune injection** : toutes les requêtes SQL et Cypher sont paramétrées.
+- **En-têtes de sécurité** : HSTS, `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`.
+- **CORS** restreint aux origines configurées (pas de joker).
+- **Gestion d'erreurs** via `UseExceptionHandler` (pas de fuite de stack en prod).
+- Limite d'upload (25 Mo) et rate limiting applicatif.
 - Journalisation structurée (Serilog) + traçage/mesures OpenTelemetry.
-- IA : les clés sont stockées **par tenant** ; les données client ne servent pas
-  à entraîner de modèles.
+- IA : clés stockées **par tenant** ; les données client ne servent pas à
+  entraîner de modèles ; **quota LLM mensuel par tenant** (repli déterministe).
+
+## Revue de sécurité interne
+
+Une revue interne du code a été menée (injection, CORS, authentification, fuite
+d'erreurs, secrets, en-têtes, limites d'upload) : aucun défaut critique résiduel
+identifié après le correctif SSRF et le refus de démarrage avec secrets de dev.
+Un **pentest indépendant** reste requis avant la GA (voir ci-dessous).
 
 ## À faire avant la GA (honnête)
 
