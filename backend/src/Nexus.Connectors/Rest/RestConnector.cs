@@ -38,6 +38,10 @@ public sealed class RestConnector(HttpClient http, RestConnectorConfig config) :
                 ? Result.Success()
                 : Result.Failure(Error.Validation("connector.rest.no_array", "Aucun tableau JSON trouvé à l'URL/au chemin indiqué."));
         }
+        catch (SsrfBlockedException ex)
+        {
+            return Result.Failure(Error.Validation("connector.rest.blocked", ex.Message));
+        }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
         {
             return Result.Failure(Error.Validation("connector.rest.unreachable", $"Source injoignable : {ex.Message}"));
@@ -90,12 +94,19 @@ public sealed class RestConnector(HttpClient http, RestConnectorConfig config) :
     // ── Interne ──
     private async Task<JsonDocument> FetchAsync(CancellationToken ct)
     {
+        // Garde anti-SSRF : refuse loopback / IP privées / métadonnées cloud.
+        await SsrfGuard.ValidateAsync(config.Url, ct);
+
         using var req = new HttpRequestMessage(HttpMethod.Get, config.Url);
         req.Headers.TryAddWithoutValidation("Accept", "application/json");
         if (!string.IsNullOrWhiteSpace(config.AuthHeaderName) && !string.IsNullOrWhiteSpace(config.AuthHeaderValue))
             req.Headers.TryAddWithoutValidation(config.AuthHeaderName, config.AuthHeaderValue);
 
         using var resp = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+        // Les redirections sont désactivées côté handler (anti-contournement SSRF) :
+        // une 3xx est traitée comme une cible non exploitable.
+        if ((int)resp.StatusCode is >= 300 and < 400)
+            throw new SsrfBlockedException("Redirections non autorisées pour une source REST.");
         resp.EnsureSuccessStatusCode();
         await using var stream = await resp.Content.ReadAsStreamAsync(ct);
         return await JsonDocument.ParseAsync(stream, cancellationToken: ct);

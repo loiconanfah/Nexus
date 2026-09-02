@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http;
+using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -67,6 +68,13 @@ builder.Services.AddScoped<Nexus.Api.Business.DecisionAnalyzer>();
 builder.Services.AddScoped<Nexus.Api.Business.ScenarioStore>();
 builder.Services.AddScoped<Nexus.Api.Business.BusinessStore>();
 builder.Services.AddScoped<Nexus.Api.Impact.ImpactIntelligenceService>();
+// Client du connecteur REST : redirections désactivées (garde anti-SSRF avec SsrfGuard).
+builder.Services.AddHttpClient("rest-connector")
+    .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+    {
+        AllowAutoRedirect = false,
+        ConnectTimeout = TimeSpan.FromSeconds(10),
+    });
 
 // --- Authentification / autorisation (durcissement, article 41) ---
 var authCfg = new AuthConfig();
