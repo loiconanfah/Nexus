@@ -28,6 +28,8 @@ import type {
   PropagationResult,
   RiskRow,
   ScenarioType,
+  SimExplain,
+  SimExplainPayload,
   SupplierIntel,
 } from './types'
 
@@ -161,6 +163,9 @@ export const api = {
 
   entityRisk: (id: string) =>
     fetch(`${BASE}/entities/${id}/risk`, { headers: headers(false) }).then(handle<EntityRisk>),
+
+  explainSimulation: (payload: SimExplainPayload) =>
+    fetch(`${BASE}/simulations/explain`, { method: 'POST', headers: headers(), body: JSON.stringify(payload) }).then(handle<SimExplain>),
 
   simulate: (assetId: string, scenario: ScenarioType, maxDepth = 10, durationHours = 8) =>
     fetch(`${BASE}/simulations`, {

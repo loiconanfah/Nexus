@@ -379,3 +379,12 @@ export interface RestSource {
   url: string; authHeaderName?: string; authHeaderValue?: string; recordsPath?: string; dataset?: string
 }
 export interface RestPreview { ok: boolean; dataset: string; columns: string[]; estimatedRows?: number }
+
+export interface SimExplain { usedAi: boolean; narrative: string; risks: string[]; mitigations: string[] }
+export interface SimExplainPayload {
+  originName: string; originType: string; action: string; actionLabel: string
+  direct: number; indirect: number; spared: number
+  worstCase: number; expected: number; currency: string
+  byType: Record<string, number>; topElements: { name: string; type: string; direct: boolean; criticality: number }[]
+  lang: string
+}

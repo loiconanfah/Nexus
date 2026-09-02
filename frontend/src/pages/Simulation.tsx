@@ -12,7 +12,8 @@ const Graph3D = lazy(() => import('../components/Graph3D').then((m) => ({ defaul
 import type { SimAction, SimCascade } from '../components/Graph3D'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
-import type { BlastNode, PropagationResult, ScenarioType } from '../lib/types'
+import type { BlastNode, PropagationResult, ScenarioType, SimExplainPayload } from '../lib/types'
+import { Sparkles } from 'lucide-react'
 
 /** Agrège les KPIs d'un scénario à partir d'une liste de nœuds affectés. */
 function aggregate(meta: { assetId: string; scenario: ScenarioType; currency: string }, affected: BlastNode[]): PropagationResult {
@@ -153,17 +154,45 @@ function affinity(action: SimAction, type: string): number {
   const m = ACTION_MODEL[action]
   return m.aff[type] ?? m.affDefault
 }
+type OriginInfo = { id: string; name: string; entityType: string; criticality: number }
+
 /** Applique le modèle d'impact d'une action à un résultat de propagation brut. */
-function applyModel(result: PropagationResult, action: SimAction): Modeled {
+function applyModel(result: PropagationResult, action: SimAction, origin?: OriginInfo): Modeled {
   const m = ACTION_MODEL[action]
   const kept = result.affected.filter((a) => a.depth <= m.reach && affinity(action, a.entity.entityType) > 0)
   const filtered = aggregate({ assetId: result.assetId, scenario: result.scenario, currency: result.currency || 'CAD' }, kept)
-  const cards: ImpactCard[] = filtered.nodeDetails
+  const deps: ImpactCard[] = filtered.nodeDetails
     .map((n) => ({ id: n.id, name: n.name, type: n.type, depth: n.depth, criticality: n.criticality, euro: n.nodeImpact, rto: n.rtoHours, prob: n.probability, direct: n.depth <= 1 }))
     .sort((a, b) => (a.direct === b.direct ? b.criticality - a.criticality : a.direct ? -1 : 1))
+
+  // L'ORIGINE est toujours le premier élément impacté (l'élément qui subit l'incident).
+  let originEuro = 0
+  const cards: ImpactCard[] = [...deps]
+  if (origin) {
+    const rto = rtoHours(origin.entityType, origin.criticality)
+    originEuro = Math.round(costPerHour(origin.criticality) * rto)
+    cards.unshift({ id: origin.id, name: origin.name, type: origin.entityType, depth: 0, criticality: origin.criticality, euro: originEuro, rto, prob: 1, direct: true })
+  }
+
   const affectedMap: Record<string, number> = {}
   for (const n of filtered.nodeDetails) affectedMap[n.id] = n.depth
-  return { result: filtered, cards, spared: result.affected.length - kept.length, direct: cards.filter((c) => c.direct).length, indirect: cards.filter((c) => !c.direct).length, affectedMap }
+
+  // Totaux : on ajoute l'origine (elle est toujours touchée à 100 %).
+  const withOrigin: PropagationResult = {
+    ...filtered,
+    affectedTotal: filtered.affectedTotal + (origin ? 1 : 0),
+    worstCaseImpact: filtered.worstCaseImpact + originEuro,
+    expectedImpact: filtered.expectedImpact + originEuro,
+    maxRecoveryHours: Math.max(filtered.maxRecoveryHours, origin ? rtoHours(origin.entityType, origin.criticality) : 0),
+    avgProbability: filtered.affected.length === 0 ? 1 : filtered.avgProbability,
+  }
+  return {
+    result: withOrigin, cards,
+    spared: result.affected.length - kept.length,
+    direct: cards.filter((c) => c.direct).length,
+    indirect: cards.filter((c) => !c.direct).length,
+    affectedMap,
+  }
 }
 
 export function Simulation() {
@@ -202,7 +231,8 @@ export function Simulation() {
       return mergeResults([primary, second])
     },
     onSuccess: (r) => {
-      const m = applyModel(r, actionRef.current)
+      const o = origin ? { id: origin.id, name: origin.name, entityType: origin.entityType, criticality: origin.criticality } : undefined
+      const m = applyModel(r, actionRef.current, o)
       setResult(r); setModeled(m)
       nonceRef.current += 1
       setSim({ originId: assetId, affected: m.affectedMap, action: actionRef.current, nonce: nonceRef.current })
@@ -353,7 +383,7 @@ export function Simulation() {
           <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
             <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Impact par élément', 'Impact by element')}</h3>
           </div>
-          {modeled ? <ImpactPanel origin={origin?.name ?? 'origin'} action={actionRef.current} modeled={modeled} /> : (
+          {modeled ? <ImpactPanel origin={origin?.name ?? 'origin'} originType={origin?.entityType ?? '—'} action={actionRef.current} modeled={modeled} /> : (
             <div className="p-4" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Lancez une perturbation pour voir l’impact, élément par élément.', 'Run a disruption to see the impact, element by element.')}</div>
           )}
           {run.error && <div className="p-4" style={{ color: ERR, fontSize: 13 }}>{(run.error as Error).message}</div>}
@@ -364,12 +394,27 @@ export function Simulation() {
 }
 
 
-function ImpactPanel({ origin, action, modeled }: { origin: string; action: SimAction; modeled: Modeled }) {
+function ImpactPanel({ origin, originType, action, modeled }: { origin: string; originType: string; action: SimAction; modeled: Modeled }) {
   const { t, lang } = useLang()
   const r = modeled.result
   const fmtMoney = (n: number) => new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { maximumFractionDigits: 0 }).format(n)
   const act = ACTIONS.find((a) => a.key === action)
   const actColor = act?.color ?? ERR
+
+  // Analyse IA : reformule le résultat en langage clair (repli déterministe sans clé).
+  const explain = useMutation({ mutationFn: (p: SimExplainPayload) => api.explainSimulation(p) })
+  useEffect(() => {
+    explain.mutate({
+      originName: origin, originType, action, actionLabel: act ? t(act.fr, act.en) : action,
+      direct: modeled.direct, indirect: modeled.indirect, spared: modeled.spared,
+      worstCase: r.worstCaseImpact, expected: r.expectedImpact, currency: r.currency,
+      byType: r.affectedByType,
+      topElements: modeled.cards.slice(0, 8).map((c) => ({ name: c.name, type: c.type, direct: c.direct, criticality: c.criticality })),
+      lang,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modeled])
+  const ai = explain.data
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -402,11 +447,41 @@ function ImpactPanel({ origin, action, modeled }: { origin: string; action: SimA
         <Metric label={t('ÉPARGNÉS', 'SPARED')} value={modeled.spared} color="#5a97a3" />
       </div>
 
+      {/* Analyse IA */}
+      <div className="rounded-sm border p-3" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', background: 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)' }}>
+        <div className="mb-1 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+          <Sparkles size={12} /> {t('Analyse IA', 'AI analysis')}{ai && !ai.usedAi && <span style={{ color: 'var(--nx-outline)' }}> · {t('repli', 'fallback')}</span>}
+        </div>
+        {explain.isPending ? (
+          <p style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Analyse en cours…', 'Analyzing…')}</p>
+        ) : ai ? (
+          <>
+            <p style={{ fontSize: 13, color: 'var(--nx-text)', lineHeight: 1.5 }}>{ai.narrative}</p>
+            {ai.risks.length > 0 && (
+              <div className="mt-2">
+                <div style={{ fontFamily: mono, fontSize: 9.5, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Risques', 'Risks')}</div>
+                <ul className="mt-0.5 flex flex-col gap-0.5">
+                  {ai.risks.map((x, i) => <li key={i} style={{ fontSize: 12, color: 'var(--nx-text)' }}>• {x}</li>)}
+                </ul>
+              </div>
+            )}
+            {ai.mitigations.length > 0 && (
+              <div className="mt-2">
+                <div style={{ fontFamily: mono, fontSize: 9.5, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Mitigations', 'Mitigations')}</div>
+                <ol className="mt-0.5 flex flex-col gap-0.5">
+                  {ai.mitigations.map((x, i) => <li key={i} style={{ fontSize: 12, color: 'var(--nx-text)' }}><span style={{ color: CYAN_T }}>{i + 1}.</span> {x}</li>)}
+                </ol>
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
+
       {/* Cartes par élément */}
       <div className="flex flex-col gap-2">
         <h4 className="border-b pb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Éléments impactés', 'Impacted elements')}</h4>
         {modeled.cards.length === 0 && <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Aucun élément logiquement impacté par ce type d’incident.', 'No element is logically impacted by this incident type.')}</p>}
-        {modeled.cards.map((c) => <ImpactCardRow key={c.id} c={c} fmtMoney={fmtMoney} />)}
+        {modeled.cards.map((c, i) => <ImpactCardRow key={`${modeled.result.scenario}-${c.id}`} c={c} i={i} fmtMoney={fmtMoney} />)}
       </div>
 
       {modeled.spared > 0 && (
@@ -418,10 +493,10 @@ function ImpactPanel({ origin, action, modeled }: { origin: string; action: SimA
   )
 }
 
-function ImpactCardRow({ c, fmtMoney }: { c: ImpactCard; fmtMoney: (n: number) => string }) {
+function ImpactCardRow({ c, i, fmtMoney }: { c: ImpactCard; i: number; fmtMoney: (n: number) => string }) {
   const { t } = useLang()
   return (
-    <div className="rounded-sm border p-2.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+    <div className="rounded-sm border p-2.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)', animation: 'simCardIn 0.34s ease both', animationDelay: `${Math.min(i * 35, 700)}ms` }}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 truncate">
           <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: '#04121a', background: critColorSim(c.criticality) }}>{c.criticality}</span>

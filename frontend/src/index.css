@@ -245,3 +245,9 @@ body {
   .nx-sim-node { opacity: 1; }
   .nx-sim-stage { transition: none; }
 }
+
+/* Apparition en cascade des cartes d'impact de simulation */
+@keyframes simCardIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
