@@ -49,6 +49,7 @@ export function Landing() {
           <a href="#essentiel">{t('L’essentiel', 'Essentials')}</a>
           <a href="#detail">{t('Fonctionnalités', 'Features')}</a>
           <a href="#secteurs">{t('Secteurs', 'Industries')}</a>
+          <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }}>Documentation</a>
           <a href="#faq">FAQ</a>
         </nav>
         <div className="flex items-center gap-2">
@@ -214,6 +215,7 @@ export function Landing() {
             <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· MJ Corp</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1" style={{ fontFamily: mono, fontSize: 11 }}>
+            <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }} style={{ color: '#8a8a98' }}>Documentation</a>
             <a href="/legal?doc=terms" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=terms') }} style={{ color: '#8a8a98' }}>{t('Conditions', 'Terms')}</a>
             <a href="/legal?doc=privacy" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=privacy') }} style={{ color: '#8a8a98' }}>{t('Confidentialité', 'Privacy')}</a>
             <a href="/legal?doc=dpa" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=dpa') }} style={{ color: '#8a8a98' }}>DPA</a>
