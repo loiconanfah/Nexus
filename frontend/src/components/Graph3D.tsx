@@ -35,7 +35,100 @@ const TYPE_ICON: Record<string, IconCmp> = {
 }
 function iconFor(type: string): IconCmp { return TYPE_ICON[type] ?? Box }
 
+function setSpriteOpacity(mesh: THREE.Mesh, o: number) {
+  mesh.children.forEach((ch) => { const cm = (ch as THREE.Sprite).material as THREE.SpriteMaterial | undefined; if (cm) cm.opacity = o })
+}
+
+const WAVE_DELAY = 0.32 // secondes par saut de profondeur
+
+/** Peint une image de l'onde de cascade : origine → dépendants par profondeur, survivants atténués. */
+function renderSimFrame(
+  s: SimState,
+  meshes: THREE.Mesh[],
+  edges: { line: THREE.Line; a: THREE.Mesh; b: THREE.Mesh }[],
+) {
+  const tt = (performance.now() - s.startAt) / 1000
+  for (const m of meshes) {
+    const mat = m.material as THREE.MeshStandardMaterial
+    const id = m.userData.id as string
+    const baseScale = (m.userData.baseScale as number) ?? 1
+    if (id === s.originId) {
+      const pulse = 1 + Math.sin(tt * 10) * 0.12
+      if (s.action === 'remove') {
+        const shrink = Math.max(0.12, 1 - tt * 0.5)
+        m.scale.setScalar(baseScale * shrink)
+        mat.opacity = Math.max(0.12, 1 - tt * 0.4)
+      } else {
+        m.scale.setScalar(baseScale * 1.45 * pulse)
+        mat.opacity = 1
+      }
+      mat.color.copy(s.originColor); mat.emissive.copy(s.originColor); mat.emissiveIntensity = 0.95
+      setSpriteOpacity(m, 1)
+      continue
+    }
+    const d = s.affected.get(id)
+    if (d !== undefined) {
+      const localT = tt - d * WAVE_DELAY
+      if (localT >= 0) {
+        const flash = Math.max(0, 1 - localT * 1.6)
+        const mix = Math.min(1, d / Math.max(1, s.maxDepth))
+        const col = s.waveHot.clone().lerp(s.waveCold, mix)
+        mat.color.copy(col); mat.emissive.copy(col)
+        const errFlicker = s.action === 'error' ? 0.3 + 0.3 * Math.sin(tt * 20 + d) : 0
+        mat.emissiveIntensity = 0.4 + flash * 0.8 + errFlicker
+        mat.opacity = s.action === 'remove' ? 0.55 : 1
+        m.scale.setScalar(baseScale * (1 + flash * 0.4))
+        setSpriteOpacity(m, 1)
+      } else {
+        mat.emissiveIntensity = 0.12; mat.opacity = 0.18; m.scale.setScalar(baseScale)
+        setSpriteOpacity(m, 0.15)
+      }
+    } else {
+      mat.emissiveIntensity = 0.08; mat.opacity = 0.1; m.scale.setScalar(baseScale)
+      setSpriteOpacity(m, 0.08)
+    }
+  }
+  for (const { line, a, b } of edges) {
+    const lm = line.material as THREE.LineBasicMaterial
+    const ai = a.userData.id as string, bi = b.userData.id as string
+    const aAff = ai === s.originId || s.affected.has(ai)
+    const bAff = bi === s.originId || s.affected.has(bi)
+    if (aAff && bAff) {
+      const dA = ai === s.originId ? 0 : (s.affected.get(ai) ?? 0)
+      const dB = bi === s.originId ? 0 : (s.affected.get(bi) ?? 0)
+      const on = tt >= Math.max(dA, dB) * WAVE_DELAY
+      lm.color.copy(on ? s.edgeColor : (line.userData.baseColor as THREE.Color))
+      lm.opacity = on ? 0.95 : 0.05
+    } else {
+      lm.opacity = 0.03
+    }
+  }
+}
+
 export interface Graph3DEdge { id: string; source: string; target: string; type?: string; status?: string; confidence?: number }
+
+export type SimAction = 'fail' | 'remove' | 'error'
+/** Cascade de simulation à animer : origine + dépendants affectés (id→profondeur). */
+export interface SimCascade { originId: string; affected: Record<string, number>; action: SimAction; nonce: number }
+
+interface SimState {
+  originId: string
+  affected: Map<string, number>
+  action: SimAction
+  maxDepth: number
+  startAt: number
+  active: boolean
+  originColor: THREE.Color
+  waveHot: THREE.Color
+  waveCold: THREE.Color
+  edgeColor: THREE.Color
+}
+
+const SIM_PALETTE: Record<SimAction, { origin: string; hot: string; cold: string; edge: string }> = {
+  fail: { origin: '#ff2d2d', hot: '#ff5a3c', cold: '#e0a44e', edge: '#ff6b4a' },
+  remove: { origin: '#7a8790', hot: '#9aa7b0', cold: '#5f6b73', edge: '#8892a0' },
+  error: { origin: '#f5c542', hot: '#ffd24a', cold: '#f59e0b', edge: '#ffcf5a' },
+}
 
 interface Props {
   nodes: GraphEntityRecord[]
@@ -43,13 +136,15 @@ interface Props {
   query?: string
   selectedId?: string | null
   onSelect?: (id: string) => void
+  sim?: SimCascade | null
 }
 
 interface Hover { name: string; sub: string; x: number; y: number }
 
-export function Graph3D({ nodes, edges, query, selectedId, onSelect }: Props) {
+export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim }: Props) {
   const { t } = useLang()
   const mountRef = useRef<HTMLDivElement>(null)
+  const simRef = useRef<SimState | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const orbitRef = useRef<OrbitControls | null>(null)
@@ -158,11 +253,17 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect }: Props) {
         pos.setXYZ(1, b.position.x, b.position.y, b.position.z)
         pos.needsUpdate = true
       }
-      // Pulsation du nœud sélectionné.
-      const sel = selectedRef.current
-      if (sel) {
-        const m = nodeMeshesRef.current.find((x) => x.userData.id === sel)
-        if (m) m.scale.setScalar((m.userData.baseScale ?? 1) * (1 + Math.sin(el * 3) * 0.08))
+      // Animation de cascade de simulation (prioritaire sur la mise en évidence).
+      const s = simRef.current
+      if (s && s.active) {
+        renderSimFrame(s, nodeMeshesRef.current, edgeLinesRef.current)
+      } else {
+        // Pulsation du nœud sélectionné.
+        const sel = selectedRef.current
+        if (sel) {
+          const m = nodeMeshesRef.current.find((x) => x.userData.id === sel)
+          if (m) m.scale.setScalar((m.userData.baseScale ?? 1) * (1 + Math.sin(el * 3) * 0.08))
+        }
       }
       renderer.render(scene, camera)
     }
@@ -257,8 +358,24 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges])
 
+  // ── Déclenchement de la cascade de simulation ──
+  useEffect(() => {
+    if (!sim) { if (simRef.current) simRef.current.active = false; return }
+    const pal = SIM_PALETTE[sim.action]
+    const affected = new Map<string, number>(Object.entries(sim.affected))
+    const maxDepth = affected.size ? Math.max(...affected.values()) : 1
+    simRef.current = {
+      originId: sim.originId, affected, action: sim.action, maxDepth,
+      startAt: performance.now(), active: true,
+      originColor: new THREE.Color(pal.origin), waveHot: new THREE.Color(pal.hot),
+      waveCold: new THREE.Color(pal.cold), edgeColor: new THREE.Color(pal.edge),
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sim?.nonce])
+
   // ── Mise en évidence : recherche (atténuation) + sélection (nœud + relations liées) ──
   useEffect(() => {
+    if (simRef.current?.active) return // la simulation possède le rendu des matériaux
     const q = (query ?? '').trim().toLowerCase()
     const sel = selectedId
     // Voisins du sélectionné (via les arêtes).
@@ -297,7 +414,8 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect }: Props) {
         lm.color.copy(conn ? new THREE.Color(CYAN) : (baseCol ?? new THREE.Color(CYAN)))
       }
     }
-  }, [query, selectedId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, selectedId, sim?.nonce])
 
   return (
     <div className="absolute inset-0 z-10">

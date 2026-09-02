@@ -1,11 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X } from 'lucide-react'
+import { AlertOctagon, Bolt, ChevronDown, Plus, Wrench, X, Trash2, Zap } from 'lucide-react'
 import { api } from '../lib/api'
 
 // Chargé à la demande : Three.js ne pèse que sur cette page.
-const Propagation3D = lazy(() => import('../components/Propagation3D').then((m) => ({ default: m.Propagation3D })))
+const Graph3D = lazy(() => import('../components/Graph3D').then((m) => ({ default: m.Graph3D })))
+import type { SimAction, SimCascade } from '../components/Graph3D'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { BlastNode, PropagationResult, ScenarioType } from '../lib/types'
@@ -126,6 +127,10 @@ export function Simulation() {
   // Nœuds retirés par l'utilisateur (what-if interactif) → impact recalculé.
   const [removed, setRemoved] = useState<Set<string>>(new Set())
   const shownResult = useMemo(() => (result ? recompute(result, removed) : null), [result, removed])
+  // Cascade à animer dans l'hologramme (origine + dépendants par profondeur).
+  const [sim, setSim] = useState<SimCascade | null>(null)
+  const actionRef = useRef<SimAction>('fail')
+  const nonceRef = useRef(0)
 
   const nodes = graph.data?.nodes ?? []
   const origin = nodes.find((n) => n.id === assetId)
@@ -139,8 +144,21 @@ export function Simulation() {
       const second = await api.simulate(secondary.assetId, secondary.scenario, depth)
       return mergeResults([primary, second])
     },
-    onSuccess: (r) => { setResult(r); setRemoved(new Set()) },
+    onSuccess: (r) => {
+      setResult(r); setRemoved(new Set())
+      const affected: Record<string, number> = {}
+      for (const n of r.nodeDetails) affected[n.id] = n.depth
+      nonceRef.current += 1
+      setSim({ originId: assetId, affected, action: actionRef.current, nonce: nonceRef.current })
+    },
   })
+
+  // Déclenche une action sur le nœud ciblé et anime la cascade.
+  function launch(action: SimAction) {
+    if (!validTarget) return
+    actionRef.current = action
+    run.mutate()
+  }
 
   // Résout le paramètre entrant (id direct OU nom) vers un vrai id de nœud ;
   // sinon présélectionne le premier actif. Corrige les liens qui passent un nom.
@@ -212,34 +230,48 @@ export function Simulation() {
           </div>
           <div className="mt-auto border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
             <button
-              onClick={() => validTarget && run.mutate()} disabled={!validTarget || run.isPending}
+              onClick={() => launch('fail')} disabled={!validTarget || run.isPending}
               className="nx-pulse flex h-12 w-full items-center justify-center gap-2 rounded-sm transition-all disabled:opacity-50"
               style={{ background: 'transparent', border: `2px solid ${CYAN}`, color: CYAN_T, fontFamily: mono, fontSize: 14, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}
             >
               <Bolt size={18} /> {run.isPending ? t('En cours…', 'Running…') : t('Lancer la simulation', 'Run Simulation')}
             </button>
+            <p className="mt-2" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>
+              {t('Astuce : cliquez un nœud dans l’hologramme, puis agissez directement dessus.', 'Tip: click a node in the hologram, then act on it directly.')}
+            </p>
           </div>
         </div>
 
-        {/* ===== Graphe de propagation (3D) ===== */}
+        {/* ===== Hologramme interactif (cliquer un nœud → agir → cascade animée) ===== */}
         <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
           <div className="nx-grid absolute inset-0" />
-          {!result && (
-            <div className="z-10 text-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>
-              {run.isPending ? t('SIMULATION DE LA PROPAGATION…', 'SIMULATING PROPAGATION…') : origin ? t(`Prêt — lancer la défaillance de ${origin.name}`, `Ready — run failure of ${origin.name}`) : t('Sélectionnez un nœud d’origine', 'Select a target origin node')}
-            </div>
-          )}
-          {result && shownResult && (
-            <Suspense fallback={<div className="z-10" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement du moteur 3D…', 'Loading 3D engine…')}</div>}>
-              <Propagation3D
-                origin={origin?.name ?? 'ORIGIN'}
-                affected={shownResult.affected}
-                maxDepth={shownResult.maxDepth}
-                removedCount={removed.size}
-                onRemove={(id) => setRemoved((p) => new Set(p).add(id))}
-                onRestore={() => setRemoved(new Set())}
+          {nodes.length > 0 ? (
+            <Suspense fallback={<div className="z-10" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement de l’hologramme…', 'Loading hologram…')}</div>}>
+              <Graph3D
+                nodes={nodes}
+                edges={(graph.data?.edges ?? []).map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
+                selectedId={assetId}
+                onSelect={(id) => { setAssetId(id); setResult(null); setSim(null) }}
+                sim={sim}
               />
             </Suspense>
+          ) : (
+            <div className="z-10 text-center" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>
+              {graph.isLoading ? t('CHARGEMENT DU GRAPHE…', 'LOADING GRAPH…') : t('Aucun graphe — importez des données', 'No graph — import data first')}
+            </div>
+          )}
+
+          {/* Barre d'actions flottante : agir directement sur le nœud ciblé */}
+          {origin && (
+            <div className="absolute bottom-5 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-lg border px-3 py-2 backdrop-blur"
+              style={{ background: 'color-mix(in srgb, var(--nx-panel) 90%, transparent)', borderColor: 'var(--nx-border)' }}>
+              <span className="mr-1 hidden sm:inline" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
+                {t('Cible', 'Target')} : <span style={{ color: 'var(--nx-text)' }}>{origin.name}</span>
+              </span>
+              <ActionBtn onClick={() => launch('fail')} busy={run.isPending} icon={<Bolt size={14} />} label={t('Faire tomber', 'Fail')} color="#ff5a3c" />
+              <ActionBtn onClick={() => launch('error')} busy={run.isPending} icon={<Zap size={14} />} label={t('Injecter une erreur', 'Inject error')} color="#f5c542" />
+              <ActionBtn onClick={() => launch('remove')} busy={run.isPending} icon={<Trash2 size={14} />} label={t('Supprimer', 'Remove')} color="#9aa7b0" />
+            </div>
           )}
         </div>
 
@@ -332,6 +364,18 @@ function ResultPanel({ origin, result, redundant }: { origin: string; result: Pr
 }
 
 /* ---------- primitives ---------- */
+function ActionBtn({ onClick, busy, icon, label, color }: { onClick: () => void; busy: boolean; icon: React.ReactNode; label: string; color: string }) {
+  return (
+    <button
+      onClick={onClick} disabled={busy}
+      className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 transition-all hover:brightness-125 disabled:opacity-50"
+      style={{ borderColor: `color-mix(in srgb, ${color} 55%, transparent)`, color, fontFamily: mono, fontSize: 12, background: `color-mix(in srgb, ${color} 10%, transparent)` }}
+    >
+      {icon} {label}
+    </button>
+  )
+}
+
 function Select({ label, value, onChange, options, danger }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; danger?: boolean }) {
   return (
     <div className="flex flex-1 flex-col gap-1.5">
