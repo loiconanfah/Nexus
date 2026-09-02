@@ -97,9 +97,14 @@ function renderSimFrame(
     if (aAff && bAff) {
       const dA = ai === s.originId ? 0 : (s.affected.get(ai) ?? 0)
       const dB = bi === s.originId ? 0 : (s.affected.get(bi) ?? 0)
-      const on = tt >= Math.max(dA, dB) * WAVE_DELAY
-      lm.color.copy(on ? s.edgeColor : (line.userData.baseColor as THREE.Color))
-      lm.opacity = on ? 0.95 : 0.05
+      const reach = Math.max(dA, dB)
+      const on = tt >= reach * WAVE_DELAY
+      if (!on) { lm.opacity = 0.05; continue }
+      // Lien DIRECT (origine → dépendant immédiat) : vif et plein.
+      // Lien INDIRECT (cascade plus profonde) : couleur froide, atténué (distinct).
+      const direct = reach <= 1
+      lm.color.copy(direct ? s.edgeColor : s.waveCold)
+      lm.opacity = direct ? 0.98 : 0.34
     } else {
       lm.opacity = 0.03
     }

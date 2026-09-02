@@ -432,10 +432,14 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* Incident */}
-      <div className="rounded-sm border p-3" style={{ borderColor: `color-mix(in srgb, ${actColor} 35%, transparent)`, background: `color-mix(in srgb, ${actColor} 8%, transparent)` }}>
-        <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Incident', 'Incident')}</div>
-        <div className="flex flex-wrap items-center gap-1.5" style={{ fontFamily: geist, fontSize: 16, color: actColor }}>
-          {act ? t(act.fr, act.en) : action} <span style={{ color: 'var(--nx-text-muted)' }}>·</span> <span style={{ color: 'var(--nx-text)' }}>{origin}</span>
+      <div className="flex items-center gap-3 rounded-md border p-3" style={{ borderColor: `color-mix(in srgb, ${actColor} 35%, transparent)`, background: `color-mix(in srgb, ${actColor} 8%, transparent)`, borderLeft: `3px solid ${actColor}` }}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md" style={{ background: `color-mix(in srgb, ${actColor} 18%, transparent)`, color: actColor }}>
+          {act ? <act.icon size={18} /> : null}
+        </div>
+        <div className="min-w-0">
+          <div style={{ fontFamily: mono, fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-text-muted)' }}>{t('Incident simulé', 'Simulated incident')}</div>
+          <div className="truncate" style={{ fontFamily: geist, fontSize: 15, color: actColor }}>{act ? t(act.fr, act.en) : action}</div>
+          <div className="truncate" style={{ fontSize: 11, color: 'var(--nx-text-muted)' }}>{originType} · {origin}</div>
         </div>
       </div>
 
@@ -458,6 +462,12 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
         <Metric label={t('DIRECTS', 'DIRECT')} value={modeled.direct} color={actColor} />
         <Metric label={t('INDIRECTS', 'INDIRECT')} value={modeled.indirect} color="var(--nx-text)" />
         <Metric label={t('ÉPARGNÉS', 'SPARED')} value={modeled.spared} color="#5a97a3" />
+      </div>
+
+      {/* Légende des liens de propagation */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1" style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-text-muted)' }}>
+        <span className="flex items-center gap-1.5"><span style={{ display: 'inline-block', width: 18, height: 3, borderRadius: 2, background: actColor }} /> {t('lien direct', 'direct link')}</span>
+        <span className="flex items-center gap-1.5"><span style={{ display: 'inline-block', width: 18, height: 2, borderRadius: 2, background: 'var(--nx-outline)', opacity: 0.6 }} /> {t('lien indirect (cascade)', 'indirect link (cascade)')}</span>
       </div>
 
       {/* Analyse IA */}
@@ -508,21 +518,55 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
 
 function ImpactCardRow({ c, i, fmtMoney }: { c: ImpactCard; i: number; fmtMoney: (n: number) => string }) {
   const { t } = useLang()
+  const [open, setOpen] = useState(false)
+  const accent = c.depth === 0 ? '#ff3b30' : c.direct ? '#ff7a5c' : '#c69a4e'
+  const tag = c.depth === 0 ? t('cible', 'target') : c.direct ? t('direct', 'direct') : t('indirect', 'indirect')
+  const costPerH = c.rto > 0 ? Math.round(c.euro / c.rto) : c.euro
+  const why = c.depth === 0
+    ? t('Élément directement ciblé par l’incident — indisponibilité immédiate.', 'Element directly hit by the incident — immediate outage.')
+    : c.direct
+      ? t('Dépend directement de la cible : impact immédiat.', 'Depends directly on the target: immediate impact.')
+      : t(`Touché par effet de cascade (profondeur ${c.depth}) : impact différé/atténué.`, `Hit by cascade effect (depth ${c.depth}): delayed/attenuated impact.`)
+
   return (
-    <div className="rounded-sm border p-2.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)', animation: 'simCardIn 0.34s ease both', animationDelay: `${Math.min(i * 35, 700)}ms` }}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 truncate">
-          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: '#04121a', background: critColorSim(c.criticality) }}>{c.criticality}</span>
-          <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
+    <div className="overflow-hidden rounded-md border transition-colors" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)', borderLeft: `3px solid ${accent}`, animation: 'simCardIn 0.34s ease both', animationDelay: `${Math.min(i * 35, 700)}ms` }}>
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2 p-2.5 text-left hover:brightness-110">
+        <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: '#04121a', background: critColorSim(c.criticality) }}>{c.criticality}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
+            <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: accent, border: `1px solid ${accent}55` }}>{tag}</span>
+          </div>
+          <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(c.type, t)} · T+{c.depth}h · <span style={{ color: 'var(--nx-text)' }}>{fmtMoney(c.euro)} $</span></div>
         </div>
-        <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: c.direct ? '#ff7a5c' : '#c69a4e', border: `1px solid ${c.direct ? '#ff7a5c55' : '#c69a4e55'}` }}>
-          {c.direct ? t('direct', 'direct') : t('indirect', 'indirect')}
-        </span>
-      </div>
-      <div className="mt-1.5 flex items-center justify-between" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>
-        <span>{entityTypeLabel(c.type, t)} · T+{c.depth}h</span>
-        <span>{fmtMoney(c.euro)}$ · RTO {c.rto}h · {Math.round(c.prob * 100)}%</span>
-      </div>
+        <ChevronDown size={14} className="shrink-0 transition-transform" style={{ color: 'var(--nx-text-muted)', transform: open ? 'rotate(180deg)' : 'none' }} />
+      </button>
+      {open && (
+        <div className="border-t px-2.5 py-2" style={{ borderColor: 'var(--nx-border)' }}>
+          <div className="grid grid-cols-3 gap-2">
+            <Detail label={t('Coût / h', 'Cost / h')} value={`${fmtMoney(costPerH)} $`} />
+            <Detail label={t('Rétablissement', 'Recovery')} value={`${c.rto} h`} />
+            <Detail label={t('Probabilité', 'Probability')} value={`${Math.round(c.prob * 100)} %`} />
+          </div>
+          <div className="mt-2">
+            <div className="mb-0.5 flex items-center justify-between" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-text-muted)' }}>
+              <span>{t('Criticité', 'Criticality')}</span><span>{c.criticality}/100</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-border)' }}>
+              <div className="h-full rounded-full" style={{ width: `${c.criticality}%`, background: critColorSim(c.criticality) }} />
+            </div>
+          </div>
+          <p className="mt-2" style={{ fontSize: 12, color: 'var(--nx-text-muted)', lineHeight: 1.4 }}>{why}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border p-1.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+      <div style={{ fontFamily: mono, fontSize: 8.5, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{label}</div>
+      <div style={{ fontFamily: geist, fontSize: 14, color: 'var(--nx-text)' }}>{value}</div>
     </div>
   )
 }
