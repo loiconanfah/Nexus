@@ -149,9 +149,8 @@ export function Simulation() {
   const actionRef = useRef<SimAction>('fail')
   const nonceRef = useRef(0)
   const pendingScenarioRef = useRef<ScenarioType | null>(null)
-  // Plein écran de l'hologramme.
-  const canvasRef = useRef<HTMLDivElement>(null)
-  const [fs, setFs] = useState(false)
+  // Mode focus : masque les panneaux latéraux pour agrandir l'hologramme.
+  const [focus, setFocus] = useState(false)
 
   const nodes = graph.data?.nodes ?? []
   const origin = nodes.find((n) => n.id === assetId)
@@ -184,17 +183,6 @@ export function Simulation() {
     run.mutate()
   }
 
-  function toggleFullscreen() {
-    const el = canvasRef.current
-    if (!el) return
-    if (!document.fullscreenElement) el.requestFullscreen?.()
-    else document.exitFullscreen?.()
-  }
-  useEffect(() => {
-    const on = () => setFs(!!document.fullscreenElement)
-    document.addEventListener('fullscreenchange', on)
-    return () => document.removeEventListener('fullscreenchange', on)
-  }, [])
 
   // Résout le paramètre entrant (id direct OU nom) vers un vrai id de nœud ;
   // sinon présélectionne le premier actif. Corrige les liens qui passent un nom.
@@ -230,7 +218,7 @@ export function Simulation() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* ===== Config ===== */}
-        <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-r" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+        <div className={`${focus ? 'hidden' : 'flex'} w-80 shrink-0 flex-col overflow-y-auto border-r`} style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
             <h3 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN_T }}>
               <Bolt size={14} /> {t('Configuration du scénario', 'Scenario Configuration')}
@@ -279,17 +267,17 @@ export function Simulation() {
         </div>
 
         {/* ===== Hologramme interactif (cliquer un nœud → agir → cascade animée) ===== */}
-        <div ref={canvasRef} className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
+        <div className="relative flex flex-1 items-center justify-center overflow-hidden" style={{ background: 'var(--nx-panel)' }}>
           <div className="nx-grid absolute inset-0" />
 
-          {/* Plein écran */}
+          {/* Agrandir : masque les panneaux latéraux */}
           <button
-            onClick={toggleFullscreen}
-            title={fs ? t('Quitter le plein écran', 'Exit fullscreen') : t('Agrandir (plein écran)', 'Enlarge (fullscreen)')}
+            onClick={() => setFocus((f) => !f)}
+            title={focus ? t('Réduire', 'Shrink') : t('Agrandir l’hologramme', 'Enlarge hologram')}
             className="absolute left-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-sm border transition-colors hover:brightness-125"
             style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)' }}
           >
-            {fs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            {focus ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
           {nodes.length > 0 ? (
             <Suspense fallback={<div className="z-10" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chargement de l’hologramme…', 'Loading hologram…')}</div>}>
@@ -326,7 +314,7 @@ export function Simulation() {
         </div>
 
         {/* ===== Résultats ===== */}
-        <div className="flex w-80 shrink-0 flex-col overflow-y-auto border-l" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+        <div className={`${focus ? 'hidden' : 'flex'} w-80 shrink-0 flex-col overflow-y-auto border-l`} style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
             <h3 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Résultat de la simulation', 'Simulation Result')}</h3>
           </div>
@@ -426,7 +414,6 @@ function ActionBtn({ onClick, busy, icon, label, color, active }: { onClick: () 
       }}
     >
       {icon}
-      <span className="hidden xl:inline" style={{ fontFamily: mono, fontSize: 11, whiteSpace: 'nowrap' }}>{label}</span>
     </button>
   )
 }
