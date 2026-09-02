@@ -28,6 +28,7 @@ import { RelationInference } from './pages/RelationInference'
 import { Help } from './pages/Help'
 import { Landing } from './pages/Landing'
 import { DemoChoice } from './pages/DemoChoice'
+import { Legal } from './pages/Legal'
 import { Login } from './pages/Login'
 import { getTenantId } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -74,6 +75,9 @@ export default function App() {
   }
   if (pathname === '/login') {
     return <Login />
+  }
+  if (pathname === '/legal') {
+    return <Legal />
   }
   // Gate d'authentification : les visiteurs non connectés arrivent sur la landing.
   if (!isAuthed()) {

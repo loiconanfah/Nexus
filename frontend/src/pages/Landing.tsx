@@ -213,8 +213,12 @@ export function Landing() {
             <span style={{ fontFamily: geist, fontSize: 14 }}>Lenexus</span>
             <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· MJ Corp</span>
           </div>
-          <p style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>{t('Savoir ce qui casse avant que l’activité n’en pâtisse.', 'Know what breaks before the business does.')}</p>
-          <button onClick={() => navigate('/login')} className="flex items-center gap-1" style={{ fontSize: 13, color: '#a9b8ff' }}>{t('Se connecter', 'Sign in')} <ArrowUpRight size={14} /></button>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1" style={{ fontFamily: mono, fontSize: 11 }}>
+            <a href="/legal?doc=terms" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=terms') }} style={{ color: '#8a8a98' }}>{t('Conditions', 'Terms')}</a>
+            <a href="/legal?doc=privacy" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=privacy') }} style={{ color: '#8a8a98' }}>{t('Confidentialité', 'Privacy')}</a>
+            <a href="/legal?doc=dpa" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=dpa') }} style={{ color: '#8a8a98' }}>DPA</a>
+            <button onClick={() => navigate('/login')} className="flex items-center gap-1" style={{ color: '#a9b8ff' }}>{t('Se connecter', 'Sign in')} <ArrowUpRight size={14} /></button>
+          </div>
         </div>
       </footer>
     </div>
