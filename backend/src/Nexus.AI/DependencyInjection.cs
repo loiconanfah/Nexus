@@ -25,7 +25,20 @@ public static class DependencyInjection
         // Complétion dont le fournisseur est choisi à l'exécution. Sans clé,
         // l'AI Analyst reste pleinement fonctionnel avec ses réponses déterministes.
         services.AddSingleton<DynamicChatCompletion>();
-        services.AddSingleton<IChatCompletion>(sp => sp.GetRequiredService<DynamicChatCompletion>());
+
+        // Plafonds d'usage LLM par tenant (env, 0 = illimité).
+        services.AddSingleton(_ => LlmQuotaOptions.FromEnvironment());
+
+        // IChatCompletion = décorateur de quota (scoped) si un store d'usage et un
+        // tenant courant sont disponibles ; sinon la complétion brute (tests/outils).
+        services.AddScoped<IChatCompletion>(sp =>
+        {
+            var inner = sp.GetRequiredService<DynamicChatCompletion>();
+            var store = sp.GetService<ILlmUsageStore>();
+            var tenant = sp.GetService<ICurrentTenant>();
+            if (store is null || tenant is null) return inner;
+            return new QuotaChatCompletion(inner, tenant, store, sp.GetRequiredService<LlmQuotaOptions>());
+        });
 
         services.AddScoped<AiOrchestrator>();
         return services;

@@ -10,10 +10,32 @@ namespace Nexus.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/v1/ai/config")]
-public sealed class AiConfigController(AiRuntimeConfig config, DynamicChatCompletion chat) : ControllerBase
+public sealed class AiConfigController(
+    AiRuntimeConfig config, DynamicChatCompletion chat,
+    ICurrentTenant tenant, ILlmUsageStore usage, LlmQuotaOptions quota) : ControllerBase
 {
     public sealed record SetKeyRequest(string Provider, string ApiKey, string? Endpoint, string? Model);
     public sealed record SetModelRequest(string Model);
+
+    /// <summary>Consommation LLM du tenant sur le mois courant + plafonds (0 = illimité).</summary>
+    [HttpGet("/api/v1/ai/usage")]
+    public async Task<IActionResult> Usage(CancellationToken ct)
+    {
+        var period = DateTime.UtcNow.ToString("yyyy-MM");
+        var tid = tenant.TenantId;
+        var u = tid is null ? new LlmUsage(0, 0) : await usage.GetAsync(tid.Value, period, ct);
+        var capReached = (quota.MonthlyCallCap > 0 && u.Calls >= quota.MonthlyCallCap)
+                      || (quota.MonthlyCharCap > 0 && u.Chars >= quota.MonthlyCharCap);
+        return Ok(new
+        {
+            period,
+            calls = u.Calls,
+            chars = u.Chars,
+            callCap = quota.MonthlyCallCap,
+            charCap = quota.MonthlyCharCap,
+            capReached,
+        });
+    }
 
     /// <summary>Statut sans secret : la clé n'est jamais exposée.</summary>
     [HttpGet]

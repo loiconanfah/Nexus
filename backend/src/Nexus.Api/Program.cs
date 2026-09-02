@@ -62,6 +62,7 @@ builder.Services.AddScoped<ITenantProvider, ClaimTenantProvider>();
 // Config IA par tenant : resolution du tenant (singleton-safe) + persistance Postgres.
 builder.Services.AddSingleton<Nexus.AI.ICurrentTenant, Nexus.Api.AI.HttpCurrentTenant>();
 builder.Services.AddSingleton<Nexus.AI.IAiConfigStore, Nexus.Api.AI.PgAiConfigStore>();
+builder.Services.AddScoped<Nexus.AI.ILlmUsageStore, Nexus.Api.AI.PgLlmUsageStore>();
 builder.Services.AddScoped<Nexus.Api.History.HistoryService>();
 builder.Services.AddScoped<Nexus.Api.Business.DecisionInterpreter>();
 builder.Services.AddScoped<Nexus.Api.Business.DecisionAnalyzer>();
