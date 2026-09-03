@@ -388,3 +388,12 @@ export interface SimExplainPayload {
   byType: Record<string, number>; topElements: { name: string; type: string; direct: boolean; criticality: number }[]
   lang: string
 }
+
+export interface AttackChainStep { name: string; type: string; via: string | null }
+export interface AttackExplainPayload {
+  entryName: string; entryType: string; scenario: string
+  compromised: number; servicesExposed: number; dataExposed: number
+  worstCase: number; expected: number; currency: string
+  byType: Record<string, number>; chain: AttackChainStep[]; lang: string
+}
+export interface AttackExplain { usedAi: boolean; narrative: string; risks: string[]; countermeasures: string[] }
