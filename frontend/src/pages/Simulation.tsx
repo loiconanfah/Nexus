@@ -76,7 +76,10 @@ function rtoHours(type: string, crit: number): number {
     : ['Server', 'CloudResource', 'Network', 'Device'].includes(type) ? 6
     : ['Application', 'Service'].includes(type) ? 3
     : ['BusinessProcess', 'BusinessService', 'Process'].includes(type) ? 4
-    : type === 'Supplier' ? 24 : type === 'Contract' ? 72
+    : type === 'Supplier' || type === 'AiProvider' ? 24 : type === 'Contract' ? 72
+    // Couche IA (aligné sur BusinessImpactModel côté serveur)
+    : ['AiModel', 'ModelEndpoint', 'AiService'].includes(type) ? 4
+    : ['AiAgent', 'AiWorkflow'].includes(type) ? 5 : type === 'Dataset' ? 12
     : ['Person', 'Role', 'Team'].includes(type) ? 48 : type === 'Location' ? 12 : 6
   return Math.round(b * (0.75 + 0.5 * crit / 100) * 10) / 10
 }

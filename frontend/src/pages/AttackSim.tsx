@@ -47,7 +47,8 @@ function costPerHour(c: number) { return c >= 90 ? 50000 : c >= 80 ? 25000 : c >
 function rtoHours(type: string, crit: number) {
   const b = ['Database', 'System', 'Infrastructure', 'DataStore'].includes(type) ? 8
     : ['Server', 'CloudResource', 'Network', 'Device'].includes(type) ? 6
-    : ['Application', 'Service', 'AiModel', 'AiService', 'ModelEndpoint'].includes(type) ? 3
+    : ['Application', 'Service'].includes(type) ? 3
+    : ['AiModel', 'AiService', 'ModelEndpoint'].includes(type) ? 4
     : ['AiAgent', 'AiWorkflow'].includes(type) ? 5
     : ['BusinessProcess', 'BusinessService', 'Process'].includes(type) ? 4
     : type === 'Supplier' || type === 'AiProvider' ? 24 : type === 'Dataset' ? 12
