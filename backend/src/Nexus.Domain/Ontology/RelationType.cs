@@ -89,6 +89,16 @@ public sealed class RelationType : IEquatable<RelationType>
     public static readonly RelationType BackedUpBy = new("BACKED_UP_BY");
     public static readonly RelationType RecoversWith = new("RECOVERS_WITH");
 
+    // --- Dépendances IA (AI Dependency Intelligence) : porteuses de dépendance ---
+    // « source dépend de cible » : une application UTILISE un modèle, un agent
+    // INVOQUE un service, un modèle est SERVI PAR un fournisseur, etc.
+    public static readonly RelationType UsesModel = new("USES_MODEL", isDependency: true, propagates: true, carriesDependency: true);
+    public static readonly RelationType Invokes = new("INVOKES", isDependency: true, propagates: true, carriesDependency: true);
+    public static readonly RelationType ServedBy = new("SERVED_BY", isDependency: true, propagates: true, carriesDependency: true);
+    public static readonly RelationType CanActOn = new("CAN_ACT_ON", isDependency: true, propagates: true, carriesDependency: true);
+    public static readonly RelationType SendsDataTo = new("SENDS_DATA_TO", isDependency: true, propagates: true, carriesDependency: true);
+    public static readonly RelationType Orchestrates = new("ORCHESTRATES", isDependency: true, propagates: true, carriesDependency: true);
+
     // Dépendances humaines (article 28)
     public static readonly RelationType HasAccessTo = new("HAS_ACCESS_TO");
     public static readonly RelationType Knows = new("KNOWS", isDependency: true);

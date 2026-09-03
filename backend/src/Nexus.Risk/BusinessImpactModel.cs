@@ -39,6 +39,12 @@ public static class BusinessImpactModel
             "Contract" => 72.0,
             "Person" or "Role" or "Team" => 48.0,
             "Location" => 12.0,
+            // Couche IA : un modèle/endpoint se re-bascule vite ; un fournisseur IA
+            // externe et un ré-entraînement de dataset sont plus lents.
+            "AiModel" or "ModelEndpoint" or "AiService" => 4.0,
+            "AiAgent" or "AiWorkflow" => 5.0,
+            "AiProvider" => 24.0,
+            "Dataset" => 12.0,
             _ => 6.0,
         };
         return Math.Round(b * (0.75 + 0.5 * criticality / 100.0), 1);

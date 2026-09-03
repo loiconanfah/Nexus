@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Bolt, ChevronDown, Plus, X, Trash2, Bug, ShieldAlert,
   Power, WifiOff, Database, Truck, CloudOff, UserMinus, Maximize2, Minimize2, GripVertical,
+  BrainCircuit, Bot, AlertTriangle, Unplug,
 } from 'lucide-react'
 import { api } from '../lib/api'
 
@@ -115,6 +116,11 @@ const ACTIONS: { key: SimAction; fr: string; en: string; icon: typeof Bolt; colo
   { key: 'supplier', fr: 'Défaillance fournisseur', en: 'Supplier failure', icon: Truck, color: '#e0a44e', scenario: 'SupplierFailure' },
   { key: 'cloud', fr: 'Panne région cloud', en: 'Cloud region down', icon: CloudOff, color: '#4ae0d0', scenario: 'CloudRegionFailure' },
   { key: 'employee', fr: 'Perte employé clé', en: 'Key employee loss', icon: UserMinus, color: '#ff8ac6', scenario: 'EmployeeLoss' },
+  // Couche IA (AI Dependency Intelligence)
+  { key: 'model-down', fr: 'Modèle IA indisponible', en: 'AI model down', icon: BrainCircuit, color: '#b98aff', scenario: 'ApplicationFailure' },
+  { key: 'model-wrong', fr: 'Sortie erronée du modèle', en: 'Bad model output', icon: AlertTriangle, color: '#ffb84a', scenario: 'DataLoss' },
+  { key: 'ai-provider', fr: 'Fournisseur IA compromis', en: 'AI provider compromised', icon: Unplug, color: '#ff4d8d', scenario: 'CyberIncident' },
+  { key: 'agent-rogue', fr: 'Agent IA hors de contrôle', en: 'Rogue AI agent', icon: Bot, color: '#e05ae0', scenario: 'CyberIncident' },
 ]
 
 /**
@@ -149,6 +155,15 @@ const ACTION_MODEL: Record<SimAction, { reach: number; affDefault: number; aff: 
   cloud: { reach: 99, affDefault: 0.2, aff: { CloudResource: 1, Application: 0.9, Service: 0.9, System: 0.9, Database: 0.7, BusinessService: 0.7, BusinessProcess: 0.7, Network: 0.3, Server: 0.2, Supplier: 0 } },
   // Perte d'employé clé : personnes/équipes + processus métier ; peu la technique.
   employee: { reach: 3, affDefault: 0, aff: { Person: 1, Role: 1, Team: 1, BusinessProcess: 0.8, BusinessService: 0.8, Process: 0.8, Application: 0.3, Service: 0.3, System: 0.3 } },
+  // ── Couche IA ──
+  // Modèle indisponible : tout ce qui l'utilise (apps, agents, services, processus).
+  'model-down': { reach: 99, affDefault: 0, aff: { AiModel: 1, ModelEndpoint: 1, AiService: 1, AiAgent: 0.9, AiWorkflow: 0.9, Application: 0.9, Service: 0.9, System: 0.8, BusinessService: 0.8, BusinessProcess: 0.8, Dataset: 0.2 } },
+  // Sortie erronée : se propage aux CONSOMMATEURS de la décision du modèle (insidieux, moins profond).
+  'model-wrong': { reach: 5, affDefault: 0, aff: { AiModel: 1, AiService: 0.9, AiAgent: 0.9, AiWorkflow: 0.9, Application: 0.8, Service: 0.8, BusinessProcess: 0.9, BusinessService: 0.9, Dataset: 0.4 } },
+  // Fournisseur IA compromis : le fournisseur + ce qu'il sert + l'aval (type cyber).
+  'ai-provider': { reach: 99, affDefault: 0.15, aff: { AiProvider: 1, AiModel: 0.9, ModelEndpoint: 0.9, AiService: 0.9, AiAgent: 0.7, AiWorkflow: 0.7, Application: 0.6, Service: 0.6, BusinessService: 0.6, BusinessProcess: 0.6, CloudResource: 0.4 } },
+  // Agent hors de contrôle : se propage via CAN_ACT_ON vers les systèmes qu'il peut toucher.
+  'agent-rogue': { reach: 99, affDefault: 0.1, aff: { AiAgent: 1, AiWorkflow: 0.8, System: 0.8, Application: 0.8, Service: 0.8, Database: 0.7, DataStore: 0.6, BusinessProcess: 0.7, BusinessService: 0.7, AiModel: 0.3 } },
 }
 function affinity(action: SimAction, type: string): number {
   const m = ACTION_MODEL[action]

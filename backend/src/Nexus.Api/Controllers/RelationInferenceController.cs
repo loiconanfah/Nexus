@@ -24,7 +24,7 @@ public sealed class RelationInferenceController(
     IGraphRepository repository) : NexusController(tenantProvider)
 {
     private const string Source = "Relation Inference";
-    private const string RelationTypes = "DEPENDS_ON, RUNS_ON, HOSTS, USES, SUPPLIED_BY, AUTHENTICATES, MAINTAINS, CONNECTS_TO, STORES, PROTECTS, PART_OF, LOCATED_IN";
+    private const string RelationTypes = "DEPENDS_ON, RUNS_ON, HOSTS, USES, SUPPLIED_BY, AUTHENTICATES, MAINTAINS, CONNECTS_TO, STORES, PROTECTS, PART_OF, LOCATED_IN, USES_MODEL, INVOKES, SERVED_BY, CAN_ACT_ON, SENDS_DATA_TO, ORCHESTRATES";
 
     public sealed record ProposedRelation(
         string Source, string SourceType, string Target, string TargetType,

@@ -212,10 +212,10 @@ public sealed class ImpactIntelligenceService(
         // Sinon déduit du type de l'entité résolue.
         return entityType switch
         {
-            "Supplier" => ScenarioType.SupplierFailure,
+            "Supplier" or "AiProvider" => ScenarioType.SupplierFailure,
             "Person" or "Role" or "Team" => ScenarioType.EmployeeLoss,
-            "Database" or "DataStore" => ScenarioType.DatabaseFailure,
-            "Application" or "Service" or "System" => ScenarioType.ApplicationFailure,
+            "Database" or "DataStore" or "Dataset" => ScenarioType.DatabaseFailure,
+            "Application" or "Service" or "System" or "AiModel" or "AiService" or "ModelEndpoint" or "AiAgent" or "AiWorkflow" => ScenarioType.ApplicationFailure,
             "Server" => ScenarioType.ServerFailure,
             "Network" => ScenarioType.NetworkFailure,
             "Location" => ScenarioType.LocationFailure,

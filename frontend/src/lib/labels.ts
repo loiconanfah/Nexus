@@ -28,6 +28,14 @@ const ENTITY_TYPE: Record<string, [string, string]> = {
   Incident: ['Incident', 'Incident'],
   Risk: ['Risque', 'Risk'],
   Location: ['Site', 'Location'],
+  // Couche IA
+  AiModel: ['Modèle IA', 'AI Model'],
+  AiAgent: ['Agent IA', 'AI Agent'],
+  AiService: ['Service IA', 'AI Service'],
+  ModelEndpoint: ['Endpoint modèle', 'Model Endpoint'],
+  AiWorkflow: ['Flux IA', 'AI Workflow'],
+  AiProvider: ['Fournisseur IA', 'AI Provider'],
+  Dataset: ['Jeu de données', 'Dataset'],
 }
 
 const RELATION_TYPE: Record<string, [string, string]> = {
@@ -47,6 +55,12 @@ const RELATION_TYPE: Record<string, [string, string]> = {
   MAINTAINS: ['maintient', 'maintains'],
   PROTECTS: ['protège', 'protects'],
   Protects: ['protège', 'protects'],
+  USES_MODEL: ['utilise le modèle', 'uses model'],
+  INVOKES: ['invoque', 'invokes'],
+  SERVED_BY: ['servi par', 'served by'],
+  CAN_ACT_ON: ['peut agir sur', 'can act on'],
+  SENDS_DATA_TO: ['envoie des données à', 'sends data to'],
+  ORCHESTRATES: ['orchestre', 'orchestrates'],
 }
 
 export function entityTypeLabel(type: string, t: T): string {

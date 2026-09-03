@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js'
 import {
   AppWindow, Box, Database, Laptop, MapPin, Move3d, Network, RotateCcw, Server, Truck,
-  User, Users, Workflow, FileText,
+  User, Users, Workflow, FileText, BrainCircuit, Bot, Cpu, Cloud,
 } from 'lucide-react'
 import { fibSpherePoint, makeIconSprite, makeLabelSprite, disposeObject, type IconCmp } from '../lib/holoThree'
 import { useLang } from '../lib/i18n'
@@ -32,6 +32,9 @@ const TYPE_ICON: Record<string, IconCmp> = {
   Person: User, Role: Users, Team: Users,
   BusinessProcess: Workflow, Process: Workflow,
   Location: MapPin,
+  // Couche IA
+  AiModel: BrainCircuit, AiService: BrainCircuit, ModelEndpoint: Cpu,
+  AiAgent: Bot, AiWorkflow: Workflow, AiProvider: Cloud, Dataset: Database,
 }
 function iconFor(type: string): IconCmp { return TYPE_ICON[type] ?? Box }
 
@@ -116,6 +119,7 @@ export interface Graph3DEdge { id: string; source: string; target: string; type?
 export type SimAction =
   | 'fail' | 'error' | 'remove' | 'cyber' | 'power'
   | 'network' | 'data' | 'supplier' | 'cloud' | 'employee'
+  | 'model-down' | 'model-wrong' | 'ai-provider' | 'agent-rogue'
 /** Cascade de simulation à animer : origine + dépendants affectés (id→profondeur). */
 export interface SimCascade { originId: string; affected: Record<string, number>; action: SimAction; nonce: number }
 
@@ -146,6 +150,11 @@ const SIM_CONFIG: Record<SimAction, { style: SimStyle; origin: string; hot: stri
   supplier: { style: 'wave', origin: '#d98c3c', hot: '#e0a44e', cold: '#9a6a2e', edge: '#e0994a' },
   cloud: { style: 'wave', origin: '#2fd0c0', hot: '#4ae0d0', cold: '#1e9a90', edge: '#3fd6c6' },
   employee: { style: 'flicker', origin: '#ff6bb0', hot: '#ff8ac6', cold: '#b3457e', edge: '#ff7ab8' },
+  // Couche IA
+  'model-down': { style: 'wave', origin: '#a26bff', hot: '#b98aff', cold: '#6f4ab3', edge: '#b07aff' },
+  'model-wrong': { style: 'flicker', origin: '#f5a742', hot: '#ffce6a', cold: '#c97a1e', edge: '#ffb84a' },
+  'ai-provider': { style: 'flicker', origin: '#ff2d6b', hot: '#ff4d8d', cold: '#b3245a', edge: '#ff5a9e' },
+  'agent-rogue': { style: 'flicker', origin: '#c026d3', hot: '#e05ae0', cold: '#8a1fb3', edge: '#d84ae0' },
 }
 
 interface Props {

@@ -13,6 +13,7 @@ public enum EntityCategory
     Process,
     Security,
     Governance,
+    Intelligence,
     Derived
 }
 
@@ -85,6 +86,15 @@ public sealed class EntityType : IEquatable<EntityType>
     public static readonly EntityType Change = new(nameof(Change), EntityCategory.Governance);
     public static readonly EntityType Risk = new(nameof(Risk), EntityCategory.Governance);
     public static readonly EntityType Event = new(nameof(Event), EntityCategory.Governance);
+
+    // --- Intelligence artificielle (couche IA / AI Dependency Intelligence) ---
+    public static readonly EntityType AiModel = new(nameof(AiModel), EntityCategory.Intelligence, isAsset: true);
+    public static readonly EntityType AiAgent = new(nameof(AiAgent), EntityCategory.Intelligence, isAsset: true);
+    public static readonly EntityType AiService = new(nameof(AiService), EntityCategory.Intelligence, isAsset: true);
+    public static readonly EntityType ModelEndpoint = new(nameof(ModelEndpoint), EntityCategory.Intelligence, isAsset: true);
+    public static readonly EntityType AiWorkflow = new(nameof(AiWorkflow), EntityCategory.Intelligence);
+    public static readonly EntityType AiProvider = new(nameof(AiProvider), EntityCategory.Intelligence);
+    public static readonly EntityType Dataset = new(nameof(Dataset), EntityCategory.Intelligence, isAsset: true);
 
     // --- Entités dérivées (calculées par NEXUS) ---
     public static readonly EntityType Dependency = new(nameof(Dependency), EntityCategory.Derived);
