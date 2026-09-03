@@ -30,6 +30,8 @@ import type {
   ScenarioType,
   SimExplain,
   SimExplainPayload,
+  AttackExplain,
+  AttackExplainPayload,
   SupplierIntel,
 } from './types'
 
@@ -166,6 +168,9 @@ export const api = {
 
   explainSimulation: (payload: SimExplainPayload) =>
     fetch(`${BASE}/simulations/explain`, { method: 'POST', headers: headers(), body: JSON.stringify(payload) }).then(handle<SimExplain>),
+
+  explainAttack: (payload: AttackExplainPayload) =>
+    fetch(`${BASE}/attacks/explain`, { method: 'POST', headers: headers(), body: JSON.stringify(payload) }).then(handle<AttackExplain>),
 
   simulate: (assetId: string, scenario: ScenarioType, maxDepth = 10, durationHours = 8) =>
     fetch(`${BASE}/simulations`, {
