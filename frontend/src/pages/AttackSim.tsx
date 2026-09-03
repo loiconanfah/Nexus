@@ -57,7 +57,19 @@ function rtoHours(type: string, crit: number) {
 const failProb = (hop: number) => Math.round(Math.max(0.3, Math.pow(0.9, Math.max(0, hop - 1))) * 100) / 100
 
 type Reach = { hop: number; from: string | null; via: string | null }
-type Compromised = { node: GraphEntityRecord; hop: number; euro: number; prob: number }
+type Compromised = { node: GraphEntityRecord; hop: number; euro: number; prob: number; cut: number; cutEuro: number }
+
+// Recommandation par élément selon son type/rôle dans l'attaque (bilingue).
+function reco(type: string): [string, string] {
+  if (['Person', 'Role', 'Team'].includes(type)) return ['Révoquer les accès et réinitialiser les identifiants (MFA).', 'Revoke access and reset credentials (enforce MFA).']
+  if (['AiAgent', 'AiWorkflow'].includes(type)) return ['Suspendre l’agent et réduire ses permissions au strict minimum.', 'Suspend the agent and cut its permissions to the minimum.']
+  if (['AiModel', 'ModelEndpoint', 'AiService'].includes(type)) return ['Basculer sur un modèle de secours et valider les sorties.', 'Fail over to a backup model and validate outputs.']
+  if (['AiProvider', 'Supplier'].includes(type)) return ['Couper le fournisseur et activer une alternative.', 'Cut the provider and activate an alternative.']
+  if (['Database', 'DataStore', 'Dataset'].includes(type)) return ['Isoler les données, vérifier l’intégrité et une exfiltration.', 'Isolate the data, check integrity and exfiltration.']
+  if (['BusinessService', 'BusinessProcess', 'Process'].includes(type)) return ['Activer le plan de continuité de ce service.', 'Activate this service’s continuity plan.']
+  if (['Network', 'CloudResource'].includes(type)) return ['Segmenter le réseau et révoquer les jetons/clés.', 'Segment the network and revoke tokens/keys.']
+  return ['Isoler le système et surveiller le trafic latéral.', 'Isolate the system and monitor lateral traffic.']
+}
 type Result = {
   entry: GraphEntityRecord; items: Compromised[]; affectedMap: Record<string, number>
   byType: Record<string, number>; services: Compromised[]; data: Compromised[]
@@ -122,8 +134,20 @@ export function AttackSim() {
     const entry = byId.get(entryId)
     if (!entry) return null
     const rmap = spread(entryId, edges, activeRel, reach, iso)
+    // Arbre de compromission → sous-arbre de chaque nœud (ce que couperait son isolement).
+    const children = new Map<string, string[]>()
+    for (const [id, r] of rmap) if (r.from) { const l = children.get(r.from) ?? []; l.push(id); children.set(r.from, l) }
+    const euroOf = (id: string) => { const n = byId.get(id)!; return Math.round(costPerHour(n.criticality) * rtoHours(n.entityType, n.criticality)) }
+    const cCount = new Map<string, number>(), cEuro = new Map<string, number>()
+    const sub = (id: string): [number, number] => {
+      if (cCount.has(id)) return [cCount.get(id)!, cEuro.get(id)!]
+      let cnt = 1, eu = euroOf(id) * failProb(rmap.get(id)!.hop)
+      for (const ch of children.get(id) ?? []) { const [c2, e2] = sub(ch); cnt += c2; eu += e2 }
+      cCount.set(id, cnt); cEuro.set(id, eu); return [cnt, eu]
+    }
+    for (const id of rmap.keys()) sub(id)
     const items: Compromised[] = [...rmap.entries()].filter(([id]) => id !== entryId)
-      .map(([id, r]) => { const node = byId.get(id)!; return { node, hop: r.hop, euro: Math.round(costPerHour(node.criticality) * rtoHours(node.entityType, node.criticality)), prob: failProb(r.hop) } })
+      .map(([id, r]) => { const node = byId.get(id)!; return { node, hop: r.hop, euro: euroOf(id), prob: failProb(r.hop), cut: cCount.get(id) ?? 1, cutEuro: Math.round(cEuro.get(id) ?? 0) } })
       .filter((c) => c.node).sort((a, b) => a.hop - b.hop || b.node.criticality - a.node.criticality)
     const affectedMap: Record<string, number> = {}; for (const c of items) affectedMap[c.node.id] = c.hop
     const byType: Record<string, number> = {}; for (const c of items) byType[c.node.entityType] = (byType[c.node.entityType] ?? 0) + 1
@@ -306,12 +330,25 @@ export function AttackSim() {
             <div>
               <h4 className="mb-2 border-b pb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Éléments compromis · isoler pour simuler', 'Compromised · isolate to simulate')}</h4>
               <div className="flex flex-col gap-1.5">
-                {result.items.slice(0, 24).map((c) => (
-                  <div key={c.node.id} className="flex items-center justify-between rounded-sm border px-2 py-1.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
-                    <span className="min-w-0 truncate" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{c.node.name} <span style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-outline)' }}>· {entityTypeLabel(c.node.entityType, t)} · S{c.hop}</span></span>
-                    <button onClick={() => toggleIsolate(c.node.id)} className="ml-2 flex-none rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, border: `1px solid ${isolated.has(c.node.id) ? '#3fb27f' : 'var(--nx-border)'}`, color: isolated.has(c.node.id) ? '#3fb27f' : 'var(--nx-text-muted)' }}>{isolated.has(c.node.id) ? t('isolé', 'isolated') : t('isoler', 'isolate')}</button>
-                  </div>
-                ))}
+                {result.items.slice(0, 24).map((c) => {
+                  const iso = isolated.has(c.node.id)
+                  const pivot = c.cut > 2
+                  return (
+                    <div key={c.node.id} className="rounded-sm border p-2" style={{ borderColor: iso ? '#3fb27f' : pivot ? `color-mix(in srgb, ${NEG} 45%, var(--nx-border))` : 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 truncate" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{c.node.name} <span style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-outline)' }}>· {entityTypeLabel(c.node.entityType, t)} · S{c.hop} · {Math.round(c.prob * 100)}%</span></span>
+                        <span className="flex-none" style={{ fontFamily: mono, fontSize: 11, color: NEG }}>{fmt(c.euro)} $</span>
+                      </div>
+                      <div className="mt-1 flex items-end justify-between gap-2">
+                        <span style={{ fontSize: 11, color: 'var(--nx-text-muted)', lineHeight: 1.35 }}>
+                          {pivot && <span style={{ color: NEG, fontFamily: mono, fontSize: 10 }}>{t('Point de bascule', 'Choke point')} · {t('couperait', 'would cut')} {c.cut} (~{fmt(c.cutEuro)} $) · </span>}
+                          {t(reco(c.node.entityType)[0], reco(c.node.entityType)[1])}
+                        </span>
+                        <button onClick={() => toggleIsolate(c.node.id)} className="flex-none rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, border: `1px solid ${iso ? '#3fb27f' : 'var(--nx-border)'}`, color: iso ? '#3fb27f' : 'var(--nx-text-muted)' }}>{iso ? t('isolé', 'isolated') : t('isoler', 'isolate')}</button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
