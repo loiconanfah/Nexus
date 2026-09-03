@@ -5,7 +5,7 @@ import {
   AlertTriangle, Blocks, Boxes, Building2, Database, FileSearch, GitBranch, GitPullRequest,
   ClipboardList, HelpCircle, History, LayoutDashboard, Moon, Network, PanelLeftClose, PanelLeftOpen,
   Radar, Radio, ScanText, ScrollText, Search,
-  Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Waypoints, Zap,
+  Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Waypoints, Zap, ShieldAlert,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
@@ -31,6 +31,7 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
       { to: '/dependencies', fr: 'Dépendances', en: 'Dependencies', icon: GitBranch },
       { to: '/risks', fr: 'Risques', en: 'Risks', icon: AlertTriangle },
       { to: '/incidents', fr: 'Alerte anticipée', en: 'Early-Warning', icon: Radar },
+      { to: '/attacks', fr: 'Simulation d’attaque', en: 'Attack Simulation', icon: ShieldAlert },
       { to: '/change', fr: 'Impact de changement', en: 'Change Impact', icon: GitPullRequest },
       { to: '/audit', fr: 'Confiance & audit', en: 'Confidence & Audit', icon: FileSearch },
     ],

@@ -25,6 +25,7 @@ import { EnterpriseModel } from './pages/EnterpriseModel'
 import { DecisionSim } from './pages/DecisionSim'
 import { ImpactIntelligence } from './pages/ImpactIntelligence'
 import { RelationInference } from './pages/RelationInference'
+import { AttackSim } from './pages/AttackSim'
 import { Help } from './pages/Help'
 import { Landing } from './pages/Landing'
 import { DemoChoice } from './pages/DemoChoice'
@@ -39,6 +40,7 @@ const TITLES: Record<string, string> = {
   '/enterprise': 'Enterprise Model',
   '/decision': 'Decision & Simulation',
   '/impact': 'Cross-system Impact',
+  '/attacks': 'Attack Simulation',
   '/inference': 'Inferred Dependencies',
   '/graph': 'Graph Explorer',
   '/assets': 'Assets',
@@ -114,6 +116,7 @@ export default function App() {
         <Route path="/enterprise" element={<EnterpriseModel />} />
         <Route path="/decision" element={<DecisionSim />} />
         <Route path="/impact" element={<ImpactIntelligence />} />
+        <Route path="/attacks" element={<AttackSim />} />
         <Route path="/inference" element={<RelationInference />} />
         <Route path="/graph" element={<GraphExplorer />} />
         <Route path="/dependencies" element={<DependencyIntelligence />} />
