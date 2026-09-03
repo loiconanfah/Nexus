@@ -12,6 +12,7 @@ const NEG = '#d15b54'
 
 const EXAMPLES: [string, string][] = [
   ['Que se passe-t-il si nous perdons le fournisseur Ericsson ?', 'What happens if we lose supplier Ericsson?'],
+  ['Que se passe-t-il si le fournisseur OpenAI tombe ?', 'What happens if the OpenAI provider goes down?'],
   ['Impact si le Data Center Montréal tombe en panne', 'Impact if Data Center Montréal goes down'],
   ['Que se passe-t-il si le HSS est indisponible ?', 'What happens if the HSS is unavailable?'],
 ]
