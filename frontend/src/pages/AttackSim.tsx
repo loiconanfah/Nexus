@@ -24,8 +24,24 @@ const SCENARIOS: Scenario[] = [
   { key: 'custom', fr: 'Personnalisé (chaîne libre)', en: 'Custom (free chain)', desc: ['Composez votre propre attaque : choisissez les liens qui transmettent la compromission et leur sens.', 'Compose your own attack: choose which links carry the compromise, and their direction.'], icon: Sliders, palette: 'cyber', entryTypes: [], reach: 4, active: {} },
 ]
 
-// Relations proposables dans le constructeur libre.
-const REL_OPTIONS = ['AUTHENTICATES', 'USES', 'KNOWS', 'MAINTAINS', 'DEPENDS_ON', 'RUNS_ON', 'SUPPLIED_BY', 'USES_MODEL', 'INVOKES', 'SERVED_BY', 'SENDS_DATA_TO', 'ORCHESTRATES', 'CAN_ACT_ON']
+// Relations proposables dans le constructeur libre : libellé + description
+// (ce que le lien transmet lors d'une attaque), bilingue.
+type RelMeta = { rel: string; fr: string; en: string; dfr: string; den: string }
+const REL_META: RelMeta[] = [
+  { rel: 'AUTHENTICATES', fr: 'Accès authentifié', en: 'Authenticated access', dfr: 'Une identité s’authentifie sur un système : l’attaquant hérite de cet accès.', den: 'An identity authenticates to a system: the attacker inherits that access.' },
+  { rel: 'USES', fr: 'Utilisation', en: 'Usage', dfr: 'Utilisation d’une ressource : voie de pivot possible.', den: 'Use of a resource: a possible pivot path.' },
+  { rel: 'KNOWS', fr: 'Lien social', en: 'Social link', dfr: 'Relation entre personnes : hameçonnage / ingénierie sociale.', den: 'Person-to-person link: phishing / social engineering.' },
+  { rel: 'MAINTAINS', fr: 'Maintenance / admin', en: 'Maintenance / admin', dfr: 'Accès d’administration à un système.', den: 'Administrative access to a system.' },
+  { rel: 'DEPENDS_ON', fr: 'Dépendance', en: 'Dependency', dfr: 'Dépendance opérationnelle : la compromission remonte aux dépendants.', den: 'Operational dependency: compromise flows to dependents.' },
+  { rel: 'RUNS_ON', fr: 'Exécution / hébergement', en: 'Runs on / hosting', dfr: 'S’exécute sur un hôte : l’hôte compromis compromet l’hébergé.', den: 'Runs on a host: a compromised host compromises what it hosts.' },
+  { rel: 'SUPPLIED_BY', fr: 'Fourniture externe', en: 'External supply', dfr: 'Fourni par un tiers : attaque de chaîne d’approvisionnement.', den: 'Supplied by a third party: supply-chain attack.' },
+  { rel: 'USES_MODEL', fr: 'Utilise un modèle IA', en: 'Uses an AI model', dfr: 'Une application utilise un modèle : sorties empoisonnées possibles.', den: 'An app uses a model: poisoned outputs possible.' },
+  { rel: 'INVOKES', fr: 'Invocation (service / agent)', en: 'Invocation (service / agent)', dfr: 'Appelle un service ou un agent : abus d’appel dans les deux sens.', den: 'Calls a service or agent: call abuse in both directions.' },
+  { rel: 'SERVED_BY', fr: 'Servi par un fournisseur IA', en: 'Served by an AI provider', dfr: 'Modèle servi par un fournisseur : compromission descendante.', den: 'Model served by a provider: downstream compromise.' },
+  { rel: 'SENDS_DATA_TO', fr: 'Flux de données', en: 'Data flow', dfr: 'Envoi de données : exfiltration ou empoisonnement.', den: 'Data sent: exfiltration or poisoning.' },
+  { rel: 'ORCHESTRATES', fr: 'Orchestration d’agents', en: 'Agent orchestration', dfr: 'Un flux orchestre des agents : détournement de la chaîne.', den: 'A workflow orchestrates agents: chain hijack.' },
+  { rel: 'CAN_ACT_ON', fr: 'Permission d’agir', en: 'Action permission', dfr: 'Un agent peut agir sur un système : rayon d’action de l’agent.', den: 'An agent can act on a system: the agent’s action radius.' },
+]
 
 function costPerHour(c: number) { return c >= 90 ? 50000 : c >= 80 ? 25000 : c >= 70 ? 15000 : c >= 60 ? 10000 : c >= 40 ? 3000 : c >= 20 ? 800 : 200 }
 function rtoHours(type: string, crit: number) {
@@ -181,15 +197,26 @@ export function AttackSim() {
                   <select value={customReach} onChange={(e) => setCustomReach(Number(e.target.value))} className="rounded border bg-transparent px-1" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)' }}>{[2, 3, 4, 5, 6].map((r) => <option key={r} value={r}>{r}</option>)}</select>
                 </label>
               </div>
-              <div className="flex flex-col gap-1">
-                {REL_OPTIONS.map((rel) => (
-                  <div key={rel} className="flex items-center justify-between">
-                    <span style={{ fontFamily: mono, fontSize: 11, color: customActive[rel] ? 'var(--nx-text)' : 'var(--nx-outline)' }}>{rel}</span>
-                    <div className="flex gap-0.5">
+              {/* Légende des directions */}
+              <div className="mb-2 flex flex-wrap gap-x-2.5 gap-y-0.5" style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-text-muted)' }}>
+                <span><b>—</b> {t('inactif', 'off')}</span>
+                <span><b>→</b> {t('source → cible', 'source → target')}</span>
+                <span><b>←</b> {t('cible → source', 'target → source')}</span>
+                <span><b>↔</b> {t('les deux', 'both')}</span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {REL_META.map(({ rel, fr, en, dfr, den }) => (
+                  <div key={rel} className="flex items-center justify-between gap-2" title={t(dfr, den)}>
+                    <span className="min-w-0">
+                      <span className="block truncate" style={{ fontSize: 12, color: customActive[rel] ? 'var(--nx-text)' : 'var(--nx-text-muted)' }}>{t(fr, en)}</span>
+                      <span className="block" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-outline)' }}>{rel}</span>
+                    </span>
+                    <div className="flex flex-none gap-0.5">
                       {(['off', 'fwd', 'bwd', 'both'] as const).map((d) => {
                         const on = (customActive[rel] ?? 'off') === d || (d === 'off' && !customActive[rel])
                         const sym = d === 'off' ? '—' : d === 'fwd' ? '→' : d === 'bwd' ? '←' : '↔'
-                        return <button key={d} onClick={() => setCustomActive((m) => { const n = { ...m }; if (d === 'off') delete n[rel]; else n[rel] = d; return n })} className="h-5 w-6 rounded" style={{ fontFamily: mono, fontSize: 11, background: on ? NEG : 'var(--nx-surface)', color: on ? '#0a0a0a' : 'var(--nx-text-muted)', border: '1px solid var(--nx-border)' }}>{sym}</button>
+                        const tip = d === 'off' ? t('inactif', 'off') : d === 'fwd' ? t('source → cible', 'source → target') : d === 'bwd' ? t('cible → source', 'target → source') : t('les deux', 'both')
+                        return <button key={d} title={tip} aria-label={tip} onClick={() => setCustomActive((m) => { const n = { ...m }; if (d === 'off') delete n[rel]; else n[rel] = d; return n })} className="h-5 w-6 rounded" style={{ fontFamily: mono, fontSize: 11, background: on ? NEG : 'var(--nx-surface)', color: on ? '#0a0a0a' : 'var(--nx-text-muted)', border: '1px solid var(--nx-border)' }}>{sym}</button>
                       })}
                     </div>
                   </div>
