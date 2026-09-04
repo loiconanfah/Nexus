@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://nexus-api-rzh9.onrender.com/api/:path*" },
+    { "source": "/health", "destination": "https://nexus-api-rzh9.onrender.com/health" },
+    { "source": "/health/:path*", "destination": "https://nexus-api-rzh9.onrender.com/health/:path*" },
+    { "source": "/openapi/:path*", "destination": "https://nexus-api-rzh9.onrender.com/openapi/:path*" },
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
+}
