@@ -7,6 +7,7 @@ import type {
   DecisionResponse,
   EnterpriseModel,
   ImpactAnalysis,
+  ModelVersion,
   InferenceResult,
   ProposedRelation,
   RestSource,
@@ -64,8 +65,12 @@ export const api = {
   overview: () => fetch(`${BASE}/overview`, { headers: headers(false) }).then(handle<Overview>),
 
   enterpriseModel: () => fetch(`${BASE}/enterprise/model`, { headers: headers(false) }).then(handle<EnterpriseModel>),
-  saveEnterpriseModel: (body: { companyName: string; industry: string; drivers: Record<string, number> }) =>
+  saveEnterpriseModel: (body: { companyName: string; industry: string; drivers: Record<string, number>; note?: string }) =>
     fetch(`${BASE}/enterprise/model`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) }).then(handle<EnterpriseModel>),
+  modelHistory: () =>
+    fetch(`${BASE}/enterprise/model/history`, { headers: headers(false) }).then(handle<ModelVersion[]>),
+  restoreModelVersion: (versionId: string) =>
+    fetch(`${BASE}/enterprise/model/restore/${versionId}`, { method: 'POST', headers: headers() }).then(handle<EnterpriseModel>),
 
   decideEnterprise: (text: string, lang: string) =>
     fetch(`${BASE}/enterprise/decision`, { method: 'POST', headers: headers(), body: JSON.stringify({ text, lang }) }).then(handle<DecisionResponse>),

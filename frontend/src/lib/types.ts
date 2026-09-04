@@ -397,3 +397,13 @@ export interface AttackExplainPayload {
   byType: Record<string, number>; chain: AttackChainStep[]; lang: string
 }
 export interface AttackExplain { usedAi: boolean; narrative: string; risks: string[]; countermeasures: string[] }
+
+export interface BusinessDriversDto {
+  units: number; avgPrice: number; cogsPercent: number; headcount: number; avgSalary: number
+  billableRatio: number; marketing: number; rnd: number; ga: number; depreciation: number
+  taxRate: number; interest: number; cashOnHand: number; churnRate: number
+}
+export interface ModelVersion {
+  id: string; version: number; companyName: string; industry: string
+  drivers: BusinessDriversDto; note: string | null; createdAt: string
+}

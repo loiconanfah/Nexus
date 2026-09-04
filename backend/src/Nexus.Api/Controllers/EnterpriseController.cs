@@ -33,9 +33,9 @@ public sealed class EnterpriseController(
         return Ok(await ResolveModelAsync(tenant, ct));
     }
 
-    public sealed record SaveModelRequest(string CompanyName, string Industry, BusinessDrivers Drivers);
+    public sealed record SaveModelRequest(string CompanyName, string Industry, BusinessDrivers Drivers, string? Note);
 
-    /// <summary>Crée / met à jour le modèle d'entreprise du tenant depuis le formulaire.</summary>
+    /// <summary>Crée / met à jour le modèle d'entreprise du tenant (chaque sauvegarde crée une version).</summary>
     [HttpPut("model")]
     public async Task<IActionResult> SaveModel([FromBody] SaveModelRequest req, CancellationToken ct)
     {
@@ -44,7 +44,27 @@ public sealed class EnterpriseController(
             return BadRequest(new { error = "company_and_drivers_required" });
         if (req.Drivers.Units <= 0 || req.Drivers.AvgPrice <= 0)
             return BadRequest(new { error = "revenue_drivers_required" });
-        await business.SaveAsync(tenant, req.CompanyName, req.Industry ?? "", req.Drivers, ct);
+        await business.SaveAsync(tenant, req.CompanyName, req.Industry ?? "", req.Drivers, req.Note, ct);
+        return Ok(await ResolveModelAsync(tenant, ct));
+    }
+
+    /// <summary>Historique des versions du modèle d'entreprise.</summary>
+    [HttpGet("model/history")]
+    public async Task<IActionResult> ModelHistory(CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var versions = await business.GetHistoryAsync(tenant, 50, ct);
+        return Ok(versions.Select(v => new { id = v.Id, version = v.Version, companyName = v.CompanyName, industry = v.Industry, drivers = v.Drivers, note = v.Note, createdAt = v.CreatedAt }));
+    }
+
+    /// <summary>Restaure une version : elle redevient le modèle courant (et crée une nouvelle version).</summary>
+    [HttpPost("model/restore/{versionId:guid}")]
+    public async Task<IActionResult> RestoreModel(Guid versionId, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var v = await business.GetVersionAsync(tenant, versionId, ct);
+        if (v is null) return NotFound(new { error = "version_not_found" });
+        await business.SaveAsync(tenant, v.CompanyName, v.Industry, v.Drivers, $"Restauré depuis la version {v.Version}", ct);
         return Ok(await ResolveModelAsync(tenant, ct));
     }
 

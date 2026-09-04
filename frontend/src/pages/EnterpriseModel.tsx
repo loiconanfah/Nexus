@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
   Building2, TrendingUp, TrendingDown, Users, MapPin, Contact, Truck, FolderKanban, ArrowRight,
+  Pencil, History, X, RotateCcw, Save,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import type { EnterpriseModel as EM } from '../lib/types'
+import type { EnterpriseModel as EM, ModelVersion } from '../lib/types'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -33,17 +34,51 @@ const COST_LABEL: Record<string, [string, string]> = {
   marketing: ['Marketing', 'Marketing'],
   depreciation: ['Amortissements', 'Depreciation'],
 }
-const QUALITY_LABEL: [keyof EM['dataQuality'], string, string][] = [
-  ['finance', 'Finance', 'Finance'],
-  ['sales', 'Ventes', 'Sales'],
-  ['hr', 'RH', 'HR'],
-  ['operations', 'Opérations', 'Operations'],
-  ['customers', 'Clients', 'Customers'],
+type Ratio = { fr: string; en: string; value: string; pct?: number; tone?: 'good' | 'warn' | 'bad' }
+/** Ratios de rentabilité, d'efficacité et de solidité, dérivés du modèle. */
+function ratios(d: EM, currency: string, money: (v: number, c: string) => string): Ratio[] {
+  const rev = d.pnl.revenue || 1
+  const monthlyBurn = (d.pnl.cogs + d.pnl.opex.total) / 12
+  const runway = monthlyBurn > 0 ? d.cash.cashOnHand / monthlyBurn : 0
+  const revPerEmp = d.pnl.revenue / Math.max(1, d.company.employees)
+  return [
+    { fr: 'Marge brute', en: 'Gross margin', value: `${(d.pnl.grossMargin * 100).toFixed(1)}%`, pct: d.pnl.grossMargin * 100, tone: d.pnl.grossMargin >= 0.5 ? 'good' : d.pnl.grossMargin >= 0.3 ? 'warn' : 'bad' },
+    { fr: 'Marge EBITDA', en: 'EBITDA margin', value: `${(d.pnl.ebitdaMargin * 100).toFixed(1)}%`, pct: d.pnl.ebitdaMargin * 100, tone: d.pnl.ebitdaMargin >= 0.2 ? 'good' : d.pnl.ebitdaMargin >= 0.1 ? 'warn' : 'bad' },
+    { fr: 'Marge nette', en: 'Net margin', value: `${(d.pnl.netMargin * 100).toFixed(1)}%`, pct: d.pnl.netMargin * 100, tone: d.pnl.netMargin >= 0.1 ? 'good' : d.pnl.netMargin >= 0 ? 'warn' : 'bad' },
+    { fr: 'Marketing / revenu', en: 'Marketing / revenue', value: `${(d.pnl.opex.marketing / rev * 100).toFixed(1)}%`, pct: d.pnl.opex.marketing / rev * 100 },
+    { fr: 'R&D / revenu', en: 'R&D / revenue', value: `${(d.pnl.opex.rnD / rev * 100).toFixed(1)}%`, pct: d.pnl.opex.rnD / rev * 100 },
+    { fr: 'Autonomie trésorerie', en: 'Cash runway', value: `${runway.toFixed(1)} ${'mois'}`, tone: runway >= 12 ? 'good' : runway >= 6 ? 'warn' : 'bad' },
+    { fr: 'Revenu / employé', en: 'Revenue / employee', value: money(revPerEmp, currency) },
+    { fr: 'Attrition', en: 'Churn', value: `${(d.drivers.churnRate * 100).toFixed(1)}%`, tone: d.drivers.churnRate <= 0.05 ? 'good' : d.drivers.churnRate <= 0.12 ? 'warn' : 'bad' },
+  ]
+}
+
+// Leviers éditables : `key` = clé envoyée à l'API (le backend lie sans casse) ;
+// `src` = champ correspondant dans le modèle résolu (drivers.rnD, etc.).
+// `pct` = valeur stockée en fraction (0–1) mais saisie en pourcentage.
+type DriverField = { key: string; src: keyof EM['drivers']; fr: string; en: string; pct?: boolean }
+const DRIVER_FIELDS: DriverField[] = [
+  { key: 'units', src: 'units', fr: 'Unités / abonnés (par an)', en: 'Units / subscribers (per year)' },
+  { key: 'avgPrice', src: 'avgPrice', fr: 'Prix moyen unitaire', en: 'Average unit price' },
+  { key: 'cogsPercent', src: 'cogsPercent', fr: 'Coût des ventes (% du revenu)', en: 'Cost of sales (% of revenue)', pct: true },
+  { key: 'churnRate', src: 'churnRate', fr: 'Attrition annuelle (%)', en: 'Annual churn (%)', pct: true },
+  { key: 'headcount', src: 'headcount', fr: 'Effectif total', en: 'Total headcount' },
+  { key: 'avgSalary', src: 'avgSalary', fr: 'Salaire moyen chargé', en: 'Average loaded salary' },
+  { key: 'billableRatio', src: 'billableRatio', fr: 'Taux facturable (%)', en: 'Billable ratio (%)', pct: true },
+  { key: 'marketing', src: 'marketing', fr: 'Marketing', en: 'Marketing' },
+  { key: 'rnd', src: 'rnD', fr: 'R&D', en: 'R&D' },
+  { key: 'ga', src: 'ga', fr: 'Frais généraux & admin', en: 'General & admin' },
+  { key: 'depreciation', src: 'depreciation', fr: 'Amortissements', en: 'Depreciation' },
+  { key: 'interest', src: 'interest', fr: 'Charges d’intérêts', en: 'Interest expense' },
+  { key: 'taxRate', src: 'taxRate', fr: 'Taux d’imposition (%)', en: 'Tax rate (%)', pct: true },
+  { key: 'cashOnHand', src: 'cashOnHand', fr: 'Trésorerie disponible', en: 'Cash on hand' },
 ]
 
 export function EnterpriseModel() {
   const { t, lang } = useLang()
   const nav = useNavigate()
+  const qc = useQueryClient()
+  const [panel, setPanel] = useState<'none' | 'edit' | 'history'>('none')
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['enterprise-model'], queryFn: api.enterpriseModel })
 
   const nf = new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA')
@@ -73,10 +108,32 @@ export function EnterpriseModel() {
           <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: CYAN }}>{t('Jumeau descriptif', 'Descriptive twin')}</span>
           <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>· {t('L’état actuel et la structure de l’entreprise.', 'The current state and structure of the company.')}</span>
         </div>
-        <a href="/decision" onClick={(e) => { e.preventDefault(); nav('/decision') }} className="flex items-center gap-1" style={{ fontSize: 12, color: 'var(--nx-cyan-text)' }}>
-          {t('Simuler une décision', 'Simulate a decision')} <ArrowRight size={12} />
-        </a>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPanel('edit')} className="flex items-center gap-1.5 rounded-md border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', fontSize: 12, color: 'var(--nx-text)' }}>
+            <Pencil size={13} /> {t('Modifier les données', 'Edit data')}
+          </button>
+          <button onClick={() => setPanel('history')} className="flex items-center gap-1.5 rounded-md border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', fontSize: 12, color: 'var(--nx-text)' }}>
+            <History size={13} /> {t('Historique', 'History')}
+          </button>
+          <a href="/decision" onClick={(e) => { e.preventDefault(); nav('/decision') }} className="flex items-center gap-1" style={{ fontSize: 12, color: 'var(--nx-cyan-text)' }}>
+            {t('Simuler une décision', 'Simulate a decision')} <ArrowRight size={12} />
+          </a>
+        </div>
       </div>
+
+      {panel === 'edit' && (
+        <EditModal
+          model={data}
+          onClose={() => setPanel('none')}
+          onSaved={() => { setPanel('none'); refetch(); qc.invalidateQueries({ queryKey: ['enterprise-history'] }) }}
+        />
+      )}
+      {panel === 'history' && (
+        <HistoryModal
+          onClose={() => setPanel('none')}
+          onRestored={() => { setPanel('none'); refetch(); qc.invalidateQueries({ queryKey: ['enterprise-history'] }) }}
+        />
+      )}
 
       {/* En-tête entreprise */}
       <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
@@ -203,8 +260,8 @@ export function EnterpriseModel() {
           </div>
         </Panel>
 
-        {/* Structure de coûts */}
-        <Panel title={t('Structure de coûts (% du revenu)', 'Cost structure (% of revenue)')}>
+        {/* Où va chaque dollar de revenu */}
+        <Panel title={t('Où va chaque dollar de revenu', 'Where each revenue dollar goes')}>
           <div className="flex flex-col gap-2.5">
             {data.costStructure.map((c) => (
               <div key={c.key}>
@@ -220,29 +277,139 @@ export function EnterpriseModel() {
           </div>
         </Panel>
 
-        {/* Qualité des données */}
-        <Panel title={t('Qualité des données', 'Data quality')}>
+        {/* Ratios & santé financière */}
+        <Panel title={t('Ratios & santé financière', 'Ratios & financial health')}>
           <div className="flex flex-col gap-2.5">
-            {QUALITY_LABEL.map(([key, fr, en]) => {
-              const v = data.dataQuality[key]
-              const col = v >= 90 ? POS : v >= 75 ? '#c69a4e' : NEG
+            {ratios(data, currency, money).map((r, i) => {
+              const col = r.tone === 'good' ? POS : r.tone === 'warn' ? '#c69a4e' : r.tone === 'bad' ? NEG : 'var(--nx-text-muted)'
               return (
-                <div key={key}>
+                <div key={i}>
                   <div className="flex items-baseline justify-between" style={{ fontSize: 13 }}>
-                    <span style={{ color: 'var(--nx-text)' }}>{t(fr, en)}</span>
-                    <span style={{ fontFamily: mono, color: col }}>{v}%</span>
+                    <span style={{ color: 'var(--nx-text)' }}>{t(r.fr, r.en)}</span>
+                    <span style={{ fontFamily: mono, color: col }}>{r.value}</span>
                   </div>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
-                    <div className="h-full rounded-full" style={{ width: `${v}%`, background: col }} />
-                  </div>
+                  {r.pct !== undefined && (
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, r.pct))}%`, background: r.tone ? col : '#4bb3c9' }} />
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
-          <p className="mt-3 flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>
-            <ArrowRight size={11} /> {t('Données de démonstration — cohérentes mais fictives.', 'Demonstration data — coherent but fictional.')}
-          </p>
         </Panel>
+      </div>
+    </div>
+  )
+}
+
+// ── Fenêtre : éditer librement les données du modèle + note de version ──
+function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void; onSaved: () => void }) {
+  const { t } = useLang()
+  const initial: Record<string, string> = { company: model.company.name, industry: model.company.industry, note: '' }
+  for (const f of DRIVER_FIELDS) {
+    const raw = model.drivers[f.src]
+    initial[f.key] = String(f.pct ? +(raw * 100).toFixed(4) : raw)
+  }
+  const [form, setForm] = useState<Record<string, string>>(initial)
+  const set = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }))
+  const num = (k: string) => Number.parseFloat(form[k] || '') || 0
+  const revenueOk = num('units') > 0 && num('avgPrice') > 0 && form.company.trim().length > 0
+
+  const save = useMutation({ mutationFn: api.saveEnterpriseModel, onSuccess: () => onSaved() })
+
+  function submit() {
+    const drivers: Record<string, number> = {}
+    for (const f of DRIVER_FIELDS) drivers[f.key] = f.pct ? num(f.key) / 100 : num(f.key)
+    save.mutate({ companyName: form.company.trim(), industry: form.industry.trim(), drivers, note: form.note.trim() || undefined })
+  }
+
+  return (
+    <Overlay onClose={onClose}>
+      <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--nx-border)' }}>
+        <div className="flex items-center gap-2">
+          <Pencil size={16} style={{ color: CYAN }} />
+          <h3 style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{t('Modifier le modèle d’entreprise', 'Edit the enterprise model')}</h3>
+        </div>
+        <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
+      </div>
+      <div className="overflow-y-auto px-5 py-4" style={{ maxHeight: '62vh' }}>
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          <WInput label={t('Nom de l’entreprise', 'Company name')} value={form.company} onChange={(v) => set('company', v)} />
+          <WInput label={t('Secteur d’activité', 'Industry')} value={form.industry} onChange={(v) => set('industry', v)} />
+          {DRIVER_FIELDS.map((f) => (
+            <WInput key={f.key} numeric suffix={f.pct ? '%' : undefined} label={t(f.fr, f.en)} value={form[f.key]} onChange={(v) => set(f.key, v)} />
+          ))}
+        </div>
+        <div className="mt-2 border-t pt-3" style={{ borderColor: 'var(--nx-border)' }}>
+          <WInput label={t('Note de version (optionnelle)', 'Version note (optional)')} value={form.note} onChange={(v) => set('note', v)} placeholder={t('ex. Ajustement du prix moyen', 'e.g. Adjusted average price')} />
+        </div>
+        {!revenueOk && <p style={{ fontSize: 12, color: 'var(--nx-outline)' }}>{t('Nom, unités et prix moyen sont requis (> 0).', 'Name, units and average price are required (> 0).')}</p>}
+        {save.isError && <p style={{ fontSize: 12, color: NEG }}>{(save.error as Error).message}</p>}
+      </div>
+      <div className="flex items-center justify-end gap-2 border-t px-5 py-4" style={{ borderColor: 'var(--nx-border)' }}>
+        <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+        <button onClick={submit} disabled={save.isPending || !revenueOk} className="flex items-center gap-1.5 rounded-md px-5 py-2 text-sm font-medium" style={{ background: CYAN, color: '#04121a', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}>
+          <Save size={15} /> {save.isPending ? t('Sauvegarde…', 'Saving…') : t('Sauvegarder', 'Save')}
+        </button>
+      </div>
+    </Overlay>
+  )
+}
+
+// ── Fenêtre : historique des versions + restauration ──
+function HistoryModal({ onClose, onRestored }: { onClose: () => void; onRestored: () => void }) {
+  const { t, lang } = useLang()
+  const { data: versions, isLoading } = useQuery({ queryKey: ['enterprise-history'], queryFn: api.modelHistory })
+  const restore = useMutation({ mutationFn: (v: ModelVersion) => api.restoreModelVersion(v.id), onSuccess: () => onRestored() })
+  const fmt = (iso: string) => new Date(iso).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'medium', timeStyle: 'short' })
+
+  return (
+    <Overlay onClose={onClose}>
+      <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: 'var(--nx-border)' }}>
+        <div className="flex items-center gap-2">
+          <History size={16} style={{ color: CYAN }} />
+          <h3 style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{t('Historique des versions', 'Version history')}</h3>
+        </div>
+        <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
+      </div>
+      <div className="overflow-y-auto px-5 py-4" style={{ maxHeight: '62vh' }}>
+        {isLoading ? (
+          <p style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT…', 'LOADING…')}</p>
+        ) : !versions || versions.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Aucune version enregistrée pour le moment. Chaque sauvegarde en crée une.', 'No versions saved yet. Each save creates one.')}</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {versions.map((v) => (
+              <div key={v.id} className="flex items-center justify-between rounded-md border px-4 py-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN, border: '1px solid rgba(0,229,255,0.3)' }}>v{v.version}</span>
+                    <span style={{ fontSize: 13, color: 'var(--nx-text)' }}>{v.companyName}</span>
+                    <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>· {v.industry}</span>
+                  </div>
+                  <div className="mt-0.5 truncate" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+                    {fmt(v.createdAt)}{v.note ? ` — ${v.note}` : ''}
+                  </div>
+                </div>
+                <button onClick={() => restore.mutate(v)} disabled={restore.isPending} className="flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', fontSize: 12, color: 'var(--nx-text)', opacity: restore.isPending ? 0.6 : 1 }}>
+                  <RotateCcw size={13} /> {t('Restaurer', 'Restore')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {restore.isError && <p className="mt-2" style={{ fontSize: 12, color: NEG }}>{(restore.error as Error).message}</p>}
+      </div>
+    </Overlay>
+  )
+}
+
+function Overlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(2,8,12,0.66)' }} onClick={onClose}>
+      <div className="w-full max-w-2xl overflow-hidden rounded-lg border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)' }} onClick={(e) => e.stopPropagation()}>
+        {children}
       </div>
     </div>
   )
