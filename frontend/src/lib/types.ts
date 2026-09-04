@@ -311,6 +311,7 @@ export interface EnterpriseModel {
     units: number; avgPrice: number; cogsPercent: number; headcount: number; avgSalary: number
     billableRatio: number; marketing: number; rnD: number; ga: number; depreciation: number
     taxRate: number; interest: number; cashOnHand: number; churnRate: number
+    divisions: number; locations: number; suppliers: number; projects: number
   }
   pnl: {
     revenue: number; cogs: number; grossProfit: number; grossMargin: number
@@ -402,6 +403,7 @@ export interface BusinessDriversDto {
   units: number; avgPrice: number; cogsPercent: number; headcount: number; avgSalary: number
   billableRatio: number; marketing: number; rnd: number; ga: number; depreciation: number
   taxRate: number; interest: number; cashOnHand: number; churnRate: number
+  divisions: number; locations: number; suppliers: number; projects: number
 }
 export interface ModelVersion {
   id: string; version: number; companyName: string; industry: string

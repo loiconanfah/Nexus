@@ -58,11 +58,11 @@ function ratios(d: EM, currency: string, money: (v: number, c: string) => string
 // `pct` = valeur stockée en fraction (0–1) mais saisie en pourcentage.
 type DriverField = { key: string; src: keyof EM['drivers']; fr: string; en: string; pct?: boolean }
 const DRIVER_FIELDS: DriverField[] = [
-  { key: 'units', src: 'units', fr: 'Unités / abonnés (par an)', en: 'Units / subscribers (per year)' },
+  { key: 'units', src: 'units', fr: 'Clients / abonnés (par an)', en: 'Customers / subscribers (per year)' },
   { key: 'avgPrice', src: 'avgPrice', fr: 'Prix moyen unitaire', en: 'Average unit price' },
   { key: 'cogsPercent', src: 'cogsPercent', fr: 'Coût des ventes (% du revenu)', en: 'Cost of sales (% of revenue)', pct: true },
   { key: 'churnRate', src: 'churnRate', fr: 'Attrition annuelle (%)', en: 'Annual churn (%)', pct: true },
-  { key: 'headcount', src: 'headcount', fr: 'Effectif total', en: 'Total headcount' },
+  { key: 'headcount', src: 'headcount', fr: 'Effectif (= employés)', en: 'Headcount (= employees)' },
   { key: 'avgSalary', src: 'avgSalary', fr: 'Salaire moyen chargé', en: 'Average loaded salary' },
   { key: 'billableRatio', src: 'billableRatio', fr: 'Taux facturable (%)', en: 'Billable ratio (%)', pct: true },
   { key: 'marketing', src: 'marketing', fr: 'Marketing', en: 'Marketing' },
@@ -72,6 +72,16 @@ const DRIVER_FIELDS: DriverField[] = [
   { key: 'interest', src: 'interest', fr: 'Charges d’intérêts', en: 'Interest expense' },
   { key: 'taxRate', src: 'taxRate', fr: 'Taux d’imposition (%)', en: 'Tax rate (%)', pct: true },
   { key: 'cashOnHand', src: 'cashOnHand', fr: 'Trésorerie disponible', en: 'Cash on hand' },
+]
+
+// Compteurs structurels (en-tête) : alimentés par company.* et renvoyés dans les
+// leviers. `key` = clé API ; `src` = champ du profil courant pour le pré-remplissage.
+type StructField = { key: string; src: keyof EM['company']; fr: string; en: string }
+const STRUCT_FIELDS: StructField[] = [
+  { key: 'divisions', src: 'divisions', fr: 'Divisions', en: 'Divisions' },
+  { key: 'locations', src: 'locations', fr: 'Sites / implantations', en: 'Locations' },
+  { key: 'suppliers', src: 'suppliers', fr: 'Fournisseurs', en: 'Suppliers' },
+  { key: 'projects', src: 'projects', fr: 'Projets actifs', en: 'Active projects' },
 ]
 
 export function EnterpriseModel() {
@@ -311,6 +321,7 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
     const raw = model.drivers[f.src]
     initial[f.key] = String(f.pct ? +(raw * 100).toFixed(4) : raw)
   }
+  for (const f of STRUCT_FIELDS) initial[f.key] = String(model.company[f.src] ?? 0)
   const [form, setForm] = useState<Record<string, string>>(initial)
   const set = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }))
   const num = (k: string) => Number.parseFloat(form[k] || '') || 0
@@ -321,6 +332,7 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
   function submit() {
     const drivers: Record<string, number> = {}
     for (const f of DRIVER_FIELDS) drivers[f.key] = f.pct ? num(f.key) / 100 : num(f.key)
+    for (const f of STRUCT_FIELDS) drivers[f.key] = Math.max(0, Math.round(num(f.key)))
     save.mutate({ companyName: form.company.trim(), industry: form.industry.trim(), drivers, note: form.note.trim() || undefined })
   }
 
@@ -337,8 +349,17 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
         <div className="grid gap-x-4 sm:grid-cols-2">
           <WInput label={t('Nom de l’entreprise', 'Company name')} value={form.company} onChange={(v) => set('company', v)} />
           <WInput label={t('Secteur d’activité', 'Industry')} value={form.industry} onChange={(v) => set('industry', v)} />
+        </div>
+        <SectionLabel>{t('Leviers financiers & opérationnels', 'Financial & operating drivers')}</SectionLabel>
+        <div className="grid gap-x-4 sm:grid-cols-2">
           {DRIVER_FIELDS.map((f) => (
             <WInput key={f.key} numeric suffix={f.pct ? '%' : undefined} label={t(f.fr, f.en)} value={form[f.key]} onChange={(v) => set(f.key, v)} />
+          ))}
+        </div>
+        <SectionLabel>{t('Structure de l’organisation', 'Organization structure')}</SectionLabel>
+        <div className="grid gap-x-4 sm:grid-cols-2">
+          {STRUCT_FIELDS.map((f) => (
+            <WInput key={f.key} numeric label={t(f.fr, f.en)} value={form[f.key]} onChange={(v) => set(f.key, v)} />
           ))}
         </div>
         <div className="mt-2 border-t pt-3" style={{ borderColor: 'var(--nx-border)' }}>
@@ -402,6 +423,12 @@ function HistoryModal({ onClose, onRestored }: { onClose: () => void; onRestored
         {restore.isError && <p className="mt-2" style={{ fontSize: 12, color: NEG }}>{(restore.error as Error).message}</p>}
       </div>
     </Overlay>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-2 mt-1" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{children}</div>
   )
 }
 
@@ -489,6 +516,16 @@ const WIZARD_STEPS: { title: [string, string]; hint: [string, string]; fields: W
       { key: 'cashOnHand', fr: 'Trésorerie disponible', en: 'Cash on hand' },
     ],
   },
+  {
+    title: ['Structure de l’organisation', 'Organization structure'],
+    hint: ['Compteurs de l’en-tête (n’affectent pas les finances).', 'Header counts (do not affect financials).'],
+    fields: [
+      { key: 'divisions', fr: 'Divisions', en: 'Divisions' },
+      { key: 'locations', fr: 'Sites / implantations', en: 'Locations' },
+      { key: 'suppliers', fr: 'Fournisseurs', en: 'Suppliers' },
+      { key: 'projects', fr: 'Projets actifs', en: 'Active projects' },
+    ],
+  },
 ]
 
 function ModelWizard({ onDone }: { onDone: () => void }) {
@@ -516,6 +553,8 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
       marketing: num('marketing'), rnd: num('rnd'), ga: num('ga'),
       depreciation: num('depreciation'), taxRate: pct('taxRate'), interest: num('interest'),
       cashOnHand: num('cashOnHand'), churnRate: pct('churnRate'),
+      divisions: Math.round(num('divisions')), locations: Math.round(num('locations')),
+      suppliers: Math.round(num('suppliers')), projects: Math.round(num('projects')),
     }
     save.mutate({ companyName: form.company.trim(), industry: form.industry.trim(), drivers })
   }

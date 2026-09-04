@@ -130,8 +130,11 @@ public static class EnterpriseModelProvider
         var company = new CompanyProfile(
             string.IsNullOrWhiteSpace(name) ? "Mon organisation" : name.Trim(),
             string.IsNullOrWhiteSpace(industry) ? "—" : industry.Trim(),
+            // Effectif = leviers RH ; clients = unites/abonnes. Les compteurs
+            // structurels (divisions, sites, fournisseurs, projets) sont saisis.
             Employees: d.Headcount, AnnualRevenue: 0,
-            Divisions: 0, Locations: 0, Customers: d.Units, Suppliers: 0, Projects: 0);
+            Divisions: d.Divisions, Locations: d.Locations, Customers: d.Units,
+            Suppliers: d.Suppliers, Projects: d.Projects);
         // Pas de repartition divisions/segments saisie : le socle financier suffit.
         return Build(company, d, [], [], new DomainQuality(75, 75, 75, 75, 75));
     }

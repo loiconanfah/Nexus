@@ -27,7 +27,14 @@ public sealed record BusinessDrivers(
     double TaxRate,         // taux d'imposition effectif
     double Interest,        // charges d'intérêts
     double CashOnHand,      // trésorerie disponible
-    double ChurnRate);      // taux d'attrition clients
+    double ChurnRate,       // taux d'attrition clients
+    // Compteurs structurels (organisation) — n'affectent PAS les états financiers,
+    // mais sont éditables et alimentent l'en-tête (divisions, sites, etc.).
+    // Défauts à 0 : les jeux de démo les fixent via CompanyProfile.
+    int Divisions = 0,      // nombre de divisions / unités d'affaires
+    int Locations = 0,      // nombre de sites / implantations
+    int Suppliers = 0,      // nombre de fournisseurs
+    int Projects = 0);      // nombre de projets actifs
 
 public sealed record OpexBreakdown(double SgaSalaries, double Marketing, double RnD, double GA, double Total);
 
