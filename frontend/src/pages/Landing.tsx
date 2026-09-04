@@ -4,7 +4,7 @@ import {
   Share2, ArrowRight, ArrowUpRight, PlayCircle, ShieldCheck,
   Plug, Bot, CheckCircle2, Lock, Shield, Server, AlertTriangle,
   Activity, Briefcase, Landmark, HeartPulse, Building2, Factory, Zap, ChevronDown, KeyRound,
-  Scale, Menu,
+  Scale, Menu, Network, LineChart, Radar, Users, Workflow, Upload, Boxes, EyeOff,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 
@@ -48,8 +48,9 @@ export function Landing() {
           <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexus</span>
         </div>
         <nav className="slb-nav-links">
-          <a href="#essentiel">{t('L’essentiel', 'Essentials')}</a>
-          <a href="#detail">{t('Fonctionnalités', 'Features')}</a>
+          <a href="#probleme">{t('Le problème', 'Problem')}</a>
+          <a href="#fonctionnement">{t('Fonctionnement', 'How it works')}</a>
+          <a href="#plateforme">{t('Plateforme', 'Platform')}</a>
           <a href="#secteurs">{t('Secteurs', 'Industries')}</a>
           <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }}>Documentation</a>
           <a href="#faq">FAQ</a>
@@ -68,8 +69,9 @@ export function Landing() {
         {/* Menu mobile (déroulant sous l'en-tête, < 900px) */}
         {menuOpen && (
           <div className="slb-mobile-menu">
-            <a href="#essentiel" onClick={() => setMenuOpen(false)}>{t('L’essentiel', 'Essentials')}</a>
-            <a href="#detail" onClick={() => setMenuOpen(false)}>{t('Fonctionnalités', 'Features')}</a>
+            <a href="#probleme" onClick={() => setMenuOpen(false)}>{t('Le problème', 'Problem')}</a>
+            <a href="#fonctionnement" onClick={() => setMenuOpen(false)}>{t('Fonctionnement', 'How it works')}</a>
+            <a href="#plateforme" onClick={() => setMenuOpen(false)}>{t('Plateforme', 'Platform')}</a>
             <a href="#secteurs" onClick={() => setMenuOpen(false)}>{t('Secteurs', 'Industries')}</a>
             <a href="/docs" onClick={(e) => { e.preventDefault(); setMenuOpen(false); navigate('/docs') }}>Documentation</a>
             <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
@@ -102,6 +104,21 @@ export function Landing() {
         </div>
       </section>
 
+      {/* ══════════ LE PROBLÈME ══════════ */}
+      <Section id="probleme" alt>
+        <Label>{t('Le problème', 'The problem')}</Label>
+        <SectionH>{t('Chaque outil voit son silo. Personne ne voit l’ensemble.', 'Each tool sees its silo. No one sees the whole.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.65 }}>
+          {t('Votre ERP connaît les fournisseurs, l’ITSM les serveurs, le RH les personnes, votre plateforme IA les modèles et agents. Mais quand un fournisseur tombe, qu’un employé clé part ou qu’un service cloud est compromis, la question — « qu’est-ce qui casse, jusqu’où, et combien ça coûte ? » — traverse tous ces silos. Aucun outil, seul, n’y répond.',
+                'Your ERP knows suppliers, your ITSM knows servers, HR knows people, your AI platform knows models and agents. But when a supplier fails, a key person leaves or a cloud service is compromised, the question — “what breaks, how far, and how much does it cost?” — cuts across all those silos. No single tool answers it.')}
+        </p>
+        <div className="mt-12 grid gap-px sm:grid-cols-3" style={{ background: '#1c1c22' }}>
+          <Persona icon={EyeOff} role={t('Angles morts', 'Blind spots')} body={t('Les dépendances transversales (systèmes ↔ fournisseurs ↔ personnes ↔ IA) ne vivent dans aucun outil.', 'Cross-cutting dependencies (systems ↔ suppliers ↔ people ↔ AI) live in no single tool.')} />
+          <Persona icon={AlertTriangle} role={t('Surprises coûteuses', 'Costly surprises')} body={t('On découvre un point unique de défaillance le jour où il tombe — pas avant.', 'You discover a single point of failure the day it fails — not before.')} />
+          <Persona icon={LineChart} role={t('Décisions à l’aveugle', 'Decisions in the dark')} body={t('Impossible de chiffrer l’impact d’une panne ou d’une décision sans un modèle relié au réel.', 'Impossible to quantify the impact of an outage or a decision without a model tied to reality.')} />
+        </div>
+      </Section>
+
       {/* ══════════ L'ESSENTIEL — 3 numéros ══════════ */}
       <Section id="essentiel">
         <Label>{t('L’essentiel', 'The essentials')}</Label>
@@ -116,8 +133,36 @@ export function Landing() {
         </div>
       </Section>
 
+      {/* ══════════ COMMENT ÇA MARCHE ══════════ */}
+      <Section id="fonctionnement" alt>
+        <Label>{t('Comment ça marche', 'How it works')}</Label>
+        <SectionH>{t('Du fichier brut à la décision chiffrée, en cinq temps.', 'From raw file to quantified decision, in five steps.')}</SectionH>
+        <div className="mt-14 grid gap-px sm:grid-cols-2 lg:grid-cols-5" style={{ background: '#1c1c22' }}>
+          <Step n="1" icon={Upload} title={t('Importer', 'Import')} body={t('CSV, Excel, API REST en direct, ou données collées structurées par l’IA. Aucun accès privilégié.', 'CSV, Excel, live REST API, or pasted data structured by AI. No privileged access.')} />
+          <Step n="2" icon={Network} title={t('Cartographier', 'Map')} body={t('Systèmes, fournisseurs, personnes et IA deviennent un graphe unique et navigable.', 'Systems, suppliers, people and AI become a single, navigable graph.')} />
+          <Step n="3" icon={Radar} title={t('Révéler', 'Reveal')} body={t('Points uniques de défaillance, concentration et rayon d’impact, avec un score expliqué.', 'Single points of failure, concentration and blast radius, with an explained score.')} />
+          <Step n="4" icon={Activity} title={t('Simuler', 'Simulate')} body={t('Rejouez une panne, une cyberattaque ou une décision ; l’impact se propage et se chiffre.', 'Replay an outage, a cyberattack or a decision; the impact propagates and is quantified.')} />
+          <Step n="5" icon={LineChart} title={t('Décider', 'Decide')} body={t('Mitigations priorisées et rapport exécutif — des chiffres déterministes, jamais inventés.', 'Prioritized mitigations and an executive report — deterministic figures, never invented.')} />
+        </div>
+        <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
+          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>
+            <PlayCircle size={14} /> {t('Un exemple concret', 'A concrete example')}
+          </div>
+          <p className="mt-4 text-lg" style={{ color: '#f3f3f6', lineHeight: 1.6 }}>
+            {t('« Que se passe-t-il si nous perdons le fournisseur d’identité ? »', '“What happens if we lose the identity provider?”')}
+          </p>
+          <p className="mt-2 max-w-3xl" style={{ color: '#a2a2b0', fontSize: 15, lineHeight: 1.6 }}>
+            {t('Lenexus résout la cible dans le graphe, suit la cascade sur plusieurs niveaux, identifie les 8 actifs qui en dépendent sans redondance, chiffre l’impact à 1,70 M$ avec une reprise de 4,9 h, puis propose les mitigations — et l’IA explique le tout en langage clair.',
+                'Lenexus resolves the target in the graph, follows the multi-level cascade, identifies the 8 assets that depend on it without redundancy, quantifies impact at $1.70M with a 4.9 h recovery, then proposes mitigations — and the AI explains it all in plain language.')}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {['8 actifs exposés', '1,70 M$', 'RTO 4,9 h', '0 redondance'].map((c) => <Chip key={c}>{c}</Chip>)}
+          </div>
+        </div>
+      </Section>
+
       {/* ══════════ 01 · SOUS LE CAPOT — risque ══════════ */}
-      <Section id="detail" alt>
+      <Section id="detail">
         <DeepRow tag="01 · " kicker={t('Sous le capot', 'Under the hood')}
           title={t('Un moteur de risque explicable.', 'An explainable risk engine.')}
           body={t('Chaque actif reçoit un score de 0 à 100, décomposé en six facteurs mesurables. Aucune boîte noire : vous voyez exactement pourquoi un élément est critique — et pouvez le justifier en comité.',
@@ -147,6 +192,66 @@ export function Landing() {
                   'Replay an intrusion spreading from an employee or external tool to your AI agents: Lenexus reveals the compromise chain, quantifies impact per node and scores each countermeasure. AI models, agents and providers are first-class dependencies.')}
           points={[t('Kill-chain expliquée par l’IA', 'AI-explained kill-chain'), t('Impact et contre-mesure par nœud', 'Per-node impact and countermeasure'), t('« OpenAI tombe » → cascade chiffrée', '“OpenAI goes down” → quantified cascade')]}
           visual={<KillChain />} />
+      </Section>
+
+      {/* ══════════ LA PLATEFORME COMPLÈTE ══════════ */}
+      <Section id="plateforme">
+        <Label>{t('La plateforme', 'The platform')}</Label>
+        <SectionH>{t('Tout ce que Lenexus fait, en un seul endroit.', 'Everything Lenexus does, in one place.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+          {t('Une couche d’intelligence au-dessus de vos systèmes — pas un remplaçant. Voici les capacités, du graphe à la décision.',
+              'An intelligence layer above your systems — not a replacement. Here are the capabilities, from graph to decision.')}
+        </p>
+        <div className="mt-12 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <CapCard icon={Network} title={t('Cartographie & graphe', 'Mapping & graph')} items={[
+            t('Graphe de dépendances 2D et hologramme 3D', '2D dependency graph and 3D hologram'),
+            t('Exploration des dépendances directes & transitives', 'Direct & transitive dependency exploration'),
+            t('Résolution d’entités entre sources', 'Cross-source entity resolution'),
+          ]} />
+          <CapCard icon={AlertTriangle} title={t('Analyse de risque', 'Risk analysis')} items={[
+            t('Score de risque 0–100 en six facteurs', '0–100 risk score across six factors'),
+            t('Points uniques de défaillance (SPOF)', 'Single points of failure (SPOF)'),
+            t('Alerte anticipée & impact de changement', 'Early warning & change impact'),
+          ]} />
+          <CapCard icon={Activity} title={t('Impact & simulation', 'Impact & simulation')} items={[
+            t('Impact transversal en langage naturel', 'Cross-cutting impact in natural language'),
+            t('Simulation holographique — 10 types de panne', 'Holographic simulation — 10 outage types'),
+            t('Cyberattaque : kill-chain & contre-mesures', 'Cyberattack: kill-chain & countermeasures'),
+          ]} />
+          <CapCard icon={Building2} title={t('Décision & finance', 'Decision & finance')} items={[
+            t('Modèle d’entreprise éditable (P&L, trésorerie, KPIs)', 'Editable enterprise model (P&L, cash, KPIs)'),
+            t('Décision en langage naturel → impact chiffré', 'Natural-language decision → quantified impact'),
+            t('Historique versionné & rapports exécutifs', 'Versioned history & executive reports'),
+          ]} />
+          <CapCard icon={Users} title={t('Résilience', 'Resilience')} items={[
+            t('Concentration & criticité des fournisseurs', 'Supplier concentration & criticality'),
+            t('Dépendances humaines (« bus factor »)', 'Human dependencies (“bus factor”)'),
+            t('Plan d’action priorisé', 'Prioritized action plan'),
+          ]} />
+          <CapCard icon={Bot} title={t('IA & connaissance', 'AI & knowledge')} items={[
+            t('Analyste IA ancré sur le graphe', 'Graph-grounded AI analyst'),
+            t('Dépendances inférées à valider (le moat)', 'Inferred dependencies to validate (the moat)'),
+            t('Extraction depuis documents · dépendances IA', 'Document extraction · AI dependencies'),
+          ]} />
+          <CapCard icon={Plug} title={t('Données & intégration', 'Data & integration')} items={[
+            t('CSV / Excel · API REST JSON en direct', 'CSV / Excel · live REST JSON API'),
+            t('Import assisté par IA · webhook / MCP', 'AI-assisted import · webhook / MCP'),
+            t('Lecture seule par défaut, anti-SSRF', 'Read-only by default, anti-SSRF'),
+          ]} />
+          <CapCard icon={Shield} title={t('Sécurité & isolation', 'Security & isolation')} items={[
+            t('Espaces clients isolés (multi-tenant)', 'Isolated client workspaces (multi-tenant)'),
+            t('SSO Entra ID · jetons signés · mots de passe hachés', 'Entra ID SSO · signed tokens · hashed passwords'),
+            t('Quota IA par tenant · Loi 25 / RGPD', 'Per-tenant AI quota · Law 25 / GDPR'),
+          ]} />
+          <CapCard icon={Workflow} title={t('Déterministe + IA', 'Deterministic + AI')} items={[
+            t('Tous les chiffres calculés, traçables', 'All figures computed, traceable'),
+            t('L’IA résout, reformule, explique — jamais n’invente', 'AI resolves, rephrases, explains — never invents'),
+            t('Sans clé IA, tout reste fonctionnel', 'Without an AI key, everything still works'),
+          ]} />
+        </div>
+        <div className="mt-8 flex justify-center">
+          <BoxBtn onClick={() => navigate('/docs')} label={t('Lire la documentation complète', 'Read the full documentation')} icon={<Boxes size={15} />} />
+        </div>
       </Section>
 
       {/* ══════════ STAT ══════════ */}
@@ -329,6 +434,35 @@ function Sec({ icon: Icon, title, body }: { icon: typeof Lock; title: string; bo
       <Icon size={18} style={{ color: '#22d3ee' }} />
       <h3 className="mt-3 font-medium" style={{ fontFamily: geist, fontSize: 15 }}>{title}</h3>
       <p className="mt-1" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>{body}</p>
+    </div>
+  )
+}
+function Step({ n, icon: Icon, title, body }: { n: string; icon: typeof Network; title: string; body: string }) {
+  return (
+    <div className="slb-cell">
+      <div className="flex items-center justify-between">
+        <Icon size={20} style={{ color: '#22d3ee' }} />
+        <span style={{ fontFamily: geist, fontSize: 26, fontWeight: 300, color: '#2f2f3a' }}>{n}</span>
+      </div>
+      <h3 className="mt-5 text-lg font-medium" style={{ fontFamily: geist }}>{title}</h3>
+      <p className="mt-1.5" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.55 }}>{body}</p>
+    </div>
+  )
+}
+function CapCard({ icon: Icon, title, items }: { icon: typeof Network; title: string; items: string[] }) {
+  return (
+    <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
+      <div className="flex items-center gap-2.5">
+        <Icon size={19} style={{ color: '#22d3ee' }} />
+        <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16 }}>{title}</h3>
+      </div>
+      <ul className="mt-3.5 flex flex-col gap-2">
+        {items.map((it) => (
+          <li key={it} className="flex gap-2" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>
+            <CheckCircle2 size={14} style={{ color: '#22d3ee', flexShrink: 0, marginTop: 2 }} /> <span>{it}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
