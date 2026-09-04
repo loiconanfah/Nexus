@@ -135,8 +135,18 @@ export function Landing() {
           points={[t('Propagation multi-niveaux', 'Multi-level propagation'), t('RTO et impact chiffré', 'RTO and quantified impact'), t('Comparaison de scénarios', 'Scenario comparison')]}
           visual={<ImpactBars />} />
         <div className="mt-10 flex flex-wrap gap-2">
-          {['Graphe', 'SPOF', 'What-If', 'RTO', 'Impact $', 'Analyste IA', 'FR · EN'].map((c) => <Chip key={c}>{c}</Chip>)}
+          {['Graphe', 'SPOF', 'What-If', 'Kill-chain', 'RTO', 'Impact $', 'Dépendances IA', 'Analyste IA', 'FR · EN'].map((c) => <Chip key={c}>{c}</Chip>)}
         </div>
+      </Section>
+
+      {/* ══════════ 03 · CYBER & IA ══════════ */}
+      <Section alt>
+        <DeepRow tag="03 · " kicker={t('Cyberattaque & IA', 'Cyberattack & AI')}
+          title={t('Suivez une attaque — et vos dépendances à l’IA.', 'Trace an attack — and your AI dependencies.')}
+          body={t('Rejouez une intrusion qui se propage d’un employé ou d’un outil externe jusqu’à vos agents IA : Lenexus révèle la chaîne de compromission, chiffre l’impact par nœud et évalue chaque contre-mesure. Modèles, agents et fournisseurs d’IA sont des dépendances de premier plan.',
+                  'Replay an intrusion spreading from an employee or external tool to your AI agents: Lenexus reveals the compromise chain, quantifies impact per node and scores each countermeasure. AI models, agents and providers are first-class dependencies.')}
+          points={[t('Kill-chain expliquée par l’IA', 'AI-explained kill-chain'), t('Impact et contre-mesure par nœud', 'Per-node impact and countermeasure'), t('« OpenAI tombe » → cascade chiffrée', '“OpenAI goes down” → quantified cascade')]}
+          visual={<KillChain />} />
       </Section>
 
       {/* ══════════ STAT ══════════ */}
@@ -197,6 +207,8 @@ export function Landing() {
             a={t('Jamais. Le moteur déterministe calcule ; l’IA interprète et explique. Sans clé, Lenexus bascule sur des règles et reste fonctionnel.', 'Never. The deterministic engine computes; the AI interprets and explains. Without a key, Lenexus falls back to rules and stays functional.')} />
           <Faq q={t('Nos données sont-elles isolées ?', 'Is our data isolated?')}
             a={t('Oui. Un espace de travail cloisonné par client, mots de passe hachés, SSO Entra ID disponible.', 'Yes. A partitioned workspace per client, hashed passwords, Entra ID SSO available.')} />
+          <Faq q={t('Peut-on modéliser nos dépendances à l’IA et rejouer une cyberattaque ?', 'Can we model our AI dependencies and replay a cyberattack?')}
+            a={t('Oui. Modèles, agents et fournisseurs d’IA sont des dépendances de premier plan ; et la simulation de cyberattaque suit une chaîne de compromission avec impact et contre-mesure par nœud.', 'Yes. AI models, agents and providers are first-class dependencies; and the cyberattack simulation traces a compromise chain with per-node impact and countermeasure.')} />
           <Faq q={t('Combien de temps pour un premier résultat ?', 'How long to a first result?')}
             a={t('Quelques minutes : importez un jeu de données et le graphe, les points de défaillance et les scores apparaissent. Un jeu de démo est disponible en un clic.', 'A few minutes: import a dataset and the graph, failure points and scores appear. A demo dataset is available in one click.')} />
         </div>
@@ -373,6 +385,38 @@ function ImpactBars() {
             <span style={{ fontFamily: mono, fontSize: 10, color: '#6b6b78' }}>{label}</span>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function KillChain() {
+  const steps = [
+    ['Employé', 'Hameçonnage', '#e0a458'],
+    ['Outil externe', 'Jeton volé', '#e0a458'],
+    ['Partage cloud', 'Accès latéral', '#d15b54'],
+    ['Agent IA', 'Exfiltration', '#d15b54'],
+  ] as const
+  return (
+    <div>
+      <div className="mb-4 flex items-baseline justify-between">
+        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b78' }}>Chaîne de compromission</span>
+        <span style={{ fontFamily: geist, fontSize: 22, color: '#d15b54' }}>4,75 M$</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {steps.map(([node, act, col], i) => (
+          <div key={node}>
+            <div className="flex items-center gap-3 border px-3 py-2.5" style={{ borderColor: '#26262e', background: '#0a0a0d' }}>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ fontFamily: mono, fontSize: 11, color: '#070714', background: col }}>{i + 1}</span>
+              <span className="flex-1" style={{ fontSize: 13.5, color: '#f3f3f6' }}>{node}</span>
+              <span style={{ fontFamily: mono, fontSize: 11, color: col }}>{act}</span>
+            </div>
+            {i < steps.length - 1 && <div className="ml-3 h-3 w-px" style={{ background: '#3a3a44' }} />}
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>
+        <ShieldCheck size={13} style={{ color: '#22d3ee' }} /> Isoler le partage cloud → ~4 M$ évités
       </div>
     </div>
   )

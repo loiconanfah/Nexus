@@ -19,6 +19,8 @@ const TOC: Group[] = [
     { id: 'graphe', label: 'Graphe de dépendances' },
     { id: 'impact', label: 'Impact transversal' },
     { id: 'simulation', label: 'Simulation holographique' },
+    { id: 'attaques', label: 'Simulation de cyberattaque' },
+    { id: 'ai-deps', label: 'Dépendances IA' },
     { id: 'modele', label: 'Modèle d’entreprise' },
     { id: 'decision', label: 'Décision & simulation' },
     { id: 'twin', label: 'Jumeau numérique' },
@@ -104,6 +106,8 @@ export function Docs() {
               'Confiance (0–1) : degré de certitude d’une relation (source, IA suggérée, validée).',
               'Impact direct vs indirect : direct = dépend immédiatement de la cible (profondeur 1) ; indirect = touché par la cascade (profondeur ≥ 2).',
               'SPOF : point unique de défaillance — entité sans redondance dont dépendent beaucoup d’autres.',
+              'Propagation de compromission : en cyberattaque, un attaquant se déplace le long des relations d’accès et de données (latéralement), distincte de la propagation de panne.',
+              'Dépendance IA : un modèle, agent ou fournisseur d’IA est une dépendance comme une autre — sa défaillance se propage et se chiffre par le même moteur.',
               'Tenant : espace client isolé. Chaque organisation a ses données, invisibles des autres.',
             ]} />
           </Sec>
@@ -116,6 +120,7 @@ export function Docs() {
               ['Technique (actifs)', 'Asset, Infrastructure, Server, Device, Network, CloudResource'],
               ['Logiciel & données', 'Application, Service, System, Database, DataStore'],
               ['Processus & métier', 'Process, BusinessProcess, BusinessService'],
+              ['Intelligence (IA)', 'AiModel, AiAgent, AiWorkflow, ModelEndpoint, AiService, AiProvider, Dataset'],
               ['Sécurité', 'Identity, Credential, Control, Policy, Vulnerability'],
               ['Gouvernance', 'Document, Incident, Change, Risk, Event'],
             ]} />
@@ -153,9 +158,31 @@ export function Docs() {
             <Figure src="simulation.png" caption="Simulation holographique interactive." />
           </Sec>
 
-          <Sec id="modele" title="Modèle d’entreprise">
-            <P>Un jumeau décisionnel financier dérivé de leviers déterministes (unités, prix, coûts, effectif, marketing, R&D, trésorerie…). S’il n’existe pas, un <b>formulaire en 5 étapes</b> le crée ; le compte de résultat, la trésorerie et les KPIs sont ensuite calculés automatiquement.</P>
-            <Figure src="enterprise.png" caption="Modèle d’entreprise (démo Bell)." />
+          <Sec id="attaques" title="Simulation de cyberattaque (kill-chain)">
+            <P>Au-delà de la panne, Lenexus rejoue une <b>attaque</b> qui se <b>propage</b> d’un élément à l’autre. On choisit un <b>point d’entrée</b> (employé, outil externe, partage cloud, agent IA…) et un <b>sens de propagation</b> ; le moteur suit les relations d’<b>accès et de données</b> pour révéler la chaîne de compromission — pas seulement les liens visibles, mais le cheminement <b>logique</b> d’un attaquant.</P>
+            <P>Quatre scénarios prêts à l’emploi (ex. <i>« un partage cloud est piraté et les agents IA qui en tirent leurs données se mettent à exfiltrer »</i>, <i>« un agent IA effectue un piratage interne parti d’un employé ayant utilisé un outil externe »</i>) et un <b>constructeur libre</b> bilingue (libellés lisibles, pas des codes bruts). Pour <b>chaque nœud compromis</b> : l’impact financier (€), la probabilité, une <b>recommandation</b> ciblée, et le gain d’une <b>isolation</b> (contre-mesure). Une <b>analyse IA</b> narre la kill-chain, les risques et les contre-mesures.</P>
+            <Figure src="attacks.png" caption="Simulation de cyberattaque — chaîne de compromission et contre-mesures." />
+          </Sec>
+
+          <Sec id="ai-deps" title="Dépendances IA (modèles, agents, fournisseurs)">
+            <P>L’IA opérationnelle est devenue une dépendance à part entière. Lenexus modélise <b>modèles</b>, <b>agents</b>, <b>workflows</b>, <b>points d’accès</b>, <b>jeux de données</b> et <b>fournisseurs IA</b> (OpenAI, Anthropic…) comme des entités de première classe, reliées au reste du graphe. Le même moteur de propagation, <b>indépendant du type</b>, chiffre donc l’impact d’une défaillance IA sans aucune adaptation.</P>
+            <Bullets items={[
+              '« OpenAI tombe » → tous les agents et services qui en dépendent, l’impact financier et le RTO.',
+              '« Un modèle est indisponible » → les workflows métier touchés en cascade.',
+              'Une donnée d’entraînement compromise → les agents qui la consomment (cf. simulation de cyberattaque).',
+            ]} />
+            <P>Les RTO par type d’élément IA sont alignés sur le moteur d’impact (modèle/service/point d’accès, agent/workflow, fournisseur, jeu de données), pour un chiffrage cohérent avec le reste de la plateforme.</P>
+          </Sec>
+
+          <Sec id="modele" title="Modèle d’entreprise (jumeau décisionnel)">
+            <P>Un jumeau financier dérivé de leviers déterministes (clients/abonnés, prix, coûts, effectif, marketing, R&D, trésorerie…). S’il n’existe pas, un <b>assistant guidé</b> le crée ; le compte de résultat, la trésorerie et les KPIs sont ensuite calculés automatiquement.</P>
+            <Bullets items={[
+              'Édition libre : le bouton « Modifier les données » ouvre tous les leviers (finances) et la « Structure de l’organisation » (divisions, sites, fournisseurs, projets) — tout l’en-tête est modifiable.',
+              'Sauvegarde & historique : chaque enregistrement crée une version datée (note optionnelle) ; le panneau « Historique » liste les versions et permet de restaurer l’une d’elles en un clic (la restauration crée elle-même une version).',
+              'Ratios & santé financière : marge brute / EBITDA / nette, marketing/revenu, R&D/revenu, autonomie de trésorerie, revenu/employé, attrition — avec code couleur de santé.',
+              '« Où va chaque dollar de revenu » : ventilation lisible des coûts (livraison, salaires, R&D, marketing, amortissements).',
+            ]} />
+            <Figure src="enterprise.png" caption="Modèle d’entreprise — édition, historique et ratios (démo Bell)." />
           </Sec>
 
           <Sec id="decision" title="Décision & simulation">
@@ -274,9 +301,10 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
               ['Graphe', 'GET /graph · GET /entities'],
               ['Impact', 'POST /impact/analyze'],
               ['Simulation', 'POST /simulations · POST /simulations/explain'],
+              ['Cyberattaque', 'POST /attacks/explain'],
               ['Inférence', 'POST /inference/relations · POST /inference/relations/ingest'],
               ['Import', 'POST /imports/csv · /imports/excel · /imports/rest(/preview) · /imports/analyze'],
-              ['Entreprise', 'GET/PUT /enterprise/model · POST /enterprise/decision · /enterprise/scenarios'],
+              ['Entreprise', 'GET/PUT /enterprise/model · GET /enterprise/model/history · POST /enterprise/model/restore/{id} · POST /enterprise/decision · /enterprise/scenarios'],
               ['IA', 'GET/PUT /ai/config · GET /ai/usage'],
               ['Santé', 'GET /health · GET /health/ready'],
             ]} />
@@ -322,6 +350,9 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
             <Qa q="Les espaces clients sont-ils isolés ?" a="Oui. Chaque tenant a ses données ; toutes les requêtes filtrent par tenant et le header-tenant est interdit en production." />
             <Qa q="Puis-je connecter mes systèmes existants ?" a="Oui : CSV/Excel, API REST/JSON en direct, ou import assisté par IA. Des connecteurs natifs (ex. CMDB) peuvent être ajoutés à la demande." />
             <Qa q="Lenexus remplace-t-il mon ERP/ITSM ?" a="Non. C’est une couche au-dessus qui relie les silos pour répondre aux questions d’impact transversales." />
+          <Qa q="Peut-on modéliser nos dépendances à l’IA ?" a="Oui. Modèles, agents, workflows, fournisseurs et jeux de données IA sont des entités de première classe ; l’impact d’une défaillance IA (ex. « OpenAI tombe ») se chiffre par le même moteur." />
+          <Qa q="En quoi la simulation de cyberattaque diffère de la simulation de panne ?" a="La panne se propage des dépendances vers leurs dépendants ; l’attaque propage une compromission latéralement le long des accès et des données, avec kill-chain, impact et contre-mesures par nœud." />
+          <Qa q="Peut-on éditer le modèle d’entreprise et revenir en arrière ?" a="Oui. Toutes les données sont éditables ; chaque sauvegarde crée une version datée et l’on peut restaurer n’importe quelle version depuis l’historique." />
           </Sec>
 
           <div className="mt-6 border-t pt-6" style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: 'var(--nx-outline)' }}>
