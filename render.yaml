@@ -105,6 +105,18 @@ services:
     runtime: static
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist
+    # ── Domaine & référencement ────────────────────────────────────────────────
+    # Domaine PRINCIPAL (canonique) : lenexux.com (apex). À configurer dans
+    # Render → Settings → Custom Domains :
+    #   1. Ajouter « lenexux.com » (apex) ET « www.lenexux.com ».
+    #      Render redirige automatiquement le domaine secondaire vers le principal
+    #      (301) → www → apex, ce qui préserve le référencement.
+    #   2. Pour rattraper les FAUTES DE FRAPPE du nom de domaine (ex. lenexus.com,
+    #      lenex-us.com, lenexux.ca…), enregistrer ces domaines chez le registraire
+    #      et les ajouter ici comme domaines secondaires OU poser une redirection
+    #      301 vers https://lenexux.com/ au niveau DNS/registraire. Render 301-redirige
+    #      tout domaine attaché non principal vers le principal.
+    # robots.txt et sitemap.xml sont servis depuis frontend/public (racine du site).
     routes:
       # Proxy serveur → aucune config CORS nécessaire (même origine côté navigateur).
       # ⚠️ Si l'URL réelle de l'API diffère, corriger les 3 destinations ci-dessous.

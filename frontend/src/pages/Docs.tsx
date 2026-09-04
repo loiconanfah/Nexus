@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { usePageMeta } from '../lib/seo'
 
 const geist = 'var(--font-geist)'
 const mono = 'var(--font-mono)'
@@ -62,6 +63,11 @@ const TOC: Group[] = [
 export function Docs() {
   const nav = useNavigate()
   const [active, setActive] = useState('presentation')
+  usePageMeta(
+    'Documentation — Lenexus',
+    'Documentation complète de Lenexus : concepts, ontologie, graphe de dépendances, impact transversal, simulation de panne et de cyberattaque, dépendances IA, modèle d’entreprise, connecteurs, API, sécurité et exploitation.',
+    '/docs',
+  )
   const go = (id: string) => { setActive(id); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 
   return (

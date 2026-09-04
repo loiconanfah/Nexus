@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Identité -->
-    <title>Lenexus — Intelligence des dépendances opérationnelles</title>
-    <meta name="description" content="Lenexus cartographie vos systèmes, fournisseurs et personnes en un graphe de dépendances vivant, révèle vos points uniques de défaillance, simule les pannes et en chiffre l’impact." />
-    <meta name="keywords" content="Lenexus, dépendances, intelligence des dépendances, risque opérationnel, SPOF, point unique de défaillance, continuité, simulation, graphe, cybersécurité, Loi 25, RGPD, MJ Corp" />
+    <title>Lenexus — Intelligence des dépendances et d’impact opérationnel</title>
+    <meta name="description" content="Lenexus cartographie vos systèmes, fournisseurs, personnes et IA en un graphe de dépendances vivant, révèle vos points uniques de défaillance, simule pannes et cyberattaques, et en chiffre l’impact financier. Déterministe et explicable." />
+    <meta name="keywords" content="Lenexus, intelligence des dépendances, dependency intelligence, impact opérationnel, risque opérationnel, SPOF, point unique de défaillance, single point of failure, continuité d’activité, simulation de panne, kill-chain, cyberattaque, dépendances IA, graphe de dépendances, cartographie des risques, RTO, Loi 25, RGPD, GDPR, MJ Corp" />
     <meta name="author" content="MJ Corp" />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
     <meta name="application-name" content="Lenexus" />
     <meta name="apple-mobile-web-app-title" content="Lenexus" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -20,21 +21,27 @@
     <meta name="theme-color" content="#eef1f3" media="(prefers-color-scheme: light)" />
     <meta name="color-scheme" content="light dark" />
 
-    <!-- Icônes -->
+    <!-- Icônes & manifeste -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Canonique -->
-    <link rel="canonical" href="https://nexus-web-6cak.onrender.com/" />
+    <!-- Canonique (domaine principal : lenexux.com, apex) -->
+    <link rel="canonical" href="https://lenexux.com/" />
+
+    <!-- Langues (contenu bilingue FR/EN, même URL) -->
+    <link rel="alternate" hreflang="fr-CA" href="https://lenexux.com/" />
+    <link rel="alternate" hreflang="en-CA" href="https://lenexux.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://lenexux.com/" />
 
     <!-- Open Graph (Facebook, LinkedIn, Slack, iMessage…) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Lenexus" />
-    <meta property="og:title" content="Lenexus — Intelligence des dépendances opérationnelles" />
-    <meta property="og:description" content="Sachez ce qui casse avant que l’activité n’en pâtisse. Cartographiez vos dépendances, révélez les points uniques de défaillance et chiffrez l’impact des pannes." />
-    <meta property="og:url" content="https://nexus-web-6cak.onrender.com/" />
-    <meta property="og:image" content="https://nexus-web-6cak.onrender.com/og-image.png" />
-    <meta property="og:image:secure_url" content="https://nexus-web-6cak.onrender.com/og-image.png" />
+    <meta property="og:title" content="Lenexus — Intelligence des dépendances et d’impact opérationnel" />
+    <meta property="og:description" content="Sachez ce qui casse avant que l’activité n’en pâtisse. Cartographiez vos dépendances (systèmes, fournisseurs, personnes, IA), révélez les points uniques de défaillance, simulez pannes et cyberattaques, et chiffrez l’impact." />
+    <meta property="og:url" content="https://lenexux.com/" />
+    <meta property="og:image" content="https://lenexux.com/og-image.png" />
+    <meta property="og:image:secure_url" content="https://lenexux.com/og-image.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -44,23 +51,104 @@
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Lenexus — Intelligence des dépendances opérationnelles" />
-    <meta name="twitter:description" content="Sachez ce qui casse avant que l’activité n’en pâtisse. Cartographiez, simulez, chiffrez l’impact." />
-    <meta name="twitter:image" content="https://nexus-web-6cak.onrender.com/og-image.png" />
+    <meta name="twitter:title" content="Lenexus — Intelligence des dépendances et d’impact opérationnel" />
+    <meta name="twitter:description" content="Sachez ce qui casse avant que l’activité n’en pâtisse. Cartographiez, simulez pannes et cyberattaques, chiffrez l’impact." />
+    <meta name="twitter:image" content="https://lenexux.com/og-image.png" />
     <meta name="twitter:image:alt" content="Lenexus — Intelligence des dépendances opérationnelles" />
 
-    <!-- Données structurées (SEO) -->
+    <!-- ══════════ Données structurées (JSON-LD) ══════════ -->
+    <!-- Organisation éditrice -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": "https://lenexux.com/#organization",
+        "name": "Lenexus",
+        "legalName": "MJ Corp",
+        "url": "https://lenexux.com/",
+        "logo": "https://lenexux.com/favicon.svg",
+        "description": "Éditeur de Lenexus, plateforme d’intelligence des dépendances et d’impact opérationnel.",
+        "slogan": "Sachez ce qui casse avant que l’activité n’en pâtisse."
+      }
+    </script>
+    <!-- Site web -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://lenexux.com/#website",
+        "name": "Lenexus",
+        "url": "https://lenexux.com/",
+        "inLanguage": ["fr-CA", "en-CA"],
+        "publisher": { "@id": "https://lenexux.com/#organization" },
+        "description": "Plateforme d’intelligence des dépendances et d’impact opérationnel."
+      }
+    </script>
+    <!-- Application logicielle -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
+        "@id": "https://lenexux.com/#software",
         "name": "Lenexus",
         "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "Operational Dependency & Impact Intelligence",
         "operatingSystem": "Web",
-        "description": "Plateforme d’intelligence des dépendances opérationnelles : cartographie du graphe de dépendances, détection des points uniques de défaillance, simulation de pannes et chiffrage de l’impact.",
-        "url": "https://nexus-web-6cak.onrender.com/",
-        "author": { "@type": "Organization", "name": "MJ Corp" },
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CAD" }
+        "url": "https://lenexux.com/",
+        "softwareHelp": "https://lenexux.com/docs",
+        "inLanguage": ["fr-CA", "en-CA"],
+        "publisher": { "@id": "https://lenexux.com/#organization" },
+        "description": "Lenexus est une couche d’intelligence au-dessus de vos systèmes (ERP, ITSM, CRM). Elle cartographie systèmes, fournisseurs, personnes et IA en un graphe de dépendances, détecte les points uniques de défaillance, simule pannes, cyberattaques (kill-chain) et décisions, puis chiffre l’impact financier. Tous les chiffres sont déterministes et traçables ; l’IA résout, reformule et explique sans jamais inventer les chiffres.",
+        "featureList": [
+          "Graphe de dépendances 2D et hologramme 3D",
+          "Détection des points uniques de défaillance (SPOF)",
+          "Score de risque explicable (0–100, six facteurs)",
+          "Impact transversal en langage naturel avec chiffrage financier",
+          "Simulation holographique de pannes (10 types de perturbation)",
+          "Simulation de cyberattaque : chaîne de compromission (kill-chain) et contre-mesures",
+          "Intelligence des dépendances IA (modèles, agents, fournisseurs)",
+          "Modèle d’entreprise décisionnel éditable (P&L, trésorerie, KPIs) avec historique",
+          "Décision en langage naturel traduite en impact financier",
+          "Dépendances inférées par IA à valider",
+          "Import CSV/Excel, API REST en direct et import assisté par IA",
+          "Isolation multi-tenant, SSO Entra ID, conformité Loi 25 / RGPD"
+        ],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CAD", "description": "Espace de démonstration gratuit." }
+      }
+    </script>
+    <!-- Foire aux questions -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "@id": "https://lenexux.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Qu’est-ce que Lenexus ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Lenexus est une plateforme d’intelligence des dépendances et d’impact opérationnel. Elle cartographie systèmes, fournisseurs, personnes et IA en un graphe vivant, révèle les points uniques de défaillance, simule pannes et cyberattaques et en chiffre l’impact financier — une couche au-dessus de vos outils existants, pas un remplaçant." }
+          },
+          {
+            "@type": "Question",
+            "name": "Faut-il connecter Lenexus à nos systèmes ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Non. Lenexus fonctionne par import : fichier CSV/Excel, API REST JSON en direct, ou données collées que l’IA structure. Aucun accès privilégié requis." }
+          },
+          {
+            "@type": "Question",
+            "name": "L’IA invente-t-elle des chiffres ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Jamais. Le moteur déterministe calcule ; l’IA interprète et explique. Sans clé d’IA, Lenexus bascule sur des règles et reste pleinement fonctionnel." }
+          },
+          {
+            "@type": "Question",
+            "name": "Peut-on modéliser nos dépendances à l’IA et rejouer une cyberattaque ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Oui. Modèles, agents et fournisseurs d’IA sont des dépendances de premier plan ; et la simulation de cyberattaque suit une chaîne de compromission (kill-chain) avec impact financier et contre-mesure par nœud." }
+          },
+          {
+            "@type": "Question",
+            "name": "Nos données sont-elles isolées ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Oui. Chaque client dispose d’un espace de travail cloisonné (multi-tenant), avec mots de passe hachés et SSO Microsoft Entra ID disponible. Conformité Loi 25 / RGPD." }
+          }
+        ]
       }
     </script>
 
@@ -73,6 +161,56 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- ══════════ Repli sans JavaScript : contenu réel pour les moteurs de
+         recherche et les IA qui n’exécutent pas le JavaScript. ══════════ -->
+    <noscript>
+      <main style="max-width:820px;margin:0 auto;padding:32px 20px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;color:#111">
+        <h1>Lenexus — Intelligence des dépendances et d’impact opérationnel</h1>
+        <p><strong>Lenexus</strong> cartographie vos systèmes, fournisseurs, personnes et intelligences artificielles
+        en un <strong>graphe de dépendances vivant</strong>, révèle vos <strong>points uniques de défaillance</strong>,
+        simule pannes, cyberattaques et décisions, et en <strong>chiffre l’impact financier</strong>. C’est une couche
+        d’intelligence au-dessus de vos outils existants (ERP, ITSM, CRM) — pas un remplaçant. Tous les chiffres sont
+        déterministes et traçables ; l’IA résout, reformule et explique, sans jamais inventer les chiffres.</p>
+
+        <h2>Le problème</h2>
+        <p>Votre ERP connaît les fournisseurs, l’ITSM les serveurs, le RH les personnes, votre plateforme IA les
+        modèles et agents. Mais quand un fournisseur tombe, qu’un employé clé part ou qu’un service cloud est
+        compromis, la question — « qu’est-ce qui casse, jusqu’où, et combien ça coûte ? » — traverse tous ces silos.
+        Aucun outil, seul, n’y répond.</p>
+
+        <h2>Comment ça marche</h2>
+        <ol>
+          <li><strong>Importer</strong> — CSV, Excel, API REST en direct ou données collées structurées par l’IA.</li>
+          <li><strong>Cartographier</strong> — systèmes, fournisseurs, personnes et IA deviennent un graphe unique.</li>
+          <li><strong>Révéler</strong> — points uniques de défaillance, concentration et rayon d’impact, score expliqué.</li>
+          <li><strong>Simuler</strong> — rejouez une panne, une cyberattaque ou une décision ; l’impact se propage et se chiffre.</li>
+          <li><strong>Décider</strong> — mitigations priorisées et rapport exécutif.</li>
+        </ol>
+
+        <h2>Capacités de la plateforme</h2>
+        <ul>
+          <li>Graphe de dépendances 2D et hologramme 3D ; exploration des dépendances directes et transitives.</li>
+          <li>Analyse de risque : score 0–100 en six facteurs, points uniques de défaillance (SPOF), alerte anticipée, impact de changement.</li>
+          <li>Impact transversal en langage naturel ; simulation holographique (10 types de panne) ; cyberattaque avec kill-chain et contre-mesures.</li>
+          <li>Modèle d’entreprise décisionnel éditable (compte de résultat, trésorerie, KPIs) avec historique versionné ; décision en langage naturel.</li>
+          <li>Résilience : concentration des fournisseurs, dépendances humaines (« bus factor »), plan d’action.</li>
+          <li>IA &amp; connaissance : analyste IA ancré sur le graphe, dépendances inférées à valider, extraction depuis documents, dépendances IA.</li>
+          <li>Données &amp; sécurité : import CSV/Excel/REST, résolution d’entités, isolation multi-tenant, SSO Entra ID, Loi 25 / RGPD.</li>
+        </ul>
+
+        <h2>Accès</h2>
+        <ul>
+          <li><a href="/welcome">Présentation de Lenexus</a></li>
+          <li><a href="/docs">Documentation complète</a></li>
+          <li><a href="/demo">Explorer la démonstration</a></li>
+          <li><a href="/login">Se connecter / créer un compte</a></li>
+          <li><a href="/legal">Mentions légales</a></li>
+        </ul>
+        <p>Lenexus · MJ Corp — activez JavaScript pour l’application interactive complète.</p>
+      </main>
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

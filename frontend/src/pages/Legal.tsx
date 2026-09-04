@@ -1,4 +1,5 @@
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { usePageMeta } from '../lib/seo'
 
 const geist = 'var(--font-geist)'
 const mono = 'var(--font-mono)'
@@ -23,6 +24,11 @@ const DOCS: { key: Doc; label: string }[] = [
 export function Legal() {
   const [params, setParams] = useSearchParams()
   const nav = useNavigate()
+  usePageMeta(
+    'Mentions légales — Lenexus',
+    'Conditions d’utilisation, politique de confidentialité et addendum de traitement des données (DPA) de Lenexus. Contexte Québec (Loi 25) et RGPD.',
+    '/legal',
+  )
   const doc = (params.get('doc') as Doc) || 'terms'
 
   return (

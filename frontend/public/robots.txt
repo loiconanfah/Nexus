@@ -1,0 +1,68 @@
+# robots.txt — Lenexus (https://lenexux.com)
+# Le contenu public est ouvert à l'indexation, y compris par les robots d'IA
+# (compréhension par les assistants et moteurs génératifs souhaitée).
+
+User-agent: *
+Allow: /
+# Zones applicatives protégées (nécessitent une authentification, non pertinentes
+# pour l'indexation). Le contenu réel n'y est jamais servi à un visiteur anonyme.
+Disallow: /admin
+Disallow: /enterprise
+Disallow: /decision
+Disallow: /impact
+Disallow: /attacks
+Disallow: /inference
+Disallow: /graph
+Disallow: /dependencies
+Disallow: /suppliers
+Disallow: /incidents
+Disallow: /change
+Disallow: /audit
+Disallow: /twin
+Disallow: /history
+Disallow: /documents
+Disallow: /onboarding
+Disallow: /integrations
+Disallow: /assets
+Disallow: /risks
+Disallow: /simulations
+Disallow: /ai
+Disallow: /reports
+Disallow: /human
+Disallow: /actions
+
+# Robots d'IA explicitement autorisés (compréhension complète de la plateforme).
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+Sitemap: https://lenexux.com/sitemap.xml

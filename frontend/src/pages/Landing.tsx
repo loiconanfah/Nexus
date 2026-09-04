@@ -7,6 +7,7 @@ import {
   Scale, Menu, Network, LineChart, Radar, Users, Workflow, Upload, Boxes, EyeOff,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
+import { usePageMeta } from '../lib/seo'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -34,6 +35,11 @@ export function Landing() {
   const navigate = useNavigate()
   const { lang, setLang, t } = useLang()
   const [menuOpen, setMenuOpen] = useState(false)
+  usePageMeta(
+    'Lenexus — Intelligence des dépendances et d’impact opérationnel',
+    'Cartographiez vos systèmes, fournisseurs, personnes et IA en un graphe de dépendances, révélez les points uniques de défaillance, simulez pannes et cyberattaques, et chiffrez l’impact financier.',
+    '/',
+  )
 
   return (
     <div className="slb h-full overflow-y-auto" style={{ ...DARK_VARS, background: '#050506', color: '#f3f3f6', fontFamily: 'var(--font-inter)' }}>
