@@ -18,9 +18,9 @@ const RELATION_TYPES = ['DEPENDS_ON', 'RUNS_ON', 'USES', 'SUPPLIED_BY', 'AUTHENT
 
 const PRESETS: Record<'nodes' | 'edges', { columns: string; sample: string; build: (ds: string) => object }> = {
   nodes: {
-    columns: 'name, type, criticality',
-    sample: 'name,type,criticality\nPaymentAPI,Application,88\nRedisCache,Server,70',
-    build: (ds) => ({ sourceSystem: 'CSV Upload', entities: [{ dataset: ds, entityType: 'Asset', nameColumn: 'name', criticalityColumn: 'criticality', entityTypeColumn: 'type' }], relations: [] }),
+    columns: 'name, type, criticality, costPerHour (optionnel)',
+    sample: 'name,type,criticality,costPerHour\nPaymentAPI,Application,88,25000\nRedisCache,Server,70,8000',
+    build: (ds) => ({ sourceSystem: 'CSV Upload', entities: [{ dataset: ds, entityType: 'Asset', nameColumn: 'name', criticalityColumn: 'criticality', entityTypeColumn: 'type', costPerHourColumn: 'costPerHour' }], relations: [] }),
   },
   edges: {
     columns: 'source, source_type, target, target_type, confidence',
@@ -40,7 +40,7 @@ const PRESETS: Record<'nodes' | 'edges', { columns: string; sample: string; buil
 function guess(headers: string[], re: RegExp): string {
   return headers.find((h) => re.test(h)) ?? ''
 }
-type AutoMap = { kind: 'entities' | 'relations'; name: string; type: string; crit: string; source: string; sourceType: string; target: string; targetType: string; relation: string; confidence: string; defaultType?: string }
+type AutoMap = { kind: 'entities' | 'relations'; name: string; type: string; crit: string; cost: string; source: string; sourceType: string; target: string; targetType: string; relation: string; confidence: string; defaultType?: string }
 function autoDetect(headers: string[]): AutoMap {
   const source = guess(headers, /source|from|src|parent|depend.*on|upstream/i)
   const target = guess(headers, /target|to\b|dest|child|downstream/i)
@@ -50,6 +50,7 @@ function autoDetect(headers: string[]): AutoMap {
     name: guess(headers, /name|nom|asset|system|hostname|\bci\b|label/i) || headers[0] || '',
     type: guess(headers, /type|category|kind|class|categorie/i),
     crit: guess(headers, /crit|prior|import|sever|weight/i),
+    cost: guess(headers, /cost.?per.?hour|cost.?hour|hourly.?cost|downtime.?cost|co[uû]t.?heure|co[uû]t.?h|\bcostperhour\b/i),
     source, target,
     sourceType: guess(headers, /source.?type|from.?type|src.?type/i),
     targetType: guess(headers, /target.?type|to.?type|dest.?type/i),
@@ -62,7 +63,7 @@ function buildAutoProfile(ds: string, m: AutoMap): object {
   if (m.kind === 'entities') {
     return {
       sourceSystem: 'CSV Upload',
-      entities: [{ dataset: ds, entityType: et, nameColumn: m.name, ...(m.type ? { entityTypeColumn: m.type } : {}), ...(m.crit ? { criticalityColumn: m.crit } : {}) }],
+      entities: [{ dataset: ds, entityType: et, nameColumn: m.name, ...(m.type ? { entityTypeColumn: m.type } : {}), ...(m.crit ? { criticalityColumn: m.crit } : {}), ...(m.cost ? { costPerHourColumn: m.cost } : {}) }],
       relations: [],
     }
   }
@@ -128,7 +129,7 @@ export function Onboarding() {
         const r = await api.analyzeImport(sample)
         if (r.usedAi && r.mapping) {
           const m = r.mapping
-          setMap({ kind: m.kind, name: m.name, type: m.type, crit: m.crit, source: m.source, sourceType: m.sourceType, target: m.target, targetType: m.targetType, relation: m.relation || 'DEPENDS_ON', confidence: m.confidence, defaultType: m.defaultEntityType })
+          setMap({ kind: m.kind, name: m.name, type: m.type, crit: m.crit, cost: autoDetect(pending?.headers ?? []).cost, source: m.source, sourceType: m.sourceType, target: m.target, targetType: m.targetType, relation: m.relation || 'DEPENDS_ON', confidence: m.confidence, defaultType: m.defaultEntityType })
           setAiUsed(true)
         }
       } catch { /* on garde l'heuristique */ } finally { setAnalyzing(false) }
@@ -208,6 +209,7 @@ export function Onboarding() {
                 <MapField label={t('Nom', 'Name')} value={map.name} headers={pending.headers} onChange={(v) => setMap({ ...map, name: v })} required />
                 <MapField label={t('Type', 'Type')} value={map.type} headers={pending.headers} onChange={(v) => setMap({ ...map, type: v })} />
                 <MapField label={t('Criticité', 'Criticality')} value={map.crit} headers={pending.headers} onChange={(v) => setMap({ ...map, crit: v })} />
+                <MapField label={t('Coût d’arrêt / h', 'Downtime cost / h')} value={map.cost} headers={pending.headers} onChange={(v) => setMap({ ...map, cost: v })} />
               </>
             ) : (
               <>

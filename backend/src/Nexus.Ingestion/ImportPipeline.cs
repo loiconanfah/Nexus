@@ -182,7 +182,8 @@ public sealed class ImportPipeline(
             criticality: criticality,
             aliases: candidate.Aliases,
             description: candidate.Description,
-            sourceSystem: sourceSystem);
+            sourceSystem: sourceSystem,
+            costPerHour: candidate.CostPerHour);
     }
 
     private async Task<Guid?> ResolveAsync(Guid tenantId, EntityType type, string name, Dictionary<string, Guid> cache, CancellationToken ct)

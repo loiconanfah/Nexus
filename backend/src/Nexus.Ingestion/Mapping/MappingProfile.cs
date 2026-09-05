@@ -14,7 +14,9 @@ public sealed record EntityMapping(
     string? DescriptionColumn = null,
     // Si renseigné, le type d'entité est lu par ligne dans cette colonne ;
     // sinon le type fixe EntityType s'applique. Fallback sur EntityType si vide.
-    string? EntityTypeColumn = null);
+    string? EntityTypeColumn = null,
+    // Coût d'arrêt réel par heure (optionnel) : prime sur l'estimation par criticité.
+    string? CostPerHourColumn = null);
 
 /// <summary>
 /// Décrit comment les colonnes d'un jeu de données produisent des RELATIONS

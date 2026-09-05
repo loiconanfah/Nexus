@@ -9,7 +9,8 @@ public sealed record EntityCandidate(
     IReadOnlyList<string> Aliases,
     int? Criticality,
     string? Description,
-    string SourceKey);
+    string SourceKey,
+    double? CostPerHour = null);
 
 /// <summary>Relation normalisée ; ses extrémités seront résolues par nom + type.</summary>
 public sealed record RelationCandidate(

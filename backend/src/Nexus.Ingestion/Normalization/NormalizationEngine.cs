@@ -48,7 +48,17 @@ public sealed class NormalizationEngine
 
         var description = mapping.DescriptionColumn is null ? null : record.Get(mapping.DescriptionColumn);
 
-        return new EntityCandidate(entityType, name, aliases, criticality, description, record.SourceKey);
+        double? costPerHour = null;
+        if (mapping.CostPerHourColumn is not null &&
+            record.Get(mapping.CostPerHourColumn) is { } rawCost &&
+            double.TryParse(rawCost.Replace(",", "").Replace("$", "").Replace(" ", "").Trim(),
+                NumberStyles.Float, CultureInfo.InvariantCulture, out var cost) &&
+            cost > 0)
+        {
+            costPerHour = cost;
+        }
+
+        return new EntityCandidate(entityType, name, aliases, criticality, description, record.SourceKey, costPerHour);
     }
 
     public Result<RelationCandidate> NormalizeRelation(RawRecord record, RelationMapping mapping)

@@ -267,11 +267,11 @@ export function Docs() {
           {/* ── DONNÉES ── */}
           <Sec id="onboarding" title="Import & intégration">
             <P>Alimentez le graphe en minutes. Trois modes : <b>Systèmes & actifs</b> (entités), <b>Dépendances</b> (relations), <b>Auto/IA</b> (colonnes libres détectées). Déposez un CSV, ou pointez une API.</P>
-            <P>Format CSV d’entités (exemple) :</P>
-            <Code>{`name,type,criticality
-HSS,System,96
-BD Abonnés,Database,95
-Ericsson,Supplier,88`}</Code>
+            <P>Format CSV d’entités (exemple). La colonne <code>costPerHour</code> est optionnelle : c’est le <b>coût d’arrêt réel par heure</b>, qui prime alors sur l’estimation par criticité dans le calcul d’impact.</P>
+            <Code>{`name,type,criticality,costPerHour
+HSS,System,96,50000
+BD Abonnés,Database,95,40000
+Ericsson,Supplier,88,`}</Code>
             <P>Format CSV de relations (source → cible) :</P>
             <Code>{`source,sourceType,target,targetType,relation,confidence
 Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
