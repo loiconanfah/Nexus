@@ -410,3 +410,12 @@ export interface ModelVersion {
   id: string; version: number; companyName: string; industry: string
   drivers: BusinessDriversDto; note: string | null; createdAt: string
 }
+
+export interface ImpactTuning {
+  costVeryHigh: number; costHigh: number; costElevated: number; costSignificant: number
+  costModerate: number; costLow: number; costMinimal: number
+  rtoMultiplier: number; probabilityDecay: number; probabilityFloor: number
+}
+export interface ImpactConfig {
+  tuning: ImpactTuning; customized: boolean; defaults: ImpactTuning
+}

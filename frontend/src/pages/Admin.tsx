@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { getTenantId, resetTenant } from '../lib/tenant'
 import { logout } from '../lib/auth'
 import { useLang } from '../lib/i18n'
+import type { ImpactTuning } from '../lib/types'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -62,6 +63,9 @@ export function Admin() {
       {/* Intégrations IA */}
       <AiIntegration />
 
+      {/* Réglages du modèle d'impact */}
+      <ImpactTuningPanel />
+
       {/* Actions */}
       <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
@@ -80,6 +84,100 @@ export function Admin() {
         </div>
       </div>
     </div>
+  )
+}
+
+// ── Réglages du modèle d'impact financier (par tenant) ──
+const COST_FIELDS: [keyof ImpactTuning, string, string][] = [
+  ['costVeryHigh', 'Coût/h · criticité ≥ 90', 'Cost/h · criticality ≥ 90'],
+  ['costHigh', 'Coût/h · ≥ 80', 'Cost/h · ≥ 80'],
+  ['costElevated', 'Coût/h · ≥ 70', 'Cost/h · ≥ 70'],
+  ['costSignificant', 'Coût/h · ≥ 60', 'Cost/h · ≥ 60'],
+  ['costModerate', 'Coût/h · ≥ 40', 'Cost/h · ≥ 40'],
+  ['costLow', 'Coût/h · ≥ 20', 'Cost/h · ≥ 20'],
+  ['costMinimal', 'Coût/h · < 20', 'Cost/h · < 20'],
+]
+const CURVE_FIELDS: [keyof ImpactTuning, string, string, string][] = [
+  ['rtoMultiplier', 'Multiplicateur RTO', 'RTO multiplier', '×'],
+  ['probabilityDecay', 'Décroissance de probabilité', 'Probability decay', '0–1'],
+  ['probabilityFloor', 'Plancher de probabilité', 'Probability floor', '0–1'],
+]
+
+function ImpactTuningPanel() {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const { data } = useQuery({ queryKey: ['impact-config'], queryFn: api.impactConfig })
+  const [form, setForm] = useState<Record<string, string>>({})
+  const [dirty, setDirty] = useState(false)
+
+  // Initialise le formulaire depuis les réglages effectifs.
+  useEffect(() => {
+    if (data && !dirty) {
+      const f: Record<string, string> = {}
+      for (const k of Object.keys(data.tuning) as (keyof ImpactTuning)[]) f[k] = String(data.tuning[k])
+      setForm(f)
+    }
+  }, [data, dirty])
+
+  const set = (k: string, v: string) => { setDirty(true); setForm((s) => ({ ...s, [k]: v })) }
+  const save = useMutation({
+    mutationFn: () => {
+      const tuning = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, Number(v) || 0])) as unknown as ImpactTuning
+      return api.saveImpactConfig(tuning)
+    },
+    onSuccess: () => { setDirty(false); qc.invalidateQueries({ queryKey: ['impact-config'] }) },
+  })
+  const reset = useMutation({ mutationFn: api.resetImpactConfig, onSuccess: () => { setDirty(false); qc.invalidateQueries({ queryKey: ['impact-config'] }) } })
+
+  return (
+    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+      <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
+        <Settings size={15} style={{ color: CYAN }} />
+        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Modèle d’impact financier', 'Financial impact model')}</h3>
+        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: data?.customized ? '#e0b23c' : 'var(--nx-text-muted)', background: data?.customized ? 'rgba(224,178,60,0.12)' : 'var(--nx-surface)' }}>
+          {data?.customized ? t('personnalisé', 'customized') : t('valeurs par défaut', 'defaults')}
+        </span>
+      </div>
+      <div className="p-4">
+        <p className="mb-3" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t('Adaptez les hypothèses d’impact à votre organisation. Un coût réel saisi par actif prime toujours sur ces paliers.',
+             'Tune the impact assumptions to your organization. A real per-asset cost always overrides these tiers.')}
+        </p>
+        <div className="mb-2" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>{t('Paliers de coût d’arrêt (par heure)', 'Downtime cost tiers (per hour)')}</div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {COST_FIELDS.map(([k, fr, en]) => (
+            <TuneInput key={k} label={t(fr, en)} value={form[k] ?? ''} onChange={(v) => set(k, v)} />
+          ))}
+        </div>
+        <div className="mb-2 mt-4" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>{t('Courbes', 'Curves')}</div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {CURVE_FIELDS.map(([k, fr, en, suffix]) => (
+            <TuneInput key={k} label={t(fr, en)} value={form[k] ?? ''} onChange={(v) => set(k, v)} suffix={suffix} />
+          ))}
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <button onClick={() => save.mutate()} disabled={save.isPending || !dirty} className="flex items-center gap-1.5 rounded-sm px-3 py-2" style={{ background: dirty ? CYAN : 'var(--nx-surface)', color: dirty ? '#04121a' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+            <Check size={14} /> {save.isPending ? t('Enregistrement…', 'Saving…') : t('Enregistrer', 'Save')}
+          </button>
+          <button onClick={() => reset.mutate()} disabled={reset.isPending} className="flex items-center gap-1.5 rounded-sm border px-3 py-2" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+            <RotateCcw size={14} /> {t('Valeurs par défaut', 'Reset to defaults')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TuneInput({ label, value, onChange, suffix }: { label: string; value: string; onChange: (v: string) => void; suffix?: string }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block" style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--nx-text-muted)' }}>{label}</span>
+      <div className="flex items-center rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)' }}>
+        <input type="number" inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-transparent px-2 py-1.5 outline-none" style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--nx-text)' }} />
+        {suffix && <span className="px-2" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--nx-outline)' }}>{suffix}</span>}
+      </div>
+    </label>
   )
 }
 

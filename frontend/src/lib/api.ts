@@ -7,6 +7,8 @@ import type {
   DecisionResponse,
   EnterpriseModel,
   ImpactAnalysis,
+  ImpactConfig,
+  ImpactTuning,
   ModelVersion,
   InferenceResult,
   ProposedRelation,
@@ -77,6 +79,13 @@ export const api = {
 
   analyzeImpact: (question: string, lang: string) =>
     fetch(`${BASE}/impact/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ question, lang }) }).then(handle<ImpactAnalysis>),
+
+  impactConfig: () =>
+    fetch(`${BASE}/impact/config`, { headers: headers(false) }).then(handle<ImpactConfig>),
+  saveImpactConfig: (tuning: ImpactTuning) =>
+    fetch(`${BASE}/impact/config`, { method: 'PUT', headers: headers(), body: JSON.stringify(tuning) }).then(handle<ImpactConfig>),
+  resetImpactConfig: () =>
+    fetch(`${BASE}/impact/config/reset`, { method: 'POST', headers: headers(false) }).then(handle<ImpactConfig>),
 
   restPreview: (source: RestSource) =>
     fetch(`${BASE}/imports/rest/preview`, { method: 'POST', headers: headers(), body: JSON.stringify(source) }).then(handle<RestPreview>),

@@ -19,6 +19,7 @@ public sealed record SimulateFailureRequest(
 public sealed class SimulationsController(
     ITenantProvider tenantProvider,
     PropagationEngine propagation,
+    Nexus.Api.Impact.ImpactConfigStore impactConfig,
     IChatCompletion chat) : NexusController(tenantProvider)
 {
     /// <summary>Simule la défaillance d'un actif et renvoie la propagation + l'impact financier estimé.</summary>
@@ -32,14 +33,15 @@ public sealed class SimulationsController(
         }
 
         var result = await propagation.SimulateFailureAsync(tenant, request.AssetId, request.Scenario, request.MaxDepth, ct);
+        var tuning = await impactConfig.GetEffectiveAsync(tenant, ct);
 
         // Modèle réaliste : coût horaire, RTO (temps de rétablissement) et
         // probabilité de propagation par actif → impact pire cas et attendu.
         var nodes = result.Affected.Select(b =>
         {
-            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality, b.Entity.CostPerHour);
-            var rto = BusinessImpactModel.RtoHours(b.Entity.EntityType, b.Entity.Criticality);
-            var prob = BusinessImpactModel.FailureProbability(b.Depth);
+            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality, b.Entity.CostPerHour, tuning);
+            var rto = BusinessImpactModel.RtoHours(b.Entity.EntityType, b.Entity.Criticality, tuning);
+            var prob = BusinessImpactModel.FailureProbability(b.Depth, tuning);
             return new
             {
                 id = b.Entity.Id, name = b.Entity.Name, type = b.Entity.EntityType,

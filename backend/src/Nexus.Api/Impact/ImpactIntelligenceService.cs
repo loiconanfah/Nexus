@@ -47,6 +47,7 @@ public sealed class ImpactIntelligenceService(
     IEntityResolver resolver,
     IDependencyQueries queries,
     PropagationEngine propagation,
+    ImpactConfigStore impactConfig,
     IChatCompletion chat)
 {
     private const string Currency = "CAD";
@@ -72,11 +73,13 @@ public sealed class ImpactIntelligenceService(
         var prop = await propagation.SimulateFailureAsync(tenant, best.Id, scenario, 10, ct);
 
         // 4. Impact financier par nœud (coût/h × RTO × probabilité de propagation).
+        //    Réglages du tenant (paliers, RTO, probabilité) — défaut si non configuré.
+        var tuning = await impactConfig.GetEffectiveAsync(tenant, ct);
         var nodes = prop.Affected.Select(b =>
         {
-            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality, b.Entity.CostPerHour);
-            var rto = BusinessImpactModel.RtoHours(b.Entity.EntityType, b.Entity.Criticality);
-            var prob = BusinessImpactModel.FailureProbability(b.Depth);
+            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality, b.Entity.CostPerHour, tuning);
+            var rto = BusinessImpactModel.RtoHours(b.Entity.EntityType, b.Entity.Criticality, tuning);
+            var prob = BusinessImpactModel.FailureProbability(b.Depth, tuning);
             return (b.Entity, b.Depth, cost, rto, prob, nodeImpact: (long)Math.Round(cost * rto));
         }).ToList();
 
