@@ -13,7 +13,8 @@ public sealed class Neo4jDependencyQueries(INeo4jConnection connection) : IDepen
 
     private const string EntityCols =
         "d.id AS id, d.tenantId AS tenantId, d.entityType AS entityType, d.name AS name, " +
-        "d.criticality AS criticality, d.aliases AS aliases, d.description AS description, d.sourceSystem AS sourceSystem";
+        "d.criticality AS criticality, d.aliases AS aliases, d.description AS description, " +
+        "d.sourceSystem AS sourceSystem, d.costPerHour AS costPerHour";
 
     public async Task<IReadOnlyList<GraphEntityRecord>> GetDirectDependentsAsync(Guid tenantId, Guid id, CancellationToken ct = default)
     {

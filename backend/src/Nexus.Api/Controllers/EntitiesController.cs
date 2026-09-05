@@ -33,6 +33,43 @@ public sealed class EntitiesController(
         return deleted ? NoContent() : NotFound(new { error = "entity_not_found" });
     }
 
+    /// <summary>Liste les actifs « mis de côté » (désinstallés), réactivables.</summary>
+    [HttpGet("archived")]
+    public async Task<IActionResult> Archived(CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        return Ok(await repository.GetArchivedEntitiesAsync(tenant, ct: ct));
+    }
+
+    /// <summary>Met un actif de côté (« désinstalle ») : conservé mais exclu de l'impact, réactivable.</summary>
+    [HttpPost("{id:guid}/decommission")]
+    public async Task<IActionResult> Decommission(Guid id, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var ok = await repository.DecommissionEntityAsync(tenant, id, ct);
+        return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
+    }
+
+    /// <summary>Réactive un actif mis de côté.</summary>
+    [HttpPost("{id:guid}/reactivate")]
+    public async Task<IActionResult> Reactivate(Guid id, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var ok = await repository.ReactivateEntityAsync(tenant, id, ct);
+        return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
+    }
+
+    public sealed record SetCostRequest(double? CostPerHour);
+
+    /// <summary>Définit le coût d'arrêt réel par heure (null / ≤ 0 = revenir à l'estimation par criticité).</summary>
+    [HttpPatch("{id:guid}/cost")]
+    public async Task<IActionResult> SetCost(Guid id, [FromBody] SetCostRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var ok = await repository.SetCostPerHourAsync(tenant, id, req?.CostPerHour, ct);
+        return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
+    }
+
     /// <summary>Résout une entité par nom exact (+ type), ou renvoie des suggestions floues.</summary>
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string name, [FromQuery] string type, CancellationToken ct)

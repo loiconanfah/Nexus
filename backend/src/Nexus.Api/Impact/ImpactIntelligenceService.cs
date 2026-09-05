@@ -74,7 +74,7 @@ public sealed class ImpactIntelligenceService(
         // 4. Impact financier par nœud (coût/h × RTO × probabilité de propagation).
         var nodes = prop.Affected.Select(b =>
         {
-            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality);
+            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality, b.Entity.CostPerHour);
             var rto = BusinessImpactModel.RtoHours(b.Entity.EntityType, b.Entity.Criticality);
             var prob = BusinessImpactModel.FailureProbability(b.Depth);
             return (b.Entity, b.Depth, cost, rto, prob, nodeImpact: (long)Math.Round(cost * rto));

@@ -26,6 +26,7 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             ["name"] = entity.Name,
             ["description"] = entity.Description,
             ["criticality"] = entity.Criticality.Value,
+            ["costPerHour"] = entity.CostPerHour, // null => propriété retirée (repli sur criticité)
             ["aliases"] = entity.Aliases.ToArray(),
             ["attributes"] = JsonSerializer.Serialize(entity.Attributes),
             ["sourceSystem"] = entity.SourceSystem,
@@ -96,6 +97,66 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
         return res.Count > 0 && res[0]["existed"].As<bool>();
     }
 
+    // ── Mise de côté (« désinstaller ») : réutilise la validité temporelle. Un
+    // actif mis de côté (validUntil non nul) disparaît de TOUTES les lectures
+    // actives (graphe, propagation, impact) sans être supprimé, et reste
+    // réactivable. Aucun changement des moteurs : ils filtrent déjà validUntil.
+    public async Task<bool> DecommissionEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    {
+        const string cypher = """
+            MATCH (n:Entity { id: $id, tenantId: $tenantId })
+            SET n.validUntil = $now, n.updatedAt = $now
+            RETURN count(n) AS c
+            """;
+        var now = DateTimeOffset.UtcNow.ToString(Iso);
+        var res = await connection.WriteAsync(cypher, new { id = id.ToString(), tenantId = tenantId.ToString(), now }, ct);
+        return res.Count > 0 && res[0]["c"].As<long>() > 0;
+    }
+
+    public async Task<bool> ReactivateEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    {
+        const string cypher = """
+            MATCH (n:Entity { id: $id, tenantId: $tenantId })
+            SET n.validUntil = null, n.validFrom = $now, n.updatedAt = $now
+            RETURN count(n) AS c
+            """;
+        var now = DateTimeOffset.UtcNow.ToString(Iso);
+        var res = await connection.WriteAsync(cypher, new { id = id.ToString(), tenantId = tenantId.ToString(), now }, ct);
+        return res.Count > 0 && res[0]["c"].As<long>() > 0;
+    }
+
+    // Coût d'arrêt réel par heure. null / ≤ 0 retire la propriété (repli sur la
+    // criticité). Ne filtre pas validUntil : on peut régler le coût même mis de côté.
+    public async Task<bool> SetCostPerHourAsync(Guid tenantId, Guid id, double? costPerHour, CancellationToken ct = default)
+    {
+        const string cypher = """
+            MATCH (n:Entity { id: $id, tenantId: $tenantId })
+            SET n.costPerHour = $cost, n.updatedAt = $now
+            RETURN count(n) AS c
+            """;
+        object? cost = costPerHour is > 0 ? costPerHour.Value : null;
+        var now = DateTimeOffset.UtcNow.ToString(Iso);
+        var res = await connection.WriteAsync(cypher, new { id = id.ToString(), tenantId = tenantId.ToString(), cost, now }, ct);
+        return res.Count > 0 && res[0]["c"].As<long>() > 0;
+    }
+
+    // Actifs mis de côté (validUntil non nul) — pour les afficher et les réactiver.
+    public async Task<IReadOnlyList<GraphEntityRecord>> GetArchivedEntitiesAsync(Guid tenantId, int limit = 500, CancellationToken ct = default)
+    {
+        var take = Math.Clamp(limit, 1, 5000);
+        var cypher = $$"""
+            MATCH (n:Entity { tenantId: $t })
+            WHERE n.validUntil IS NOT NULL
+            RETURN n.id AS id, n.tenantId AS tenantId, n.entityType AS entityType, n.name AS name,
+                   n.criticality AS criticality, n.aliases AS aliases, n.description AS description,
+                   n.sourceSystem AS sourceSystem, n.costPerHour AS costPerHour
+            ORDER BY n.updatedAt DESC
+            LIMIT {{take}}
+            """;
+        var records = await connection.ReadAsync(cypher, new { t = tenantId.ToString() }, ct);
+        return records.Select(GraphRecordMapper.MapEntity).ToList();
+    }
+
     public async Task<GraphEntityRecord?> GetEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default)
     {
         const string cypher = """
@@ -103,7 +164,8 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             WHERE n.validUntil IS NULL
             RETURN n.id AS id, n.tenantId AS tenantId, n.entityType AS entityType,
                    n.name AS name, n.criticality AS criticality, n.aliases AS aliases,
-                   n.description AS description, n.sourceSystem AS sourceSystem
+                   n.description AS description, n.sourceSystem AS sourceSystem,
+                   n.costPerHour AS costPerHour
             """;
 
         var records = await connection.ReadAsync(cypher,
@@ -122,6 +184,7 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             RETURN t.id AS id, t.tenantId AS tenantId, t.entityType AS entityType,
                    t.name AS name, t.criticality AS criticality, t.aliases AS aliases,
                    t.description AS description, t.sourceSystem AS sourceSystem,
+                   t.costPerHour AS costPerHour,
                    type(r) AS relType, r.confidence AS confidence, r.status AS status
             """;
 
@@ -147,7 +210,7 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             WHERE n.validUntil IS NULL
             RETURN n.id AS id, n.tenantId AS tenantId, n.entityType AS entityType, n.name AS name,
                    n.criticality AS criticality, n.aliases AS aliases, n.description AS description,
-                   n.sourceSystem AS sourceSystem
+                   n.sourceSystem AS sourceSystem, n.costPerHour AS costPerHour
             LIMIT {{take}}
             """;
 

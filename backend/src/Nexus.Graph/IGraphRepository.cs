@@ -17,6 +17,18 @@ public interface IGraphRepository
     /// <summary>Supprime définitivement une entité et ses relations (DETACH DELETE), filtrée par tenant.</summary>
     Task<bool> DeleteEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
+    /// <summary>Met une entité de côté (« désinstalle ») : exclue des lectures actives, conservée, réactivable.</summary>
+    Task<bool> DecommissionEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>Réactive une entité mise de côté.</summary>
+    Task<bool> ReactivateEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+
+    /// <summary>Définit (ou retire, si null/≤0) le coût d'arrêt réel par heure d'une entité.</summary>
+    Task<bool> SetCostPerHourAsync(Guid tenantId, Guid id, double? costPerHour, CancellationToken ct = default);
+
+    /// <summary>Liste les entités mises de côté (validité close), pour les afficher et les réactiver.</summary>
+    Task<IReadOnlyList<GraphEntityRecord>> GetArchivedEntitiesAsync(Guid tenantId, int limit = 500, CancellationToken ct = default);
+
     /// <summary>Lit une entité active par identifiant (filtrée par tenant).</summary>
     Task<GraphEntityRecord?> GetEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 

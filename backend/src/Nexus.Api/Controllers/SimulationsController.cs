@@ -37,7 +37,7 @@ public sealed class SimulationsController(
         // probabilité de propagation par actif → impact pire cas et attendu.
         var nodes = result.Affected.Select(b =>
         {
-            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality);
+            var cost = BusinessImpactModel.CostPerHour(b.Entity.Criticality, b.Entity.CostPerHour);
             var rto = BusinessImpactModel.RtoHours(b.Entity.EntityType, b.Entity.Criticality);
             var prob = BusinessImpactModel.FailureProbability(b.Depth);
             return new

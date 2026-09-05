@@ -13,7 +13,8 @@ public sealed record GraphEntityRecord(
     int Criticality,
     IReadOnlyList<string> Aliases,
     string? Description,
-    string? SourceSystem);
+    string? SourceSystem,
+    double? CostPerHour = null);
 
 /// <summary>Une dépendance directe lue depuis le graphe, avec la confiance de l'arête.</summary>
 public sealed record DirectDependencyRecord(

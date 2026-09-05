@@ -11,6 +11,15 @@ internal static class GraphRecordMapper
             ? []
             : r["aliases"].As<List<object>>().Select(a => a.ToString() ?? string.Empty).ToList();
 
+        // Coût/h réel (propriété de nœud dédiée) : présent seulement dans les
+        // requêtes qui le sélectionnent — tolérant à son absence.
+        double? costPerHour = null;
+        if (r.Keys.Contains("costPerHour") && r["costPerHour"] is not null)
+        {
+            var c = r["costPerHour"].As<double?>();
+            if (c is > 0) costPerHour = c;
+        }
+
         return new GraphEntityRecord(
             Guid.Parse(r["id"].As<string>()),
             Guid.Parse(r["tenantId"].As<string>()),
@@ -19,6 +28,7 @@ internal static class GraphRecordMapper
             Convert.ToInt32(r["criticality"].As<long>()),
             aliases,
             r["description"]?.As<string>(),
-            r["sourceSystem"]?.As<string>());
+            r["sourceSystem"]?.As<string>(),
+            costPerHour);
     }
 }

@@ -22,6 +22,15 @@ public static class BusinessImpactModel
     };
 
     /// <summary>
+    /// Coût d'arrêt par heure d'un actif : utilise le coût RÉEL fourni par le
+    /// client (import/saisie) s'il est présent (&gt; 0), sinon l'estimation par
+    /// paliers de criticité. Le chiffrage devient ainsi celui du client dès qu'il
+    /// renseigne ses vrais coûts, plutôt qu'une hypothèse du produit.
+    /// </summary>
+    public static long CostPerHour(int criticality, double? realCostPerHour)
+        => realCostPerHour is > 0 ? (long)Math.Round(realCostPerHour.Value) : CostPerHour(criticality);
+
+    /// <summary>
     /// RTO estimé (heures de rétablissement) selon le type d'actif et la
     /// criticité. Base par type (une base de données se restaure plus lentement
     /// qu'une appli ; un fournisseur/contrat/personne bien plus lentement),

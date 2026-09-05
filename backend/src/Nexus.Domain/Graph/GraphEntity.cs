@@ -26,7 +26,8 @@ public sealed class GraphEntity : Entity<Guid>
         IReadOnlyDictionary<string, string> attributes,
         string? description,
         string? sourceSystem,
-        DateTimeOffset createdAt) : base(id)
+        DateTimeOffset createdAt,
+        double? costPerHour) : base(id)
     {
         TenantId = tenantId;
         Type = type;
@@ -36,6 +37,7 @@ public sealed class GraphEntity : Entity<Guid>
         _attributes = new Dictionary<string, string>(attributes);
         Description = description;
         SourceSystem = sourceSystem;
+        CostPerHour = costPerHour is > 0 ? costPerHour : null;
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
         ValidFrom = createdAt;
@@ -47,6 +49,13 @@ public sealed class GraphEntity : Entity<Guid>
     public string? Description { get; private set; }
     public Criticality Criticality { get; private set; }
     public string? SourceSystem { get; }
+
+    /// <summary>
+    /// Coût d'arrêt RÉEL par heure fourni par le client (import ou saisie). Quand
+    /// il est présent, il prime sur l'estimation par paliers de criticité — le
+    /// chiffrage d'impact devient celui du client, pas une hypothèse du produit.
+    /// </summary>
+    public double? CostPerHour { get; private set; }
 
     public IReadOnlyList<string> Aliases => _aliases;
     public IReadOnlyDictionary<string, string> Attributes => _attributes;
@@ -71,7 +80,8 @@ public sealed class GraphEntity : Entity<Guid>
         string? description = null,
         string? sourceSystem = null,
         Guid? id = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        double? costPerHour = null)
     {
         if (tenantId == Guid.Empty)
         {
@@ -98,7 +108,8 @@ public sealed class GraphEntity : Entity<Guid>
             attributes ?? new Dictionary<string, string>(),
             description,
             sourceSystem,
-            createdAt ?? DateTimeOffset.UtcNow);
+            createdAt ?? DateTimeOffset.UtcNow,
+            costPerHour);
     }
 
     public void Rename(string name)
@@ -129,10 +140,25 @@ public sealed class GraphEntity : Entity<Guid>
         Touch();
     }
 
+    /// <summary>Coût d'arrêt réel par heure (null / ≤ 0 = revenir à l'estimation par criticité).</summary>
+    public void SetCostPerHour(double? costPerHour)
+    {
+        CostPerHour = costPerHour is > 0 ? costPerHour : null;
+        Touch();
+    }
+
     /// <summary>Clôt la validité temporelle de l'entité (historisation — article 25).</summary>
     public void Retire(DateTimeOffset at)
     {
         ValidUntil = at;
+        Touch();
+    }
+
+    /// <summary>Réactive une entité mise de côté (« désinstallée ») : elle redevient active.</summary>
+    public void Reactivate(DateTimeOffset at)
+    {
+        ValidUntil = null;
+        ValidFrom = at;
         Touch();
     }
 
