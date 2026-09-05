@@ -11,6 +11,7 @@ export interface GraphEntityRecord {
   aliases: string[]
   description: string | null
   sourceSystem: string | null
+  costPerHour?: number | null
 }
 
 export interface SpofSummary {

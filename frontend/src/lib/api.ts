@@ -155,6 +155,17 @@ export const api = {
   entity: (id: string) =>
     fetch(`${BASE}/entities/${id}`, { headers: headers(false) }).then(handle<GraphEntityRecord>),
 
+  archivedEntities: () =>
+    fetch(`${BASE}/entities/archived`, { headers: headers(false) }).then(handle<GraphEntityRecord[]>),
+  deleteEntity: (id: string) =>
+    fetch(`${BASE}/entities/${id}`, { method: 'DELETE', headers: headers(false) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
+  decommissionEntity: (id: string) =>
+    fetch(`${BASE}/entities/${id}/decommission`, { method: 'POST', headers: headers(false) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
+  reactivateEntity: (id: string) =>
+    fetch(`${BASE}/entities/${id}/reactivate`, { method: 'POST', headers: headers(false) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
+  setEntityCost: (id: string, costPerHour: number | null) =>
+    fetch(`${BASE}/entities/${id}/cost`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ costPerHour }) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
+
   dependencies: (id: string) =>
     fetch(`${BASE}/entities/${id}/dependencies`, { headers: headers(false) }).then(
       handle<{ target: GraphEntityRecord; relationType: string; confidence: number; status: string }[]>,

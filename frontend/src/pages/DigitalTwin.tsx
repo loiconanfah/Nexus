@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Activity, Boxes, Cpu, Radio } from 'lucide-react'
+import { Activity, Boxes, Cpu, Radio, X, Trash2, PowerOff, RotateCcw, ExternalLink, Save, Archive } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
@@ -24,8 +24,18 @@ function statusOf(crit: number, deg: number, t: T) {
 export function DigitalTwin() {
   const navigate = useNavigate()
   const { t } = useLang()
+  const qc = useQueryClient()
+  const [selected, setSelected] = useState<GraphEntityRecord | null>(null)
   const { data: overview } = useQuery({ queryKey: ['overview'], queryFn: api.overview })
   const { data: graph, isLoading } = useQuery({ queryKey: ['graph'], queryFn: api.graph })
+  const { data: archived } = useQuery({ queryKey: ['entities-archived'], queryFn: api.archivedEntities })
+
+  const refreshAll = () => {
+    qc.invalidateQueries({ queryKey: ['graph'] })
+    qc.invalidateQueries({ queryKey: ['entities-archived'] })
+    qc.invalidateQueries({ queryKey: ['overview'] })
+  }
+  const reactivate = useMutation({ mutationFn: (id: string) => api.reactivateEntity(id), onSuccess: refreshAll })
 
   // Degre entrant = nombre de dependants (poids operationnel dans le twin).
   const inDegree = useMemo(() => {
@@ -81,7 +91,7 @@ export function DigitalTwin() {
                 const deg = inDegree.get(n.id) ?? 0
                 const st = statusOf(n.criticality, deg * 3, t)
                 return (
-                  <button key={n.id} onClick={() => navigate(`/graph?focus=${n.id}`)} className="group relative flex flex-col gap-1 rounded-sm border p-3 text-left transition-transform hover:-translate-y-0.5" style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}>
+                  <button key={n.id} onClick={() => setSelected(n)} className="group relative flex flex-col gap-1 rounded-sm border p-3 text-left transition-transform hover:-translate-y-0.5" style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}>
                     <div className="flex items-center justify-between">
                       <span className="nx-node-pulse inline-block h-2 w-2 rounded-full" style={{ background: st.color, boxShadow: `0 0 6px ${st.color}` }} />
                       <span style={{ fontFamily: mono, fontSize: 9, color: st.color }}>{st.label}</span>
@@ -97,6 +107,102 @@ export function DigitalTwin() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Actifs mis de côté (désinstallés) */}
+      {archived && archived.length > 0 && (
+        <div className="mt-2">
+          <div className="mb-2 flex items-center gap-2">
+            <Archive size={14} style={{ color: 'var(--nx-text-muted)' }} />
+            <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--nx-text-muted)' }}>{t('Mis de côté (désinstallés)', 'Set aside (uninstalled)')}</span>
+            <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>· {archived.length}</span>
+            <div className="h-px flex-1" style={{ background: 'var(--nx-border)' }} />
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {archived.map((n) => (
+              <div key={n.id} className="flex items-center justify-between gap-2 rounded-sm border p-3" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', opacity: 0.85 }}>
+                <div className="min-w-0">
+                  <div className="truncate" style={{ fontSize: 13, color: 'var(--nx-text-muted)', textDecoration: 'line-through' }} title={n.name}>{n.name}</div>
+                  <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{entityTypeLabel(n.entityType, t)} · {t('crit', 'crit')} {n.criticality}</div>
+                </div>
+                <button onClick={() => reactivate.mutate(n.id)} disabled={reactivate.isPending} className="flex shrink-0 items-center gap-1.5 rounded-sm border px-2.5 py-1.5" style={{ borderColor: 'var(--nx-border)', fontSize: 12, color: CYAN_T }}>
+                  <RotateCcw size={12} /> {t('Réactiver', 'Reactivate')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selected && (
+        <NodePanel node={selected} onClose={() => setSelected(null)} onChanged={refreshAll} onGraph={(id) => navigate(`/graph?focus=${id}`)} />
+      )}
+    </div>
+  )
+}
+
+function NodePanel({ node, onClose, onChanged, onGraph }: { node: GraphEntityRecord; onClose: () => void; onChanged: () => void; onGraph: (id: string) => void }) {
+  const { t } = useLang()
+  const [cost, setCost] = useState(node.costPerHour != null ? String(node.costPerHour) : '')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const done = () => { onChanged(); onClose() }
+
+  const saveCost = useMutation({ mutationFn: () => api.setEntityCost(node.id, cost.trim() === '' ? null : Number(cost)), onSuccess: onChanged })
+  const decommission = useMutation({ mutationFn: () => api.decommissionEntity(node.id), onSuccess: done })
+  const remove = useMutation({ mutationFn: () => api.deleteEntity(node.id), onSuccess: done })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(2,8,12,0.66)' }} onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-lg border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between border-b px-5 py-4" style={{ borderColor: 'var(--nx-border)' }}>
+          <div className="min-w-0">
+            <h3 className="truncate" style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }} title={node.name}>{node.name}</h3>
+            <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(node.entityType, t)} · {t('criticité', 'criticality')} {node.criticality}</div>
+          </div>
+          <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
+        </div>
+
+        <div className="flex flex-col gap-4 px-5 py-4">
+          {/* Coût d'arrêt réel */}
+          <div>
+            <label className="mb-1 block" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Coût d’arrêt réel (par heure)', 'Real downtime cost (per hour)')}</label>
+            <div className="flex items-center gap-2">
+              <input type="number" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} placeholder={t('estimé par criticité', 'estimated by criticality')}
+                className="w-full rounded-md border bg-transparent px-3 py-2 outline-none" style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 14, color: 'var(--nx-text)' }} />
+              <button onClick={() => saveCost.mutate()} disabled={saveCost.isPending} className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium" style={{ background: CYAN, color: '#04121a', opacity: saveCost.isPending ? 0.6 : 1 }}>
+                <Save size={14} /> {saveCost.isSuccess ? t('Enregistré', 'Saved') : t('Enregistrer', 'Save')}
+              </button>
+            </div>
+            <p className="mt-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{t('Vide = estimation par paliers de criticité. Renseigné = prime dans le calcul d’impact.', 'Empty = estimated by criticality tiers. Set = overrides in impact calculation.')}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => onGraph(node.id)} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)' }}>
+              <ExternalLink size={14} /> {t('Voir dans le graphe', 'View in graph')}
+            </button>
+            <button onClick={() => decommission.mutate()} disabled={decommission.isPending} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'rgba(224,178,60,0.4)', color: '#e0b23c' }}>
+              <PowerOff size={14} /> {t('Mettre de côté', 'Set aside')}
+            </button>
+          </div>
+
+          {/* Suppression définitive */}
+          {confirmDelete ? (
+            <div className="rounded-md border p-3" style={{ borderColor: 'rgba(209,91,84,0.5)', background: 'rgba(209,91,84,0.06)' }}>
+              <p style={{ fontSize: 12, color: '#ffb4ab' }}>{t('Supprimer définitivement cet actif et ses relations ? Irréversible.', 'Permanently delete this asset and its relations? Irreversible.')}</p>
+              <div className="mt-2 flex justify-end gap-2">
+                <button onClick={() => setConfirmDelete(false)} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+                <button onClick={() => remove.mutate()} disabled={remove.isPending} className="rounded-md px-3 py-1.5 text-sm font-medium" style={{ background: '#d15b54', color: '#fff', opacity: remove.isPending ? 0.6 : 1 }}>{t('Supprimer', 'Delete')}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: '#d15b54' }}>
+              <Trash2 size={14} /> {t('Supprimer définitivement', 'Delete permanently')}
+            </button>
+          )}
+          <p className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>
+            <PowerOff size={11} /> {t('« Mettre de côté » conserve l’actif mais l’exclut de l’impact — réactivable.', '“Set aside” keeps the asset but excludes it from impact — reversible.')}
+          </p>
+        </div>
       </div>
     </div>
   )
