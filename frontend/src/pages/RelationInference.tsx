@@ -42,8 +42,8 @@ export function RelationInference() {
         </div>
         <p style={{ fontSize: 13, color: 'var(--nx-text-muted)', maxWidth: 660 }}>
           {t(
-            'Lenexus lit les entités déjà présentes dans votre graphe et propose les dépendances manquantes les plus plausibles. Un graphe n’a de valeur que s’il apprend : vous validez, Lenexus enrichit. Rien n’est écrit sans votre confirmation.',
-            'Lenexus reads the entities already in your graph and proposes the most plausible missing dependencies. A graph is only valuable if it learns: you approve, Lenexus enriches. Nothing is written without your confirmation.',
+            'Lenexux lit les entités déjà présentes dans votre graphe et propose les dépendances manquantes les plus plausibles. Un graphe n’a de valeur que s’il apprend : vous validez, Lenexux enrichit. Rien n’est écrit sans votre confirmation.',
+            'Lenexux reads the entities already in your graph and proposes the most plausible missing dependencies. A graph is only valuable if it learns: you approve, Lenexux enriches. Nothing is written without your confirmation.',
           )}
         </p>
       </div>

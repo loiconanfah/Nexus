@@ -1,6 +1,6 @@
 # Exploitation — Sauvegardes, reprise (DR) et supervision
 
-Runbook opérationnel de Lenexus (déploiement Render). Objectif : rendre la
+Runbook opérationnel de Lenexux (déploiement Render). Objectif : rendre la
 production défendable pour des clients (RPO/RTO définis, sauvegardes testées,
 supervision en place).
 

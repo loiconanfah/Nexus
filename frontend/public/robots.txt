@@ -1,4 +1,4 @@
-# robots.txt — Lenexus (https://lenexux.com)
+# robots.txt — Lenexux (https://lenexux.com)
 # Le contenu public est ouvert à l'indexation, y compris par les robots d'IA
 # (compréhension par les assistants et moteurs génératifs souhaitée).
 

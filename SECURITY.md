@@ -1,6 +1,6 @@
-# Sécurité — Lenexus
+# Sécurité — Lenexux
 
-Ce document décrit le modèle de sécurité de Lenexus pour une revue de diligence
+Ce document décrit le modèle de sécurité de Lenexux pour une revue de diligence
 (design partners / pilotes). Il reflète l'état actuel et liste honnêtement les
 travaux restants avant la mise en marché générale (GA).
 

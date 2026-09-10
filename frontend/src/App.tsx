@@ -95,7 +95,7 @@ export default function App() {
       header={
         <>
           <h1 className="text-sm font-semibold" style={{ color: 'var(--color-text-strong)' }}>
-            {TITLES[pathname] ?? 'Lenexus'}
+            {TITLES[pathname] ?? 'Lenexux'}
           </h1>
           <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             <span title="Tenant (issu du jeton)">tenant&nbsp;·&nbsp;{tenant.slice(0, 8)}</span>

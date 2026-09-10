@@ -44,8 +44,8 @@ export function ImpactIntelligence() {
         </div>
         <p style={{ fontSize: 13, color: 'var(--nx-text-muted)', maxWidth: 640 }}>
           {t(
-            'Posez une question métier en langage naturel. Lenexus relie la question à votre graphe de dépendances, calcule la cascade, l’impact financier, les éléments critiques et les mitigations — au-delà des frontières des systèmes.',
-            'Ask a business question in natural language. Lenexus links it to your dependency graph, computing the cascade, financial impact, critical items and mitigations — across system boundaries.',
+            'Posez une question métier en langage naturel. Lenexux relie la question à votre graphe de dépendances, calcule la cascade, l’impact financier, les éléments critiques et les mitigations — au-delà des frontières des systèmes.',
+            'Ask a business question in natural language. Lenexux links it to your dependency graph, computing the cascade, financial impact, critical items and mitigations — across system boundaries.',
           )}
         </p>
       </div>

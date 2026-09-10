@@ -8,7 +8,7 @@ const CYAN = 'var(--nx-cyan-text)'
 // NB : ces textes sont des MODÈLES de départ. Ils doivent être revus et complétés
 // par un conseiller juridique (raison sociale, coordonnées, sous-traitants, etc.)
 // avant tout usage commercial. Rédigés pour le contexte Québec (Loi 25) + RGPD.
-const COMPANY = '[Raison sociale de l’éditeur de Lenexus]'
+const COMPANY = '[Raison sociale de l’éditeur de Lenexux]'
 const CONTACT = '[courriel de contact]'
 const DPO = '[responsable de la protection des renseignements personnels]'
 const ADDRESS = '[adresse postale]'
@@ -25,15 +25,15 @@ export function Legal() {
   const [params, setParams] = useSearchParams()
   const nav = useNavigate()
   usePageMeta(
-    'Mentions légales — Lenexus',
-    'Conditions d’utilisation, politique de confidentialité et addendum de traitement des données (DPA) de Lenexus. Contexte Québec (Loi 25) et RGPD.',
+    'Mentions légales — Lenexux',
+    'Conditions d’utilisation, politique de confidentialité et addendum de traitement des données (DPA) de Lenexux. Contexte Québec (Loi 25) et RGPD.',
     '/legal',
   )
   const doc = (params.get('doc') as Doc) || 'terms'
 
   return (
     <div className="mx-auto min-h-screen max-w-5xl px-6 py-10" style={{ background: 'var(--nx-bg)' }}>
-      <button onClick={() => nav('/welcome')} className="mb-6" style={{ fontFamily: mono, fontSize: 12, color: CYAN }}>← Lenexus</button>
+      <button onClick={() => nav('/welcome')} className="mb-6" style={{ fontFamily: mono, fontSize: 12, color: CYAN }}>← Lenexux</button>
 
       <div className="mb-4 rounded-md border p-3" style={{ borderColor: '#e0a45855', background: 'color-mix(in srgb, #e0a458 8%, transparent)' }}>
         <p style={{ fontSize: 12, color: 'var(--nx-text)' }}>
@@ -80,10 +80,10 @@ function Terms() {
   return (
     <>
       <H1>Conditions d’utilisation</H1>
-      <P>Les présentes conditions régissent l’accès et l’utilisation de la plateforme Lenexus (« le Service »), éditée par {COMPANY}, {ADDRESS}.</P>
+      <P>Les présentes conditions régissent l’accès et l’utilisation de la plateforme Lenexux (« le Service »), éditée par {COMPANY}, {ADDRESS}.</P>
 
       <H2>1. Objet</H2>
-      <P>Lenexus est une plateforme d’intelligence des dépendances et d’impact : cartographie des dépendances, analyse de risque, simulation d’incidents et aide à la décision. Le Service est fourni en mode logiciel-service (SaaS), multi-tenant, chaque espace client étant isolé.</P>
+      <P>Lenexux est une plateforme d’intelligence des dépendances et d’impact : cartographie des dépendances, analyse de risque, simulation d’incidents et aide à la décision. Le Service est fourni en mode logiciel-service (SaaS), multi-tenant, chaque espace client étant isolé.</P>
 
       <H2>2. Comptes et accès</H2>
       <P>Le client est responsable de la confidentialité de ses identifiants et de l’usage fait par ses utilisateurs. Il s’engage à fournir des informations exactes et à sécuriser les accès (mots de passe robustes, SSO le cas échéant).</P>
@@ -167,7 +167,7 @@ function Dpa() {
   return (
     <>
       <H1>Addendum de traitement des données (DPA)</H1>
-      <P>Le présent addendum s’applique lorsque {COMPANY} (« le Sous-traitant ») traite des renseignements personnels pour le compte du client (« le Responsable ») dans le cadre de Lenexus. En cas de conflit, il prévaut sur les Conditions d’utilisation pour les questions de protection des données.</P>
+      <P>Le présent addendum s’applique lorsque {COMPANY} (« le Sous-traitant ») traite des renseignements personnels pour le compte du client (« le Responsable ») dans le cadre de Lenexux. En cas de conflit, il prévaut sur les Conditions d’utilisation pour les questions de protection des données.</P>
 
       <H2>1. Objet et rôles</H2>
       <P>Le Responsable détermine les finalités et les moyens ; le Sous-traitant traite les données uniquement sur instruction documentée du Responsable, aux fins de fourniture du Service.</P>

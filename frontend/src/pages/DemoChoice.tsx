@@ -61,7 +61,7 @@ export function DemoChoice() {
           <div className="flex h-8 w-8 items-center justify-center rounded" style={{ background: 'var(--nx-cyan)' }}>
             <Share2 size={17} strokeWidth={2.4} style={{ color: 'var(--nx-on-cyan)' }} />
           </div>
-          <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexus</span>
+          <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexux</span>
         </button>
         <button onClick={() => navigate('/welcome')} className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>
           <ArrowLeft size={14} /> {t('Retour', 'Back')}

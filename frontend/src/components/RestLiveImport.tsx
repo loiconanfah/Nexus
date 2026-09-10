@@ -53,7 +53,7 @@ export function RestLiveImport({ onImported }: { onImported?: () => void }) {
         <span className="rounded px-1.5 py-0.5" style={{ background: 'var(--nx-surface-container)', fontFamily: mono, fontSize: 10, color: CYAN }}>LIVE</span>
       </h3>
       <p className="mb-3" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
-        {t('Pointez une API renvoyant un tableau JSON. Lenexus l’interroge en direct, détecte les colonnes et ingère via le pipeline.', 'Point to an API returning a JSON array. Lenexus queries it live, detects columns and ingests via the pipeline.')}
+        {t('Pointez une API renvoyant un tableau JSON. Lenexux l’interroge en direct, détecte les colonnes et ingère via le pipeline.', 'Point to an API returning a JSON array. Lenexux queries it live, detects columns and ingests via the pipeline.')}
       </p>
 
       <div className="flex flex-col gap-2 md:flex-row">

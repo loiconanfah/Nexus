@@ -64,8 +64,8 @@ export function Docs() {
   const nav = useNavigate()
   const [active, setActive] = useState('presentation')
   usePageMeta(
-    'Documentation — Lenexus',
-    'Documentation complète de Lenexus : concepts, ontologie, graphe de dépendances, impact transversal, simulation de panne et de cyberattaque, dépendances IA, modèle d’entreprise, connecteurs, API, sécurité et exploitation.',
+    'Documentation — Lenexux',
+    'Documentation complète de Lenexux : concepts, ontologie, graphe de dépendances, impact transversal, simulation de panne et de cyberattaque, dépendances IA, modèle d’entreprise, connecteurs, API, sécurité et exploitation.',
     '/docs',
   )
   const go = (id: string) => { setActive(id); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
@@ -74,7 +74,7 @@ export function Docs() {
     <div className="min-h-screen" style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)' }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b px-6 py-3 backdrop-blur" style={{ borderColor: 'var(--nx-border)', background: 'color-mix(in srgb, var(--nx-bg) 88%, transparent)' }}>
         <button onClick={() => nav('/welcome')} className="flex items-center gap-2" style={{ fontFamily: geist, fontSize: 16 }}>
-          <span style={{ color: CYAN }}>◈</span> Lenexus <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>· Documentation</span>
+          <span style={{ color: CYAN }}>◈</span> Lenexux <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>· Documentation</span>
         </button>
         <div className="flex items-center gap-3" style={{ fontFamily: mono, fontSize: 12 }}>
           <button onClick={() => nav('/demo')} style={{ color: CYAN }}>Essayer la démo →</button>
@@ -100,7 +100,7 @@ export function Docs() {
         <main className="flex min-w-0 flex-1 flex-col gap-10" style={{ lineHeight: 1.6 }}>
           {/* ── INTRODUCTION ── */}
           <Sec id="presentation" title="Présentation">
-            <P><b>Lenexus</b> est une plateforme d’<b>intelligence des dépendances et d’impact</b>. Elle cartographie systèmes, fournisseurs et personnes clés d’une organisation en un <b>graphe vivant</b>, révèle les points uniques de défaillance, simule des incidents et chiffre leur impact — au-delà des frontières des outils (ERP, ITSM, CRM).</P>
+            <P><b>Lenexux</b> est une plateforme d’<b>intelligence des dépendances et d’impact</b>. Elle cartographie systèmes, fournisseurs et personnes clés d’une organisation en un <b>graphe vivant</b>, révèle les points uniques de défaillance, simule des incidents et chiffre leur impact — au-delà des frontières des outils (ERP, ITSM, CRM).</P>
             <P>Positionnement : une <b>couche au-dessus</b> des systèmes existants (pas un remplaçant de SAP), qui répond à des questions d’impact <b>transversales</b> que chaque outil, cantonné à son silo, ne voit que partiellement. Tous les chiffres sont <b>déterministes et traçables</b> ; l’IA sert à résoudre, reformuler et proposer — jamais à inventer les chiffres.</P>
           </Sec>
 
@@ -119,7 +119,7 @@ export function Docs() {
           </Sec>
 
           <Sec id="ontologie" title="Ontologie (vocabulaire contrôlé)">
-            <P>Lenexus normalise toutes les données vers une ontologie propriétaire, ce qui permet de relier des sources hétérogènes. <b>Types d’entités</b> par catégorie :</P>
+            <P>Lenexux normalise toutes les données vers une ontologie propriétaire, ce qui permet de relier des sources hétérogènes. <b>Types d’entités</b> par catégorie :</P>
             <Tbl rows={[
               ['Organisation & humains', 'Organization, BusinessUnit, Location, Person, Role, Team'],
               ['Fournisseurs & contrats', 'Supplier, Contract'],
@@ -154,7 +154,7 @@ export function Docs() {
           </Sec>
 
           <Sec id="impact" title="Impact transversal">
-            <P>Posez une question métier en langage naturel — <i>« que se passe-t-il si nous perdons le fournisseur X ? »</i>. Lenexus résout la cible dans le graphe, calcule la cascade, l’impact financier (pondéré par la probabilité), les éléments critiques et les points uniques de défaillance, puis propose des mitigations.</P>
+            <P>Posez une question métier en langage naturel — <i>« que se passe-t-il si nous perdons le fournisseur X ? »</i>. Lenexux résout la cible dans le graphe, calcule la cascade, l’impact financier (pondéré par la probabilité), les éléments critiques et les points uniques de défaillance, puis propose des mitigations.</P>
             <Figure src="impact.png" caption="Impact transversal — entrée en langage naturel." />
           </Sec>
 
@@ -165,13 +165,13 @@ export function Docs() {
           </Sec>
 
           <Sec id="attaques" title="Simulation de cyberattaque (kill-chain)">
-            <P>Au-delà de la panne, Lenexus rejoue une <b>attaque</b> qui se <b>propage</b> d’un élément à l’autre. On choisit un <b>point d’entrée</b> (employé, outil externe, partage cloud, agent IA…) et un <b>sens de propagation</b> ; le moteur suit les relations d’<b>accès et de données</b> pour révéler la chaîne de compromission — pas seulement les liens visibles, mais le cheminement <b>logique</b> d’un attaquant.</P>
+            <P>Au-delà de la panne, Lenexux rejoue une <b>attaque</b> qui se <b>propage</b> d’un élément à l’autre. On choisit un <b>point d’entrée</b> (employé, outil externe, partage cloud, agent IA…) et un <b>sens de propagation</b> ; le moteur suit les relations d’<b>accès et de données</b> pour révéler la chaîne de compromission — pas seulement les liens visibles, mais le cheminement <b>logique</b> d’un attaquant.</P>
             <P>Quatre scénarios prêts à l’emploi (ex. <i>« un partage cloud est piraté et les agents IA qui en tirent leurs données se mettent à exfiltrer »</i>, <i>« un agent IA effectue un piratage interne parti d’un employé ayant utilisé un outil externe »</i>) et un <b>constructeur libre</b> bilingue (libellés lisibles, pas des codes bruts). Pour <b>chaque nœud compromis</b> : l’impact financier (€), la probabilité, une <b>recommandation</b> ciblée, et le gain d’une <b>isolation</b> (contre-mesure). Une <b>analyse IA</b> narre la kill-chain, les risques et les contre-mesures.</P>
             <Figure src="attacks.png" caption="Simulation de cyberattaque — chaîne de compromission et contre-mesures." />
           </Sec>
 
           <Sec id="ai-deps" title="Dépendances IA (modèles, agents, fournisseurs)">
-            <P>L’IA opérationnelle est devenue une dépendance à part entière. Lenexus modélise <b>modèles</b>, <b>agents</b>, <b>workflows</b>, <b>points d’accès</b>, <b>jeux de données</b> et <b>fournisseurs IA</b> (OpenAI, Anthropic…) comme des entités de première classe, reliées au reste du graphe. Le même moteur de propagation, <b>indépendant du type</b>, chiffre donc l’impact d’une défaillance IA sans aucune adaptation.</P>
+            <P>L’IA opérationnelle est devenue une dépendance à part entière. Lenexux modélise <b>modèles</b>, <b>agents</b>, <b>workflows</b>, <b>points d’accès</b>, <b>jeux de données</b> et <b>fournisseurs IA</b> (OpenAI, Anthropic…) comme des entités de première classe, reliées au reste du graphe. Le même moteur de propagation, <b>indépendant du type</b>, chiffre donc l’impact d’une défaillance IA sans aucune adaptation.</P>
             <Bullets items={[
               '« OpenAI tombe » → tous les agents et services qui en dépendent, l’impact financier et le RTO.',
               '« Un modèle est indisponible » → les workflows métier touchés en cascade.',
@@ -250,7 +250,7 @@ export function Docs() {
           </Sec>
 
           <Sec id="inference" title="Dépendances inférées (le moat)">
-            <P>Un graphe rempli à la main a peu de valeur. Lenexus <b>lit les entités existantes</b> et <b>propose les dépendances manquantes</b> plausibles (avec justification et confiance) ; vous validez. Rien n’est écrit sans confirmation (statut « suggéré par IA »).</P>
+            <P>Un graphe rempli à la main a peu de valeur. Lenexux <b>lit les entités existantes</b> et <b>propose les dépendances manquantes</b> plausibles (avec justification et confiance) ; vous validez. Rien n’est écrit sans confirmation (statut « suggéré par IA »).</P>
             <Figure src="inference.png" caption="Dépendances inférées." />
           </Sec>
 
@@ -283,7 +283,7 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
               'CSV / Excel : tout tableur d’actifs ou de dépendances.',
               'REST / API JSON (live) : pointez une API renvoyant un tableau JSON — pull en direct, détection des colonnes, ingestion via le pipeline. Garde anti-SSRF (refuse les adresses internes) et redirections désactivées.',
               'Import assisté par IA : collez des données brutes, l’IA déduit le mapping vers l’ontologie.',
-              'Webhook / MCP : réception d’événements, exposition de Lenexus comme serveur MCP (roadmap pour les connecteurs natifs par éditeur).',
+              'Webhook / MCP : réception d’événements, exposition de Lenexux comme serveur MCP (roadmap pour les connecteurs natifs par éditeur).',
             ]} />
             <P>Connecteurs <b>lecture seule</b> par défaut. La <b>résolution d’entités</b> rapproche automatiquement une même ressource décrite différemment par plusieurs sources (ex. « SQL01 » ≈ « database-server-001 »).</P>
             <Figure src="integrations.png" caption="Catalogue de connecteurs." />
@@ -355,14 +355,14 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
             <Qa q="L’IA est-elle obligatoire ?" a="Non. Sans clé IA, l’application reste pleinement fonctionnelle avec ses réponses déterministes." />
             <Qa q="Les espaces clients sont-ils isolés ?" a="Oui. Chaque tenant a ses données ; toutes les requêtes filtrent par tenant et le header-tenant est interdit en production." />
             <Qa q="Puis-je connecter mes systèmes existants ?" a="Oui : CSV/Excel, API REST/JSON en direct, ou import assisté par IA. Des connecteurs natifs (ex. CMDB) peuvent être ajoutés à la demande." />
-            <Qa q="Lenexus remplace-t-il mon ERP/ITSM ?" a="Non. C’est une couche au-dessus qui relie les silos pour répondre aux questions d’impact transversales." />
+            <Qa q="Lenexux remplace-t-il mon ERP/ITSM ?" a="Non. C’est une couche au-dessus qui relie les silos pour répondre aux questions d’impact transversales." />
           <Qa q="Peut-on modéliser nos dépendances à l’IA ?" a="Oui. Modèles, agents, workflows, fournisseurs et jeux de données IA sont des entités de première classe ; l’impact d’une défaillance IA (ex. « OpenAI tombe ») se chiffre par le même moteur." />
           <Qa q="En quoi la simulation de cyberattaque diffère de la simulation de panne ?" a="La panne se propage des dépendances vers leurs dépendants ; l’attaque propage une compromission latéralement le long des accès et des données, avec kill-chain, impact et contre-mesures par nœud." />
           <Qa q="Peut-on éditer le modèle d’entreprise et revenir en arrière ?" a="Oui. Toutes les données sont éditables ; chaque sauvegarde crée une version datée et l’on peut restaurer n’importe quelle version depuis l’historique." />
           </Sec>
 
           <div className="mt-6 border-t pt-6" style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: 'var(--nx-outline)' }}>
-            Lenexus · Documentation. Voir aussi <a onClick={() => nav('/legal')} style={{ color: CYAN, cursor: 'pointer' }}>les mentions légales</a>.
+            Lenexux · Documentation. Voir aussi <a onClick={() => nav('/legal')} style={{ color: CYAN, cursor: 'pointer' }}>les mentions légales</a>.
           </div>
         </main>
       </div>

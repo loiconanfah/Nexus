@@ -95,7 +95,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-bold tracking-tighter" style={{ fontFamily: geist, fontSize: 20, lineHeight: 1, color: 'var(--nx-cyan-text)' }}>Lenexus</div>
+              <div className="font-bold tracking-tighter" style={{ fontFamily: geist, fontSize: 20, lineHeight: 1, color: 'var(--nx-cyan-text)' }}>Lenexux</div>
               <div className="mt-1 truncate" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', opacity: 0.8 }}>{t('Intelligence opérationnelle', 'Operational Intel')}</div>
             </div>
           )}
@@ -177,7 +177,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
             >
               {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </button>
-            <span className="hidden font-bold tracking-tight md:block" style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>Lenexus COMMAND</span>
+            <span className="hidden font-bold tracking-tight md:block" style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>Lenexux COMMAND</span>
             <CommandSearch inputRef={searchRef} />
           </div>
           <div className="flex items-center gap-3">
