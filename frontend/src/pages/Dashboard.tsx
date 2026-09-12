@@ -86,12 +86,12 @@ export function Dashboard() {
 
       {/* Métriques */}
       <section className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
-        <Metric label="CRIT_RISK" value={data.criticalRiskCount} color={ERR} accent={ERR} icon={<AlertOctagon size={14} />} />
-        <Metric label="HIGH_RISK" value={data.highRiskCount} color={HIGH} accent={HIGH} icon={<AlertTriangle size={14} />} />
-        <Metric label="CRIT_ASSET" value={data.criticalAssetCount} color="var(--nx-text)" accent="rgba(0,229,255,0.5)" icon={<Package size={14} />} />
-        <Metric label="UNK_DEP" value={data.unknownDependencyCount} color="var(--nx-text)" accent="var(--nx-outline)" icon={<HelpCircle size={14} />} />
-        <Metric label="SPOF_COUNT" value={data.spofCount} color={ERR} accent={ERR} icon={<Network size={14} />} />
-        <Metric label="SUPP_CONC" value={`${data.supplierConcentrationPercent}%`} color={CYAN_T} accent={CYAN} icon={<PieChart size={14} />} />
+        <Metric label={t('Risques critiques', 'Critical risks')} value={data.criticalRiskCount} color={ERR} accent={ERR} icon={<AlertOctagon size={14} />} />
+        <Metric label={t('Risques élevés', 'High risks')} value={data.highRiskCount} color={HIGH} accent={HIGH} icon={<AlertTriangle size={14} />} />
+        <Metric label={t('Actifs critiques', 'Critical assets')} value={data.criticalAssetCount} color="var(--nx-text)" accent="rgba(0,229,255,0.5)" icon={<Package size={14} />} />
+        <Metric label={t('Dépendances non confirmées', 'Unconfirmed dependencies')} value={data.unknownDependencyCount} color="var(--nx-text)" accent="var(--nx-outline)" icon={<HelpCircle size={14} />} />
+        <Metric label={t('Points uniques de défaillance', 'Single points of failure')} value={data.spofCount} color={ERR} accent={ERR} icon={<Network size={14} />} />
+        <Metric label={t('Concentration fournisseurs', 'Supplier concentration')} value={`${data.supplierConcentrationPercent}%`} color={CYAN_T} accent={CYAN} icon={<PieChart size={14} />} />
       </section>
 
       {/* Grille principale */}
@@ -177,9 +177,9 @@ function Topology({ graph, onNode }: { graph?: GraphData; onNode: (id: string, n
       <div className="absolute top-0 z-10 flex w-full items-center justify-between border-b p-3 backdrop-blur-sm" style={{ borderColor: 'var(--nx-border)', background: 'rgba(32,31,32,0.5)' }}>
         <div className="flex items-center gap-2">
           <Network size={14} style={{ color: 'var(--nx-text-muted)' }} />
-          <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>ORG_DEPENDENCY_TOPOLOGY</span>
+          <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{t('Topologie des dépendances', 'Dependency topology')}</span>
         </div>
-        <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{graph?.nodes.length ?? 0} nodes · {graph?.edges.length ?? 0} edges</span>
+        <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{graph?.nodes.length ?? 0} {t('actifs', 'assets')} · {graph?.edges.length ?? 0} {t('liens', 'links')}</span>
       </div>
 
       <div className="relative h-full min-h-[420px] w-full" style={{ background: 'var(--nx-panel)' }}>
@@ -228,8 +228,8 @@ function PriorityIntelligence({ items, onInvestigate }: { items: PriorityItem[];
             <div key={i} className="relative overflow-hidden rounded-sm border p-3" style={{ background: 'var(--nx-panel)', borderColor: it.severity === 'SEV_CRIT' ? 'rgba(255,180,171,0.3)' : 'var(--nx-border)' }}>
               <div className="absolute bottom-0 left-0 top-0 w-1" style={{ background: c }} />
               <div className="mb-2 flex items-start justify-between">
-                <span className="rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, background: `color-mix(in srgb, ${c} 20%, transparent)`, color: c }}>{it.severity}</span>
-                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>CONF: {it.confidence}%</span>
+                <span className="rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, background: `color-mix(in srgb, ${c} 20%, transparent)`, color: c }}>{it.severity === 'SEV_CRIT' ? t('CRITIQUE', 'CRITICAL') : it.severity === 'SEV_HIGH' ? t('ÉLEVÉ', 'HIGH') : t('MODÉRÉ', 'MODERATE')}</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('confiance', 'confidence')} {it.confidence}%</span>
               </div>
               <p className="mb-3" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{priorityText(it, t)}</p>
               <button onClick={onInvestigate} className="flex w-full items-center justify-center gap-1 rounded py-1" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T, border: `1px solid ${it.severity === 'SEV_CRIT' ? 'rgba(0,229,255,0.4)' : 'var(--nx-border)'}` }}>
