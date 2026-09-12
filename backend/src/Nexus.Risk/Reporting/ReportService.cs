@@ -1,4 +1,4 @@
-﻿using Nexus.Graph;
+using Nexus.Graph;
 using Nexus.Risk.Spof;
 
 namespace Nexus.Risk.Reporting;
@@ -15,6 +15,9 @@ public sealed class ReportService(
     RiskAnalyzer riskAnalyzer,
     SpofAnalyzer spofAnalyzer)
 {
+    /// <summary>Évaluations menées de front (borne la charge sur Neo4j).</summary>
+    private const int MaxConcurrency = 12;
+
     private static readonly HashSet<string> HumanRelations = new(StringComparer.OrdinalIgnoreCase) { "KNOWS", "MAINTAINS" };
 
     public async Task<ExecutiveReport> GenerateAsync(Guid tenantId, CancellationToken ct = default)
@@ -25,29 +28,42 @@ public sealed class ReportService(
         var byId = entities.ToDictionary(e => e.Id);
         var spofs = await spofAnalyzer.AnalyzeAsync(tenantId, limit: 15, ct: ct);
 
-        // Risques par entité.
-        var risks = new List<ReportRiskItem>();
-        foreach (var e in entities)
+        // Risques par entité. Chaque évaluation demande plusieurs requêtes Neo4j :
+        // en séquentiel, le rapport (et donc la vue d'ensemble et l'alerte
+        // anticipée, qui s'en servent) devient très lent dès quelques centaines
+        // d'actifs. Le pilote ouvrant une session par requête, on borne la
+        // concurrence au lieu de sérialiser.
+        using var gate = new SemaphoreSlim(MaxConcurrency);
+        var assessed = await Task.WhenAll(entities.Select(async e =>
         {
-            var r = await riskAnalyzer.AssessEntityAsync(tenantId, e.Id, ct: ct);
-            if (r is not null)
-                risks.Add(new ReportRiskItem(e.Name, e.EntityType, r.Assessment.Score, r.Assessment.Band.ToString(),
-                    r.DirectDependents, r.BlastRadius, r.HasRedundancy));
-        }
+            await gate.WaitAsync(ct);
+            try
+            {
+                var r = await riskAnalyzer.AssessEntityAsync(tenantId, e.Id, ct: ct);
+                return r is null ? null : new ReportRiskItem(e.Name, e.EntityType, r.Assessment.Score,
+                    r.Assessment.Band.ToString(), r.DirectDependents, r.BlastRadius, r.HasRedundancy);
+            }
+            finally { gate.Release(); }
+        }));
+        var risks = assessed.Where(r => r is not null).Select(r => r!).ToList();
         var topRisks = risks.OrderByDescending(r => r.Score).Take(8).ToList();
 
         var spofItems = spofs.Take(10).Select(s => new ReportRiskItem(
             s.Entity.Name, s.Entity.EntityType, s.Score, "—", s.DirectDependents, s.BlastRadius, false)).ToList();
 
-        // Concentration fournisseurs.
-        var suppliers = new List<ReportSupplier>();
-        foreach (var s in entities.Where(e => e.EntityType == "Supplier"))
+        // Concentration fournisseurs (même raisonnement : une requête par fournisseur).
+        var supplierResults = await Task.WhenAll(entities.Where(e => e.EntityType == "Supplier").Select(async sup =>
         {
-            var deps = await queries.GetDirectDependentsAsync(tenantId, s.Id, ct);
-            if (deps.Count > 0)
-                suppliers.Add(new ReportSupplier(s.Name, deps.Count, deps.Select(d => d.Name).ToList()));
-        }
-        suppliers = suppliers.OrderByDescending(s => s.DependentSystems).ToList();
+            await gate.WaitAsync(ct);
+            try
+            {
+                var deps = await queries.GetDirectDependentsAsync(tenantId, sup.Id, ct);
+                return deps.Count == 0 ? null : new ReportSupplier(sup.Name, deps.Count, deps.Select(d => d.Name).ToList());
+            }
+            finally { gate.Release(); }
+        }));
+        var suppliers = supplierResults.Where(s => s is not null).Select(s => s!)
+            .OrderByDescending(s => s.DependentSystems).ToList();
 
         // Dépendances humaines (KNOWS / MAINTAINS depuis une Person).
         var humanByPerson = relations
