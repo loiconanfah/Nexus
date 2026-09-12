@@ -2,6 +2,7 @@
 using Neo4j.Driver;
 using Nexus.Domain.Graph;
 using Nexus.Domain.Ontology;
+using Nexus.Domain.ValueObjects;
 
 namespace Nexus.Graph;
 
@@ -50,16 +51,27 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
     {
         var relType = SafeLabel(relation.Type.Name, RelationType.IsKnown);
 
+        // FUSION des preuves : l'import utilise des identifiants déterministes, donc
+        // un ré-import retombe sur la même arête. Sans fusion, `SET r += $props`
+        // effacerait ce que d'AUTRES sources (ou une validation humaine) ont établi.
+        // Une lecture ponctuelle par id (indexé) précède donc l'écriture.
+        var merged = await MergeWithExistingEvidencesAsync(relation, ct);
+        var hasEvidence = merged.Count > 0;
+        var breakdown = hasEvidence ? ConfidenceEngine.Evaluate(merged, DateTimeOffset.UtcNow) : null;
+
         var props = new Dictionary<string, object?>
         {
             ["id"] = relation.Id.ToString(),
             ["tenantId"] = relation.TenantId.ToString(),
             ["type"] = relation.Type.Name,
-            ["confidence"] = relation.Confidence.Value,
-            ["status"] = relation.Status.ToString(),
+            ["confidence"] = breakdown?.Score ?? relation.Confidence.Value,
+            ["status"] = (breakdown?.Status ?? relation.Status).ToString(),
             ["sourceSystem"] = relation.SourceSystem,
             ["sourceRecord"] = relation.SourceRecord,
             ["evidence"] = relation.Evidence,
+            // Preuves structurées (Evidence Engine), sérialisées sur l'arête —
+            // même patron que `attributes` sur les nœuds.
+            ["evidences"] = JsonSerializer.Serialize(merged),
             ["createdAt"] = relation.CreatedAt.ToString(Iso),
             ["updatedAt"] = relation.UpdatedAt.ToString(Iso),
             ["verifiedAt"] = relation.VerifiedAt?.ToString(Iso),
@@ -226,7 +238,8 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             WHERE r.validUntil IS NULL
             RETURN r.id AS id, s.id AS source, tg.id AS target, type(r) AS type,
                    r.confidence AS confidence, r.status AS status,
-                   r.sourceSystem AS sourceSystem, r.evidence AS evidence
+                   r.sourceSystem AS sourceSystem, r.evidence AS evidence,
+                   r.evidences AS evidences
             LIMIT {{take}}
             """;
 
@@ -239,7 +252,98 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
             r["confidence"].As<double>(),
             r["status"].As<string>(),
             r["sourceSystem"]?.As<string>(),
-            r["evidence"]?.As<string>())).ToList();
+            r["evidence"]?.As<string>(),
+            DeserializeEvidences(r["evidences"]?.As<string>()))).ToList();
+    }
+
+    /// <summary>
+    /// Preuves existantes de l'arête + celles de la relation entrante. Une source
+    /// qui re-confirme le même fait REMPLACE sa propre preuve (on garde la plus
+    /// récente) ; les preuves des autres sources sont préservées.
+    /// </summary>
+    private async Task<List<RelationEvidence>> MergeWithExistingEvidencesAsync(
+        GraphRelation relation, CancellationToken ct)
+    {
+        var incoming = relation.Evidences.ToList();
+
+        const string read = """
+            MATCH ()-[r { id: $id, tenantId: $tenantId }]->()
+            RETURN r.evidences AS evidences
+            """;
+        var rows = await connection.ReadAsync(read,
+            new { id = relation.Id.ToString(), tenantId = relation.TenantId.ToString() }, ct);
+        if (rows.Count == 0) return incoming; // nouvelle arête
+
+        var merged = DeserializeEvidences(rows[0]["evidences"]?.As<string>()).ToList();
+        foreach (var e in incoming)
+        {
+            merged.RemoveAll(x =>
+                x.Source == e.Source &&
+                string.Equals(x.SourceSystem, e.SourceSystem, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(x.SourceRecord, e.SourceRecord, StringComparison.OrdinalIgnoreCase));
+            merged.Add(e);
+        }
+        return merged;
+    }
+
+    private static IReadOnlyList<RelationEvidence> DeserializeEvidences(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return [];
+        try { return JsonSerializer.Deserialize<List<RelationEvidence>>(json) ?? []; }
+        catch { return []; } // preuves illisibles : on n'invente rien, on repart de zéro
+    }
+
+    /// <summary>
+    /// Ajoute une PREUVE à une relation existante et recalcule sa confiance.
+    /// C'est le chemin par lequel une source qui re-confirme un fait renforce la
+    /// relation au lieu de créer un doublon (lecture → fusion en mémoire →
+    /// réécriture), et par lequel une validation humaine s'ajoute à la trace.
+    /// </summary>
+    public async Task<ConfidenceBreakdown?> AddRelationEvidenceAsync(
+        Guid tenantId, Guid relationId, RelationEvidence evidence, string? verifiedBy = null, CancellationToken ct = default)
+    {
+        const string read = """
+            MATCH ()-[r { id: $id, tenantId: $tenantId }]->()
+            RETURN r.evidences AS evidences
+            """;
+        var rows = await connection.ReadAsync(read, new { id = relationId.ToString(), tenantId = tenantId.ToString() }, ct);
+        if (rows.Count == 0) return null;
+
+        var evidences = DeserializeEvidences(rows[0]["evidences"]?.As<string>()).ToList();
+
+        // Une même source re-confirmant le même fait remplace sa preuve précédente
+        // (on garde la plus récente) au lieu de gonfler la confiance par répétition.
+        evidences.RemoveAll(e =>
+            e.Source == evidence.Source &&
+            string.Equals(e.SourceSystem, evidence.SourceSystem, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.SourceRecord, evidence.SourceRecord, StringComparison.OrdinalIgnoreCase));
+        evidences.Add(evidence);
+
+        var now = DateTimeOffset.UtcNow;
+        var breakdown = ConfidenceEngine.Evaluate(evidences, now);
+
+        const string write = """
+            MATCH ()-[r { id: $id, tenantId: $tenantId }]->()
+            SET r.evidences = $evidences,
+                r.confidence = $confidence,
+                r.status = $status,
+                r.updatedAt = $now,
+                r.verifiedBy = coalesce($verifiedBy, r.verifiedBy),
+                r.verifiedAt = CASE WHEN $verifiedBy IS NULL THEN r.verifiedAt ELSE $now END
+            RETURN count(r) AS c
+            """;
+        await connection.WriteAsync(write, new
+        {
+            id = relationId.ToString(),
+            tenantId = tenantId.ToString(),
+            evidences = JsonSerializer.Serialize(evidences),
+            confidence = breakdown.Score,
+            status = breakdown.Status.ToString(),
+            now = now.ToString(Iso),
+            verifiedBy,
+        }, ct);
+
+        return breakdown;
     }
 
     /// <summary>Contrôle qu'un label/type provient bien du registre d'ontologie avant interpolation.</summary>

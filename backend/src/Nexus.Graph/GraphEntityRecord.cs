@@ -32,4 +32,6 @@ public sealed record GraphEdgeRecord(
     double Confidence,
     string Status,
     string? SourceSystem = null,
-    string? Evidence = null);
+    string? Evidence = null,
+    /// <summary>Preuves structurées soutenant la relation (Evidence Engine).</summary>
+    IReadOnlyList<Nexus.Domain.ValueObjects.RelationEvidence>? Evidences = null);

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Tenancy;
+using Nexus.Domain.ValueObjects;
 using Nexus.Graph;
 
 namespace Nexus.Api.Controllers;
@@ -14,6 +15,59 @@ public sealed class AuditController(
     ITenantProvider tenantProvider,
     IGraphRepository repository) : NexusController(tenantProvider)
 {
+    public sealed record VerifyRequest(string? Note);
+
+    /// <summary>
+    /// Validation humaine d'une dépendance : AJOUTE une preuve humaine (la plus
+    /// fiable) aux preuves existantes et recalcule la confiance. La trace des
+    /// sources d'origine est conservée — on n'écrase jamais ce qui était su.
+    /// </summary>
+    [HttpPost("relations/{id:guid}/verify")]
+    public async Task<IActionResult> VerifyRelation(Guid id, [FromBody] VerifyRequest? req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+
+        var who = User?.Identity?.Name ?? "utilisateur";
+        var note = string.IsNullOrWhiteSpace(req?.Note) ? null : req!.Note!.Trim();
+        var evidence = RelationEvidence.From(
+            EvidenceSource.HumanValidation,
+            note is null ? $"Confirmée par {who}" : $"Confirmée par {who} — {note}",
+            sourceSystem: "Lenexux",
+            sourceRecord: who);
+
+        var breakdown = await repository.AddRelationEvidenceAsync(tenant, id, evidence, verifiedBy: who, ct: ct);
+        if (breakdown is null) return NotFound(new { error = "relation_not_found" });
+
+        return Ok(new
+        {
+            confidence = breakdown.Score,
+            status = breakdown.Status.ToString(),
+            contributions = breakdown.Contributions,
+        });
+    }
+
+    /// <summary>Décomposition explicable de la confiance d'une dépendance (d'où vient le score).</summary>
+    [HttpGet("relations/{id:guid}/confidence")]
+    public async Task<IActionResult> ExplainConfidence(Guid id, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+
+        var edges = await repository.GetRelationsAsync(tenant, ct: ct);
+        var edge = edges.FirstOrDefault(e => e.Id == id);
+        if (edge is null) return NotFound(new { error = "relation_not_found" });
+
+        var breakdown = ConfidenceEngine.Evaluate(edge.Evidences ?? [], DateTimeOffset.UtcNow);
+        return Ok(new
+        {
+            id = edge.Id,
+            type = edge.Type,
+            storedConfidence = edge.Confidence,
+            confidence = breakdown.Score,
+            status = breakdown.Status.ToString(),
+            contributions = breakdown.Contributions,
+        });
+    }
+
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
     {

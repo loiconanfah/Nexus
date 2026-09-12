@@ -1,4 +1,5 @@
 ﻿using Nexus.Domain.Graph;
+using Nexus.Domain.ValueObjects;
 
 namespace Nexus.Graph;
 
@@ -13,6 +14,14 @@ public interface IGraphRepository
 
     /// <summary>Crée ou met à jour une relation (MERGE sur id ; les extrémités doivent exister).</summary>
     Task UpsertRelationAsync(GraphRelation relation, CancellationToken ct = default);
+
+    /// <summary>
+    /// Ajoute une preuve à une relation existante et recalcule sa confiance
+    /// (Evidence Engine). Renvoie la décomposition, ou null si la relation est
+    /// introuvable. <paramref name="verifiedBy"/> horodate une validation humaine.
+    /// </summary>
+    Task<ConfidenceBreakdown?> AddRelationEvidenceAsync(
+        Guid tenantId, Guid relationId, RelationEvidence evidence, string? verifiedBy = null, CancellationToken ct = default);
 
     /// <summary>Supprime définitivement une entité et ses relations (DETACH DELETE), filtrée par tenant.</summary>
     Task<bool> DeleteEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);

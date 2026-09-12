@@ -115,9 +115,18 @@ public sealed class DocumentExtractionController(
             if (sid == tid) { unresolved++; continue; }
             var relType = OntologyResolver.ResolveRelationType(r.RelationType);
             var conf = Confidence.Create(Math.Clamp(r.Confidence, 0.05, 0.95));
+            // Extraite d'un document PAR l'IA : reste AiSuggested (donc hors des
+            // calculs « fermes », ADR-0006) jusqu'à validation humaine. L'extrait
+            // du document sert d'observation lisible.
+            var extract = string.IsNullOrWhiteSpace(r.Evidence) ? null : r.Evidence;
             var rel = GraphRelation.Create(tenant, sid, tid, relType,
                 conf.IsSuccess ? conf.Value : Confidence.Create(0.4).Value,
-                ConfidenceStatus.AiSuggested, sourceSystem: Source, evidence: string.IsNullOrWhiteSpace(r.Evidence) ? null : r.Evidence);
+                ConfidenceStatus.AiSuggested, sourceSystem: Source, evidence: extract,
+                evidences: [RelationEvidence.From(
+                    EvidenceSource.AiInference,
+                    extract is null ? "Extraite d'un document par l'IA" : $"Extrait du document : « {extract} »",
+                    sourceSystem: Source,
+                    weight: conf.IsSuccess ? conf.Value.Value : 0.4)]);
             if (rel.IsFailure) { unresolved++; continue; }
             await repository.UpsertRelationAsync(rel.Value, ct);
             relationsCreated++;

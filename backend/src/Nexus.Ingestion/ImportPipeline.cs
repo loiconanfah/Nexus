@@ -137,11 +137,22 @@ public sealed class ImportPipeline(
                     continue;
                 }
 
+                // Preuve estampillée : une source interrogée EN DIRECT (API REST)
+                // est plus fiable qu'un fichier déclaratif, potentiellement périmé.
+                var evidenceSource = LooksLive(profile.SourceSystem)
+                    ? EvidenceSource.RestApi
+                    : EvidenceSource.Import;
+
                 var relation = GraphRelation.Create(
                     tenantId, sourceId.Value, targetId.Value, candidate.Type,
                     confidence.Value, ConfidenceStatus.Imported,
                     sourceSystem: profile.SourceSystem, sourceRecord: candidate.SourceKey,
-                    id: relationId);
+                    id: relationId,
+                    evidences: [RelationEvidence.From(
+                        evidenceSource,
+                        $"Déclarée par « {profile.SourceSystem} » ({candidate.SourceKey})",
+                        sourceSystem: profile.SourceSystem,
+                        sourceRecord: candidate.SourceKey)]);
 
                 if (relation.IsFailure)
                 {
@@ -164,6 +175,12 @@ public sealed class ImportPipeline(
         return new ImportResult(
             recordsRead, created, matched, relCreated, relUnresolved, skipped, sw.Elapsed, timeToFirstGraph);
     }
+
+    /// <summary>Vrai si la source a été interrogée en direct (API/CMDB) plutôt qu'importée en fichier.</summary>
+    private static bool LooksLive(string? sourceSystem)
+        => sourceSystem is not null &&
+           (sourceSystem.Contains("rest", StringComparison.OrdinalIgnoreCase) ||
+            sourceSystem.Contains("api", StringComparison.OrdinalIgnoreCase));
 
     private static Result<GraphEntity> BuildEntity(Guid tenantId, EntityCandidate candidate, string sourceSystem)
     {

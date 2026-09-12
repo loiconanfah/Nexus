@@ -12,6 +12,8 @@ namespace Nexus.Domain.Graph;
 /// </summary>
 public sealed class GraphRelation : Entity<Guid>
 {
+    private readonly List<RelationEvidence> _evidences;
+
     private GraphRelation(
         Guid id,
         Guid tenantId,
@@ -23,6 +25,7 @@ public sealed class GraphRelation : Entity<Guid>
         string? sourceSystem,
         string? sourceRecord,
         string? evidence,
+        IEnumerable<RelationEvidence> evidences,
         DateTimeOffset createdAt) : base(id)
     {
         TenantId = tenantId;
@@ -34,9 +37,11 @@ public sealed class GraphRelation : Entity<Guid>
         SourceSystem = sourceSystem;
         SourceRecord = sourceRecord;
         Evidence = evidence;
+        _evidences = [.. evidences];
         CreatedAt = createdAt;
         UpdatedAt = createdAt;
         ValidFrom = createdAt;
+        Recompute(createdAt);
     }
 
     public Guid TenantId { get; }
@@ -49,7 +54,16 @@ public sealed class GraphRelation : Entity<Guid>
 
     public string? SourceSystem { get; }
     public string? SourceRecord { get; }
+
+    /// <summary>Preuve historique en texte libre (conservée pour rétro-compatibilité).</summary>
     public string? Evidence { get; private set; }
+
+    /// <summary>
+    /// Preuves soutenant la relation. Dès qu'il y en a au moins une, la
+    /// <see cref="Confidence"/> et le <see cref="Status"/> en sont DÉRIVÉS
+    /// (Evidence Engine) plutôt qu'affirmés par l'appelant.
+    /// </summary>
+    public IReadOnlyList<RelationEvidence> Evidences => _evidences;
 
     public DateTimeOffset CreatedAt { get; }
     public DateTimeOffset UpdatedAt { get; private set; }
@@ -76,7 +90,8 @@ public sealed class GraphRelation : Entity<Guid>
         string? sourceRecord = null,
         string? evidence = null,
         Guid? id = null,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        IEnumerable<RelationEvidence>? evidences = null)
     {
         if (tenantId == Guid.Empty)
         {
@@ -103,6 +118,22 @@ public sealed class GraphRelation : Entity<Guid>
             return Error.Validation("graph_relation.confidence_required", "La confiance est requise.");
         }
 
+        var at = createdAt ?? DateTimeOffset.UtcNow;
+
+        // Rétro-compatibilité : un appelant qui n'a pas encore été instrumenté
+        // fournit (status, confidence, evidence). On en synthétise UNE preuve,
+        // de poids égal à la confiance annoncée. Le moteur redonne alors
+        // exactement cette confiance (1 − (1 − w) = w) et le même statut :
+        // aucun comportement existant n'est modifié.
+        var seeded = evidences?.ToList() ?? [];
+        if (seeded.Count == 0 && status.ImpliedEvidenceSource() is { } implied)
+        {
+            seeded.Add(RelationEvidence.From(
+                implied,
+                string.IsNullOrWhiteSpace(evidence) ? $"Relation issue de : {status}" : evidence!,
+                at, sourceSystem, sourceRecord, confidence.Value));
+        }
+
         return new GraphRelation(
             id ?? Guid.NewGuid(),
             tenantId,
@@ -114,17 +145,66 @@ public sealed class GraphRelation : Entity<Guid>
             sourceSystem,
             sourceRecord,
             evidence,
-            createdAt ?? DateTimeOffset.UtcNow);
+            seeded,
+            at);
     }
 
     /// <summary>
-    /// Promeut la relation en VERIFIED (validation humaine — article 9).
-    /// Porte la confiance à certaine et enregistre l'auteur/horodatage.
+    /// Ajoute une preuve et recalcule la confiance. C'est le chemin par lequel
+    /// une source qui RE-CONFIRME une relation la renforce, au lieu de créer un
+    /// doublon ou d'écraser ce qui était déjà su.
+    /// </summary>
+    public void AddEvidence(RelationEvidence evidence, DateTimeOffset? at = null)
+    {
+        if (evidence is null) return;
+        var now = at ?? DateTimeOffset.UtcNow;
+
+        // Une même source re-confirmant le même fait remplace sa preuve
+        // précédente (on garde l'observation la plus récente) plutôt que de
+        // gonfler artificiellement la confiance par répétition.
+        _evidences.RemoveAll(e =>
+            e.Source == evidence.Source &&
+            string.Equals(e.SourceSystem, evidence.SourceSystem, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.SourceRecord, evidence.SourceRecord, StringComparison.OrdinalIgnoreCase));
+
+        _evidences.Add(evidence);
+        Recompute(now);
+        UpdatedAt = now;
+    }
+
+    /// <summary>Décomposition explicable du score de confiance.</summary>
+    public ConfidenceBreakdown ExplainConfidence(DateTimeOffset? asOf = null)
+        => ConfidenceEngine.Evaluate(_evidences, asOf ?? DateTimeOffset.UtcNow);
+
+    /// <summary>
+    /// Dérive confiance et statut des preuves. Sans preuve, on conserve les
+    /// valeurs fournies (cas d'un statut Unknown notamment).
+    /// </summary>
+    private void Recompute(DateTimeOffset asOf)
+    {
+        if (_evidences.Count == 0) return;
+
+        var breakdown = ConfidenceEngine.Evaluate(_evidences, asOf);
+        var c = Confidence.Create(breakdown.Score);
+        if (c.IsSuccess) Confidence = c.Value;
+        Status = breakdown.Status;
+    }
+
+    /// <summary>
+    /// Validation humaine (article 9). AJOUTE une preuve humaine au lieu
+    /// d'écraser ce qui était déjà su : la trace des sources d'origine est
+    /// conservée, et la confiance monte au lieu d'être décrétée. Le statut
+    /// devient Verified car la validation humaine est la source la plus fiable.
     /// </summary>
     public void Verify(string verifiedBy, DateTimeOffset at)
     {
-        Status = ConfidenceStatus.Verified;
-        Confidence = Confidence.Certain;
+        AddEvidence(RelationEvidence.From(
+            EvidenceSource.HumanValidation,
+            $"Confirmée par {verifiedBy}",
+            at,
+            sourceSystem: "Lenexux",
+            sourceRecord: verifiedBy), at);
+
         VerifiedBy = verifiedBy;
         VerifiedAt = at;
         Evidence ??= $"Validée par {verifiedBy}";
