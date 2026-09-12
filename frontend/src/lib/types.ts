@@ -273,6 +273,37 @@ export interface VerifyResult {
   contributions: ConfidenceContribution[]
 }
 
+// ── Collector (sonde installée chez le client) ──
+export interface Collector {
+  id: string
+  name: string
+  version: string | null
+  createdAt: string
+  lastSeenAt: string | null
+  online: boolean
+}
+export interface CollectorCreated {
+  id: string
+  name: string
+  /** Clé en clair — affichée une seule fois, non récupérable ensuite. */
+  key: string
+  hint: string
+}
+export interface CollectorJob {
+  id: string
+  collectorId: string
+  kind: string
+  status: 'pending' | 'running' | 'done' | 'failed'
+  createdAt: string
+  completedAt: string | null
+  error: string | null
+  entitiesCreated: number
+  relationsCreated: number
+  scheduledFor: string
+  intervalMinutes: number | null
+  url: string | null
+}
+
 export type EvidenceQuality = 'Solid' | 'Moderate' | 'Fragile'
 export interface WeakLink {
   id: string; source: string; target: string; type: string

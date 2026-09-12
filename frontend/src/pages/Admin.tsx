@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { getTenantId, resetTenant } from '../lib/tenant'
 import { logout } from '../lib/auth'
 import { useLang } from '../lib/i18n'
+import { CollectorsPanel } from '../components/CollectorsPanel'
 import type { ImpactTuning } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -62,6 +63,9 @@ export function Admin() {
 
       {/* Intégrations IA */}
       <AiIntegration />
+
+      {/* Sondes de collecte installées chez le client */}
+      <CollectorsPanel />
 
       {/* Réglages du modèle d'impact */}
       <ImpactTuningPanel />

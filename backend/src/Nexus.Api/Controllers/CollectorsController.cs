@@ -67,7 +67,9 @@ public sealed class CollectorsController(
     /// <summary>Source REST interne à collecter + profil de mapping vers l'ontologie.</summary>
     public sealed record RestJobRequest(
         string Url, string? AuthHeaderName, string? AuthHeaderValue, string? RecordsPath,
-        string? Dataset, MappingProfile Profile);
+        string? Dataset, MappingProfile Profile,
+        /// <summary>Si renseigné, la collecte se répète à cet intervalle (en minutes).</summary>
+        int? IntervalMinutes = null);
 
     /// <summary>Confie une collecte à une sonde (elle la récupérera à son prochain passage).</summary>
     [HttpPost("{id:guid}/jobs")]
@@ -77,8 +79,23 @@ public sealed class CollectorsController(
         if (req is null || string.IsNullOrWhiteSpace(req.Url) || req.Profile is null)
             return BadRequest(new { error = "url_and_profile_required" });
 
-        var jobId = await store.EnqueueJobAsync(tenant, id, "rest", JsonSerializer.Serialize(req, Json), ct);
-        return Ok(new { jobId, status = "pending" });
+        var jobId = await store.EnqueueJobAsync(
+            tenant, id, "rest", JsonSerializer.Serialize(req, Json),
+            req.IntervalMinutes, scheduledFor: null, ct);
+        return Ok(new { jobId, status = "pending", recurring = req.IntervalMinutes is > 0 });
+    }
+
+    /// <summary>
+    /// Révoque une sonde : sa clé cesse immédiatement d'être acceptée et ses
+    /// collectes planifiées sont retirées. À utiliser en cas de compromission ou
+    /// de mise hors service.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Revoke(Guid id, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        var ok = await store.RevokeAsync(tenant, id, ct);
+        return ok ? NoContent() : NotFound(new { error = "collector_not_found" });
     }
 
     /// <summary>Historique des collectes.</summary>
@@ -90,11 +107,20 @@ public sealed class CollectorsController(
         {
             j.Id, j.CollectorId, j.Kind, j.Status, j.CreatedAt, j.CompletedAt,
             j.Error, j.EntitiesCreated, j.RelationsCreated,
+            j.ScheduledFor, j.IntervalMinutes,
+            url = TryReadUrl(j.RequestJson),
         });
         return Ok(jobs);
     }
 
     // ══════════ Protocole de la sonde (clé, pas de JWT) ══════════
+
+    /// <summary>URL de la source, pour l'affichage de l'historique (sans les secrets).</summary>
+    private static string? TryReadUrl(string requestJson)
+    {
+        try { return JsonSerializer.Deserialize<JsonElement>(requestJson).GetProperty("url").GetString(); }
+        catch { return null; }
+    }
 
     private async Task<CollectorInfo?> AgentAsync(CancellationToken ct)
         => Request.Headers.TryGetValue(KeyHeader, out var k)

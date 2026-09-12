@@ -16,6 +16,9 @@ import type {
   RestPreview,
   ScenarioSummary,
   AuditData,
+  Collector,
+  CollectorCreated,
+  CollectorJob,
   ConfidenceExplain,
   VerifyResult,
   EntityRisk,
@@ -122,6 +125,20 @@ export const api = {
   captureSnapshot: () => fetch(`${BASE}/history/snapshot`, { method: 'POST', headers: headers(false) }).then(handle<Snapshot>),
 
   audit: () => fetch(`${BASE}/audit`, { headers: headers(false) }).then(handle<AuditData>),
+
+  // ── Collectors (sondes déployées dans le réseau du client) ──
+  collectors: () => fetch(`${BASE}/collectors`, { headers: headers(false) }).then(handle<Collector[]>),
+  createCollector: (name: string) =>
+    fetch(`${BASE}/collectors`, { method: 'POST', headers: headers(), body: JSON.stringify({ name }) }).then(handle<CollectorCreated>),
+  revokeCollector: (id: string) =>
+    fetch(`${BASE}/collectors/${id}`, { method: 'DELETE', headers: headers(false) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
+  collectorJobs: () => fetch(`${BASE}/collectors/jobs`, { headers: headers(false) }).then(handle<CollectorJob[]>),
+  enqueueCollectorJob: (id: string, body: {
+    url: string; authHeaderName?: string | null; authHeaderValue?: string | null
+    recordsPath?: string | null; dataset?: string | null; profile: unknown; intervalMinutes?: number | null
+  }) =>
+    fetch(`${BASE}/collectors/${id}/jobs`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ jobId: string; status: string; recurring: boolean }>),
 
   /** Décomposition explicable de la confiance d'une dépendance (d'où vient le score). */
   explainRelationConfidence: (id: string) =>

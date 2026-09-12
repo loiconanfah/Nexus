@@ -16,7 +16,8 @@ public sealed record CollectorInfo(
 public sealed record CollectorJob(
     Guid Id, Guid TenantId, Guid CollectorId, string Kind, string RequestJson,
     string Status, DateTime CreatedAt, DateTime? CompletedAt, string? Error,
-    int EntitiesCreated, int RelationsCreated);
+    int EntitiesCreated, int RelationsCreated,
+    DateTime ScheduledFor, int? IntervalMinutes);
 
 /// <summary>
 /// Registre des Collectors et de leurs tâches. Le Collector n'expose AUCUN port :
@@ -57,6 +58,12 @@ public sealed class CollectorStore(NexusDbContext db)
                 entities_created integer NOT NULL DEFAULT 0,
                 relations_created integer NOT NULL DEFAULT 0);
             CREATE INDEX IF NOT EXISTS ix_jobs_collector ON collector_jobs (collector_id, status);
+
+            -- Planification : une collecte récurrente se ré-inscrit elle-même à la
+            -- fin de chaque exécution (pas de tâche de fond à superviser).
+            ALTER TABLE collector_jobs ADD COLUMN IF NOT EXISTS scheduled_for timestamptz NOT NULL DEFAULT now();
+            ALTER TABLE collector_jobs ADD COLUMN IF NOT EXISTS interval_minutes integer;
+            CREATE INDEX IF NOT EXISTS ix_jobs_due ON collector_jobs (collector_id, status, scheduled_for);
             """;
         await cmd.ExecuteNonQueryAsync(ct);
         return conn;
@@ -133,17 +140,27 @@ public sealed class CollectorStore(NexusDbContext db)
         await cmd.ExecuteNonQueryAsync(ct);
     }
 
-    public async Task<Guid> EnqueueJobAsync(Guid tenant, Guid collectorId, string kind, string requestJson, CancellationToken ct)
+    /// <summary>
+    /// Met une collecte en file. <paramref name="intervalMinutes"/> la rend
+    /// RÉCURRENTE : à la fin de chaque exécution elle se ré-inscrit pour le
+    /// prochain passage (une donnée qui n'est jamais rafraîchie se périme, et le
+    /// moteur de preuves la décote).
+    /// </summary>
+    public async Task<Guid> EnqueueJobAsync(
+        Guid tenant, Guid collectorId, string kind, string requestJson,
+        int? intervalMinutes, DateTime? scheduledFor, CancellationToken ct)
     {
         var conn = await OpenAsync(ct);
         var id = Guid.NewGuid();
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            INSERT INTO collector_jobs (id, tenant_id, collector_id, kind, request_json, status, created_at)
-            VALUES (@id, @t, @c, @k, @r, 'pending', now());
+            INSERT INTO collector_jobs (id, tenant_id, collector_id, kind, request_json, status, created_at, scheduled_for, interval_minutes)
+            VALUES (@id, @t, @c, @k, @r, 'pending', now(), COALESCE(@sf, now()), @iv);
             """;
         P(cmd, "@id", id); P(cmd, "@t", tenant); P(cmd, "@c", collectorId);
         P(cmd, "@k", kind); P(cmd, "@r", requestJson);
+        P(cmd, "@sf", scheduledFor);
+        P(cmd, "@iv", intervalMinutes is > 0 ? intervalMinutes : null);
         await cmd.ExecuteNonQueryAsync(ct);
         return id;
     }
@@ -160,12 +177,13 @@ public sealed class CollectorStore(NexusDbContext db)
             UPDATE collector_jobs SET status = 'running', claimed_at = now()
             WHERE id = (
                 SELECT id FROM collector_jobs
-                WHERE collector_id = @c AND status = 'pending'
-                ORDER BY created_at
+                WHERE collector_id = @c AND status = 'pending' AND scheduled_for <= now()
+                ORDER BY scheduled_for
                 FOR UPDATE SKIP LOCKED
                 LIMIT 1)
             RETURNING id, tenant_id, collector_id, kind, request_json, status, created_at,
-                      completed_at, error, entities_created, relations_created;
+                      completed_at, error, entities_created, relations_created,
+                      scheduled_for, interval_minutes;
             """;
         P(cmd, "@c", collectorId);
         await using var r = await cmd.ExecuteReaderAsync(ct);
@@ -173,19 +191,60 @@ public sealed class CollectorStore(NexusDbContext db)
         return Read(r);
     }
 
+    /// <summary>
+    /// Clôt une collecte et, si elle est récurrente, inscrit d'office la
+    /// suivante. La récurrence survit donc aux redémarrages du cloud comme de la
+    /// sonde : il n'y a aucun ordonnanceur à surveiller.
+    /// </summary>
     public async Task CompleteJobAsync(Guid jobId, string status, string? error, int entities, int relations, CancellationToken ct)
     {
         var conn = await OpenAsync(ct);
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                UPDATE collector_jobs
+                SET status = @s, completed_at = now(), error = @e,
+                    entities_created = @en, relations_created = @re
+                WHERE id = @id;
+                """;
+            P(cmd, "@id", jobId); P(cmd, "@s", status); P(cmd, "@e", error);
+            P(cmd, "@en", entities); P(cmd, "@re", relations);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = """
+                INSERT INTO collector_jobs (id, tenant_id, collector_id, kind, request_json, status, created_at, scheduled_for, interval_minutes)
+                SELECT gen_random_uuid(), tenant_id, collector_id, kind, request_json, 'pending', now(),
+                       now() + make_interval(mins => interval_minutes), interval_minutes
+                FROM collector_jobs
+                WHERE id = @id AND interval_minutes IS NOT NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM collector_jobs n
+                      WHERE n.collector_id = collector_jobs.collector_id
+                        AND n.request_json = collector_jobs.request_json
+                        AND n.status = 'pending');
+                """;
+            P(cmd, "@id", jobId);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+    }
+
+    /// <summary>Révoque une sonde : sa clé cesse immédiatement de fonctionner et ses collectes sont retirées.</summary>
+    public async Task<bool> RevokeAsync(Guid tenant, Guid collectorId, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using (var jobs = conn.CreateCommand())
+        {
+            jobs.CommandText = "DELETE FROM collector_jobs WHERE collector_id = @c AND tenant_id = @t;";
+            P(jobs, "@c", collectorId); P(jobs, "@t", tenant);
+            await jobs.ExecuteNonQueryAsync(ct);
+        }
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            UPDATE collector_jobs
-            SET status = @s, completed_at = now(), error = @e,
-                entities_created = @en, relations_created = @re
-            WHERE id = @id;
-            """;
-        P(cmd, "@id", jobId); P(cmd, "@s", status); P(cmd, "@e", error);
-        P(cmd, "@en", entities); P(cmd, "@re", relations);
-        await cmd.ExecuteNonQueryAsync(ct);
+        cmd.CommandText = "DELETE FROM collectors WHERE id = @c AND tenant_id = @t;";
+        P(cmd, "@c", collectorId); P(cmd, "@t", tenant);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
     }
 
     public async Task<IReadOnlyList<CollectorJob>> ListJobsAsync(Guid tenant, int limit, CancellationToken ct)
@@ -194,7 +253,8 @@ public sealed class CollectorStore(NexusDbContext db)
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT id, tenant_id, collector_id, kind, request_json, status, created_at,
-                   completed_at, error, entities_created, relations_created
+                   completed_at, error, entities_created, relations_created,
+                   scheduled_for, interval_minutes
             FROM collector_jobs WHERE tenant_id = @t ORDER BY created_at DESC LIMIT @lim;
             """;
         P(cmd, "@t", tenant); P(cmd, "@lim", Math.Clamp(limit, 1, 500));
@@ -207,5 +267,6 @@ public sealed class CollectorStore(NexusDbContext db)
     private static CollectorJob Read(DbDataReader r) => new(
         r.GetGuid(0), r.GetGuid(1), r.GetGuid(2), r.GetString(3), r.GetString(4), r.GetString(5),
         r.GetDateTime(6), r.IsDBNull(7) ? null : r.GetDateTime(7), r.IsDBNull(8) ? null : r.GetString(8),
-        r.GetInt32(9), r.GetInt32(10));
+        r.GetInt32(9), r.GetInt32(10),
+        r.GetDateTime(11), r.IsDBNull(12) ? null : r.GetInt32(12));
 }

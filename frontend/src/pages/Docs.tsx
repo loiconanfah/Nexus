@@ -46,6 +46,7 @@ const TOC: Group[] = [
   ] },
   { group: 'Données', items: [
     { id: 'onboarding', label: 'Import & intégration' },
+    { id: 'collector', label: 'Collector (sonde interne)' },
     { id: 'connecteurs', label: 'Connecteurs' },
   ] },
   { group: 'Administration', items: [
@@ -278,6 +279,28 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
             <Figure src="onboarding.png" caption="Import des données (fichier + source REST live)." />
           </Sec>
 
+          <Sec id="collector" title="Collector — la sonde installée chez vous">
+            <P>Vos systèmes internes ne sont pas exposés sur Internet, et c'est très bien ainsi : Lenexux refuse d'ailleurs délibérément d'atteindre une adresse privée depuis le cloud (garde anti-SSRF). Le <b>Collector</b> lève ce blocage sans affaiblir votre sécurité.</P>
+            <Bullets items={[
+              'Aucun port ouvert, aucune règle de pare-feu entrante : la sonde SORT en HTTPS pour venir chercher son travail. Rien ne peut l’atteindre de l’extérieur.',
+              'Aucun privilège : conteneur non-root, identifiants en lecture seule que vous choisissez, et uniquement vers les sources que vous désignez.',
+              'Elle ne fait que COLLECTER. La résolution d’entités, l’ontologie, les preuves et le calcul d’impact restent côté Lenexux — le moteur évolue sans jamais redéployer chez vous.',
+              'Clé d’authentification stockée en empreinte (jamais en clair), révocable en un clic depuis Admin.',
+            ]} />
+            <P className="mt-2"><b>Mise en place</b> — trois étapes :</P>
+            <Bullets items={[
+              '1. Admin → Collectors → « Déclarer une sonde ». La clé s’affiche UNE seule fois, avec la commande de démarrage prête à copier.',
+              '2. Lancez le conteneur sur une VM de votre réseau (Docker, ou l’image de votre choix) avec cette clé.',
+              '3. Configurez une collecte : URL interne, en-tête d’authentification éventuel, type de données, et la fréquence de rafraîchissement.',
+            ]} />
+            <Code>{`docker run -d --name lenexux-collector --restart unless-stopped \\
+  -e LENEXUX_CLOUD_URL=https://lenexux.com \\
+  -e LENEXUX_COLLECTOR_KEY=lxc_… \\
+  lenexux-collector`}</Code>
+            <P><b>Collecte récurrente.</b> Une collecte peut se répéter (ex. toutes les 24 h) : elle se ré-inscrit d'elle-même après chaque exécution. C'est important, car une dépendance qui n'est plus reconfirmée voit sa confiance <b>décoter avec le temps</b> — la cartographie signale ainsi son propre vieillissement.</P>
+            <P><b>Ce que la sonde sait interroger aujourd'hui</b> : toute API JSON interne (CMDB, Kubernetes, catalogue de services, application maison), avec ou sans en-tête d'authentification. Les données collectées entrent par le même pipeline que n'importe quelle source, et portent une preuve « source interrogée en direct » — plus fiable qu'un fichier déclaratif.</P>
+          </Sec>
+
           <Sec id="connecteurs" title="Connecteurs">
             <Bullets items={[
               'CSV / Excel : tout tableur d’actifs ou de dépendances.',
@@ -310,6 +333,8 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
               ['Cyberattaque', 'POST /attacks/explain'],
               ['Inférence', 'POST /inference/relations · POST /inference/relations/ingest'],
               ['Import', 'POST /imports/csv · /imports/excel · /imports/rest(/preview) · /imports/analyze'],
+              ['Collector', 'POST/GET/DELETE /collectors · POST /collectors/{id}/jobs · GET /collectors/jobs'],
+              ['Preuves', 'GET /audit/relations/{id}/confidence · POST /audit/relations/{id}/verify'],
               ['Entreprise', 'GET/PUT /enterprise/model · GET /enterprise/model/history · POST /enterprise/model/restore/{id} · POST /enterprise/decision · /enterprise/scenarios'],
               ['IA', 'GET/PUT /ai/config · GET /ai/usage'],
               ['Santé', 'GET /health · GET /health/ready'],
