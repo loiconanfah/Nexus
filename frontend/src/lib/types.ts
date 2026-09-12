@@ -273,6 +273,20 @@ export interface VerifyResult {
   contributions: ConfidenceContribution[]
 }
 
+// ── Comptes de l'espace de travail ──
+export type WorkspaceRole = 'admin' | 'member'
+export interface WorkspaceUser {
+  email: string
+  role: WorkspaceRole
+  createdAt: string
+  isSelf: boolean
+}
+export interface WorkspaceUsers {
+  users: WorkspaceUser[]
+  /** Vrai si l'utilisateur courant peut gérer les comptes (rôle admin). */
+  canManage: boolean
+}
+
 // ── Collector (sonde installée chez le client) ──
 export interface Collector {
   id: string

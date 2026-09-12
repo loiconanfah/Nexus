@@ -31,6 +31,29 @@ public abstract class NexusController(ITenantProvider tenantProvider) : Controll
         return false;
     }
 
+    /// <summary>Courriel de l'utilisateur courant (claim du jeton).</summary>
+    protected string? CurrentEmail => User?.FindFirst("email")?.Value;
+
+    /// <summary>Rôle de l'utilisateur courant : « admin » ou « member ».</summary>
+    protected string CurrentRole => User?.FindFirst("role")?.Value ?? "member";
+
+    protected bool IsAdmin => string.Equals(CurrentRole, "admin", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Garde des opérations d'administration (gestion des comptes, sondes,
+    /// configuration IA, réglages d'impact). Les membres consultent, les
+    /// administrateurs configurent.
+    /// </summary>
+    protected bool RequireAdmin(out IActionResult error)
+    {
+        if (IsAdmin) { error = null!; return true; }
+        error = Problem(
+            title: "admin_required",
+            detail: "Cette opération est réservée aux administrateurs de l'espace de travail.",
+            statusCode: StatusCodes.Status403Forbidden);
+        return false;
+    }
+
     protected IActionResult ToProblem(Error error) => Problem(
         title: error.Code,
         detail: error.Message,

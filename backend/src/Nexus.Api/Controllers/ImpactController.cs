@@ -49,6 +49,7 @@ public sealed class ImpactController(
     public async Task<IActionResult> SaveConfig([FromBody] ImpactTuning tuning, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         if (tuning is null) return BadRequest(new { error = "tuning_required" });
         // Bornes de sûreté : coûts ≥ 0, probabilités dans [0,1], multiplicateur > 0.
         var safe = tuning with
@@ -70,6 +71,7 @@ public sealed class ImpactController(
     public async Task<IActionResult> ResetConfig(CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         await impactConfig.ResetAsync(tenant, ct);
         return Ok(new { tuning = ImpactTuning.Default, customized = false, defaults = ImpactTuning.Default });
     }

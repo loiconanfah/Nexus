@@ -7,6 +7,7 @@ import { getTenantId, resetTenant } from '../lib/tenant'
 import { logout } from '../lib/auth'
 import { useLang } from '../lib/i18n'
 import { CollectorsPanel } from '../components/CollectorsPanel'
+import { UsersPanel } from '../components/UsersPanel'
 import type { ImpactTuning } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -63,6 +64,9 @@ export function Admin() {
 
       {/* Intégrations IA */}
       <AiIntegration />
+
+      {/* Comptes de l'espace de travail */}
+      <UsersPanel />
 
       {/* Sondes de collecte installées chez le client */}
       <CollectorsPanel />

@@ -315,7 +315,8 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
           {/* ── ADMINISTRATION ── */}
           <Sec id="admin" title="Administration">
             <Bullets items={[
-              'Comptes & rôles : gestion des utilisateurs de l’espace (rôle admin).',
+              'Comptes & rôles : plusieurs personnes partagent le MÊME espace de travail. Deux rôles — administrateur (configure : comptes, sondes, IA, réglages d’impact) et membre (consulte et analyse). Un espace conserve toujours au moins un administrateur.',
+              'Collectors : déclarer, surveiller et révoquer les sondes installées dans votre réseau ; planifier des collectes récurrentes.',
               'Configuration IA : par tenant, choix du fournisseur (Anthropic, Gemini, OpenAI, Azure) et du modèle ; la clé est stockée côté serveur et n’est jamais renvoyée.',
               'Quota LLM : plafond mensuel par tenant (appels + caractères), repli déterministe au-delà. Consommation via GET /api/v1/ai/usage.',
               'Inscriptions : ouvrables/fermables (NEXUS_ALLOW_REGISTRATION).',
@@ -333,6 +334,7 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
               ['Cyberattaque', 'POST /attacks/explain'],
               ['Inférence', 'POST /inference/relations · POST /inference/relations/ingest'],
               ['Import', 'POST /imports/csv · /imports/excel · /imports/rest(/preview) · /imports/analyze'],
+              ['Comptes', 'GET/POST /users · PATCH /users/{email}/role · PATCH /users/{email}/password · DELETE /users/{email}'],
               ['Collector', 'POST/GET/DELETE /collectors · POST /collectors/{id}/jobs · GET /collectors/jobs'],
               ['Preuves', 'GET /audit/relations/{id}/confidence · POST /audit/relations/{id}/verify'],
               ['Entreprise', 'GET/PUT /enterprise/model · GET /enterprise/model/history · POST /enterprise/model/restore/{id} · POST /enterprise/decision · /enterprise/scenarios'],

@@ -37,6 +37,7 @@ public sealed class CollectorsController(
     public async Task<IActionResult> Create([FromBody] CreateCollectorRequest req, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         if (req is null || string.IsNullOrWhiteSpace(req.Name))
             return BadRequest(new { error = "name_required" });
 
@@ -76,6 +77,7 @@ public sealed class CollectorsController(
     public async Task<IActionResult> Enqueue(Guid id, [FromBody] RestJobRequest req, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         if (req is null || string.IsNullOrWhiteSpace(req.Url) || req.Profile is null)
             return BadRequest(new { error = "url_and_profile_required" });
 
@@ -94,6 +96,7 @@ public sealed class CollectorsController(
     public async Task<IActionResult> Revoke(Guid id, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         var ok = await store.RevokeAsync(tenant, id, ct);
         return ok ? NoContent() : NotFound(new { error = "collector_not_found" });
     }

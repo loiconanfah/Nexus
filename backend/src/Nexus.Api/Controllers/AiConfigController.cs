@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Nexus.AI;
 
 namespace Nexus.Api.Controllers;
@@ -14,6 +14,17 @@ public sealed class AiConfigController(
     AiRuntimeConfig config, DynamicChatCompletion chat,
     ICurrentTenant tenant, ILlmUsageStore usage, LlmQuotaOptions quota) : ControllerBase
 {
+    /// <summary>Garde admin locale (ce contrôleur n'hérite pas de NexusController).</summary>
+    private bool RequireAdmin(out IActionResult error)
+    {
+        if (string.Equals(User?.FindFirst("role")?.Value, "admin", StringComparison.OrdinalIgnoreCase))
+        { error = null!; return true; }
+        error = Problem(title: "admin_required",
+            detail: "Cette opération est réservée aux administrateurs de l'espace de travail.",
+            statusCode: StatusCodes.Status403Forbidden);
+        return false;
+    }
+
     public sealed record SetKeyRequest(string Provider, string ApiKey, string? Endpoint, string? Model);
     public sealed record SetModelRequest(string Model);
 
@@ -55,6 +66,7 @@ public sealed class AiConfigController(
     [HttpPut]
     public async Task<IActionResult> Set([FromBody] SetKeyRequest req, CancellationToken ct)
     {
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         if (req is null || string.IsNullOrWhiteSpace(req.Provider) || string.IsNullOrWhiteSpace(req.ApiKey))
             return BadRequest(new { error = "provider_and_key_required" });
         if (req.Provider is not ("anthropic" or "azure-openai" or "openai" or "gemini"))
@@ -97,6 +109,7 @@ public sealed class AiConfigController(
     [HttpDelete]
     public IActionResult Clear()
     {
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         config.Clear();
         return Ok(new { configured = false });
     }

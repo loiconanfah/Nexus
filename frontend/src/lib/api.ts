@@ -21,6 +21,8 @@ import type {
   CollectorJob,
   ConfidenceExplain,
   VerifyResult,
+  WorkspaceUsers,
+  WorkspaceRole,
   EntityRisk,
   ExecutiveReport,
   ExtractedEntity,
@@ -125,6 +127,21 @@ export const api = {
   captureSnapshot: () => fetch(`${BASE}/history/snapshot`, { method: 'POST', headers: headers(false) }).then(handle<Snapshot>),
 
   audit: () => fetch(`${BASE}/audit`, { headers: headers(false) }).then(handle<AuditData>),
+
+  // ── Comptes de l'espace de travail ──
+  workspaceUsers: () => fetch(`${BASE}/users`, { headers: headers(false) }).then(handle<WorkspaceUsers>),
+  inviteUser: (email: string, password: string, role: WorkspaceRole) =>
+    fetch(`${BASE}/users`, { method: 'POST', headers: headers(), body: JSON.stringify({ email, password, role }) })
+      .then(handle<{ email: string; role: WorkspaceRole }>),
+  setUserRole: (email: string, role: WorkspaceRole) =>
+    fetch(`${BASE}/users/${encodeURIComponent(email)}/role`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ role }) })
+      .then(handle<{ email: string; role: WorkspaceRole }>),
+  setUserPassword: (email: string, password: string) =>
+    fetch(`${BASE}/users/${encodeURIComponent(email)}/password`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ password }) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
+  removeUser: (email: string) =>
+    fetch(`${BASE}/users/${encodeURIComponent(email)}`, { method: 'DELETE', headers: headers(false) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
 
   // ── Collectors (sondes déployées dans le réseau du client) ──
   collectors: () => fetch(`${BASE}/collectors`, { headers: headers(false) }).then(handle<Collector[]>),
