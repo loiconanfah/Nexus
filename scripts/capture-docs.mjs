@@ -18,32 +18,32 @@ const W = 1600, H = 1000
 
 // Écrans à capturer : [route, fichier, attente ms, publique?]
 const SHOTS = [
-  ['/welcome', 'landing.png', 1500, true],
-  ['/demo', 'demo.png', 1200, true],
-  ['/', 'dashboard.png', 2500, false],
-  ['/graph', 'graph.png', 4000, false],
-  ['/impact', 'impact.png', 2000, false],
-  ['/simulations', 'simulation.png', 4500, false],
-  ['/inference', 'inference.png', 1800, false],
-  ['/dependencies', 'dependencies.png', 2500, false],
-  ['/risks', 'risks.png', 2500, false],
-  ['/enterprise', 'enterprise.png', 2500, false],
-  ['/legal?doc=privacy', 'legal.png', 1200, true],
+  ['/welcome', 'landing.png', 4000, true],
+  ['/demo', 'demo.png', 4000, true],
+  ['/', 'dashboard.png', 5000, false],
+  ['/graph', 'graph.png', 10000, false],
+  ['/impact', 'impact.png', 5000, false],
+  ['/simulations', 'simulation.png', 11250, false],
+  ['/inference', 'inference.png', 4500, false],
+  ['/dependencies', 'dependencies.png', 6250, false],
+  ['/risks', 'risks.png', 5000, false],
+  ['/enterprise', 'enterprise.png', 6250, false],
+  ['/legal?doc=privacy', 'legal.png', 4000, true],
   // Écrans complémentaires
-  ['/incidents', 'incidents.png', 2500, false],
-  ['/change', 'change.png', 2500, false],
-  ['/audit', 'audit.png', 2500, false],
-  ['/suppliers', 'suppliers.png', 2500, false],
-  ['/human', 'human.png', 2500, false],
-  ['/actions', 'actions.png', 2500, false],
-  ['/twin', 'twin.png', 3500, false],
-  ['/decision', 'decision.png', 2500, false],
-  ['/ai', 'ai.png', 2000, false],
-  ['/documents', 'documents.png', 2000, false],
-  ['/reports', 'reports.png', 2500, false],
-  ['/onboarding', 'onboarding.png', 2000, false],
-  ['/integrations', 'integrations.png', 2500, false],
-  ['/admin', 'admin.png', 2000, false],
+  ['/incidents', 'incidents.png', 5000, false],
+  ['/change', 'change.png', 6250, false],
+  ['/audit', 'audit.png', 6250, false],
+  ['/suppliers', 'suppliers.png', 6250, false],
+  ['/human', 'human.png', 6250, false],
+  ['/actions', 'actions.png', 6250, false],
+  ['/twin', 'twin.png', 8750, false],
+  ['/decision', 'decision.png', 6250, false],
+  ['/ai', 'ai.png', 5000, false],
+  ['/documents', 'documents.png', 5000, false],
+  ['/reports', 'reports.png', 5000, false],
+  ['/onboarding', 'onboarding.png', 5000, false],
+  ['/integrations', 'integrations.png', 6250, false],
+  ['/admin', 'admin.png', 5000, false],
 ]
 
 async function cdp(ws, method, params = {}) {
@@ -94,7 +94,7 @@ async function main() {
     await cdp(ws, 'Runtime.enable')
     // Injecte le jeton AVANT le chargement de l'app (localStorage) pour chaque doc.
     await cdp(ws, 'Page.addScriptToEvaluateOnNewDocument', {
-      source: `try{localStorage.setItem('nexus.jwt', ${JSON.stringify(token)});localStorage.setItem('nexus.tenantId', ${JSON.stringify(tenantId)});}catch(e){}`,
+      source: `try{localStorage.setItem('nexus.jwt', ${JSON.stringify(token)});localStorage.setItem('nexus.tenantId', ${JSON.stringify(tenantId)});localStorage.setItem('nexus.theme','dark');}catch(e){}`,
     })
 
     for (const [route, file, wait] of SHOTS) {

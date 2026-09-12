@@ -56,6 +56,7 @@ export function Landing() {
         <nav className="slb-nav-links">
           <a href="#probleme">{t('Le problème', 'Problem')}</a>
           <a href="#fonctionnement">{t('Fonctionnement', 'How it works')}</a>
+          <a href="#produit">{t('Le produit', 'Product')}</a>
           <a href="#plateforme">{t('Plateforme', 'Platform')}</a>
           <a href="#secteurs">{t('Secteurs', 'Industries')}</a>
           <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }}>Documentation</a>
@@ -77,6 +78,7 @@ export function Landing() {
           <div className="slb-mobile-menu">
             <a href="#probleme" onClick={() => setMenuOpen(false)}>{t('Le problème', 'Problem')}</a>
             <a href="#fonctionnement" onClick={() => setMenuOpen(false)}>{t('Fonctionnement', 'How it works')}</a>
+            <a href="#produit" onClick={() => setMenuOpen(false)}>{t('Le produit', 'Product')}</a>
             <a href="#plateforme" onClick={() => setMenuOpen(false)}>{t('Plateforme', 'Platform')}</a>
             <a href="#secteurs" onClick={() => setMenuOpen(false)}>{t('Secteurs', 'Industries')}</a>
             <a href="/docs" onClick={(e) => { e.preventDefault(); setMenuOpen(false); navigate('/docs') }}>Documentation</a>
@@ -165,6 +167,17 @@ export function Landing() {
             {['8 actifs exposés', '1,70 M$', 'RTO 4,9 h', '0 redondance'].map((c) => <Chip key={c}>{c}</Chip>)}
           </div>
         </div>
+      </Section>
+
+      {/* ══════════ VOIR LE PRODUIT ══════════ */}
+      <Section id="produit">
+        <Label>{t('Voir le produit', 'See the product')}</Label>
+        <SectionH>{t('Ce à quoi ça ressemble, vraiment.', 'What it actually looks like.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+          {t('Captures réelles de la plateforme sur le jeu de démo — aucune maquette.',
+             'Real screenshots of the platform on the demo dataset — no mockups.')}
+        </p>
+        <Showcase t={t} />
       </Section>
 
       {/* ══════════ 01 · SOUS LE CAPOT — risque ══════════ */}
@@ -359,6 +372,99 @@ export function Landing() {
           </div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+// ── Galerie produit ───────────────────────────────────────────────────────────
+/**
+ * Captures RÉELLES de la plateforme (générées par scripts/capture-docs.mjs sur le
+ * jeu de démo, en thème sombre pour s'accorder à la vitrine). On lisait beaucoup
+ * de texte sans jamais VOIR le produit : cette section corrige cela.
+ */
+type Shot = { file: string; tab: [string, string]; title: [string, string]; body: [string, string] }
+
+const SHOTS: Shot[] = [
+  {
+    file: 'graph.png',
+    tab: ['Graphe', 'Graph'],
+    title: ['Le graphe de dépendances', 'The dependency graph'],
+    body: [
+      'Systèmes, fournisseurs, personnes et IA dans une même carte navigable. Chaque lien porte sa confiance et son origine : on voit d’où vient l’information.',
+      'Systems, suppliers, people and AI in one navigable map. Every link carries its confidence and origin: you see where the information comes from.',
+    ],
+  },
+  {
+    file: 'risks.png',
+    tab: ['Risques', 'Risks'],
+    title: ['Le classement par risque', 'The risk ranking'],
+    body: [
+      'Tous les actifs classés de 0 à 100, avec criticité effective, nombre de dépendants, rayon d’impact et présence ou non de redondance. Chaque score est décomposable.',
+      'Every asset ranked 0–100, with effective criticality, dependents, blast radius and whether redundancy exists. Every score is decomposable.',
+    ],
+  },
+  {
+    file: 'simulation.png',
+    tab: ['Simulation', 'Simulation'],
+    title: ['Rejouer une panne', 'Replay an outage'],
+    body: [
+      'Coupez un élément : la cascade se propage niveau par niveau, le délai de reprise et l’impact financier se calculent, et la base probante du chiffrage est affichée.',
+      'Cut an element: the cascade propagates level by level, recovery time and financial impact are computed, and the evidence base behind the figure is shown.',
+    ],
+  },
+  {
+    file: 'impact.png',
+    tab: ['Impact', 'Impact'],
+    title: ['L’impact transversal', 'Cross-cutting impact'],
+    body: [
+      'Posez la question en langage naturel — « et si nous perdons ce fournisseur ? ». Le moteur chiffre, l’IA explique, et rien n’est inventé.',
+      'Ask in plain language — “what if we lose this supplier?”. The engine quantifies, the AI explains, and nothing is invented.',
+    ],
+  },
+  {
+    file: 'audit.png',
+    tab: ['Confiance', 'Trust'],
+    title: ['Confiance & audit', 'Trust & audit'],
+    body: [
+      'Chaque dépendance expose « pourquoi ce score » : preuve par preuve, fiabilité × fraîcheur. Une validation humaine s’ajoute aux sources — elle ne les efface jamais.',
+      'Every dependency exposes “why this score”: evidence by evidence, reliability × freshness. A human validation is added to the sources — it never erases them.',
+    ],
+  },
+  {
+    file: 'enterprise.png',
+    tab: ['Entreprise', 'Enterprise'],
+    title: ['Le modèle d’entreprise', 'The enterprise model'],
+    body: [
+      'P&L, trésorerie, effectifs, sites et structure de coûts — entièrement éditables et versionnés. C’est ce modèle qui convertit une panne technique en dollars.',
+      'P&L, cash, headcount, sites and cost structure — fully editable and versioned. This model is what turns a technical outage into dollars.',
+    ],
+  },
+]
+
+function Showcase({ t }: { t: (fr: string, en: string) => string }) {
+  const [i, setI] = useState(0)
+  const s = SHOTS[i]
+  return (
+    <div className="mt-10">
+      <div className="flex flex-wrap gap-2">
+        {SHOTS.map((sh, k) => (
+          <button key={sh.file} onClick={() => setI(k)} className="slb-shot-tab"
+            aria-pressed={k === i}
+            style={k === i
+              ? { borderColor: '#22d3ee', color: '#070714', background: '#22d3ee' }
+              : { borderColor: '#26262e', color: '#b9b9c6', background: 'transparent' }}>
+            {t(sh.tab[0], sh.tab[1])}
+          </button>
+        ))}
+      </div>
+      <figure className="mt-5 border" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
+        <img src={`/docs/${s.file}`} alt={t(s.title[0], s.title[1])} width={1440} height={900} loading="lazy"
+          className="block w-full" style={{ borderBottom: '1px solid #1c1c22' }} />
+        <figcaption className="p-5 sm:p-6">
+          <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 18 }}>{t(s.title[0], s.title[1])}</h3>
+          <p className="mt-2 max-w-3xl" style={{ fontSize: 14.5, color: '#a2a2b0', lineHeight: 1.6 }}>{t(s.body[0], s.body[1])}</p>
+        </figcaption>
+      </figure>
     </div>
   )
 }
@@ -633,6 +739,11 @@ const SILBER_CSS = `
 
 /* Cellule (persona) */
 .slb-cell { background: #050506; padding: 30px 24px; }
+
+/* Onglets de la galerie produit */
+.slb-shot-tab { border: 1px solid; padding: 7px 14px; font-family: var(--font-mono); font-size: 11.5px;
+  letter-spacing: .04em; text-transform: uppercase; transition: border-color .15s, color .15s; }
+.slb-shot-tab[aria-pressed="false"]:hover { border-color: #3a3a47; color: #f3f3f6; }
 
 /* Chips */
 .slb-chip { border: 1px solid #26262e; padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; color: #b9b9c6; }
