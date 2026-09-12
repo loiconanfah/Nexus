@@ -14,7 +14,14 @@ public sealed record RestConnectorConfig(
     string? AuthHeaderName = null,
     string? AuthHeaderValue = null,
     string? RecordsPath = null,
-    string DatasetName = "rest");
+    string DatasetName = "rest",
+    /// <summary>
+    /// Autorise les cibles internes/privées. DOIT rester false dans le cloud :
+    /// le garde anti-SSRF empêche d'utiliser l'API comme proxy vers un réseau
+    /// privé. N'est activé QUE par le Collector, qui s'exécute à l'intérieur du
+    /// réseau du client et dont c'est précisément la raison d'être.
+    /// </summary>
+    bool AllowInternalTargets = false);
 
 /// <summary>
 /// Connecteur REST/JSON read-only (article 10) : un vrai connecteur LIVE — il
@@ -95,7 +102,7 @@ public sealed class RestConnector(HttpClient http, RestConnectorConfig config) :
     private async Task<JsonDocument> FetchAsync(CancellationToken ct)
     {
         // Garde anti-SSRF : refuse loopback / IP privées / métadonnées cloud.
-        await SsrfGuard.ValidateAsync(config.Url, ct);
+        if (!config.AllowInternalTargets) await SsrfGuard.ValidateAsync(config.Url, ct);
 
         using var req = new HttpRequestMessage(HttpMethod.Get, config.Url);
         req.Headers.TryAddWithoutValidation("Accept", "application/json");
