@@ -84,3 +84,48 @@ export function bandLabel(band: string, t: T): string {
   const m = BAND[band]
   return m ? t(m[0], m[1]) : band
 }
+
+/**
+ * Statut de confiance d'une dépendance. Ces valeurs viennent de l'API sous
+ * leur nom technique (Verified, AiSuggested…) : elles ne doivent jamais
+ * apparaître telles quelles à l'écran.
+ */
+const CONFIDENCE_STATUS: Record<string, [string, string]> = {
+  Verified: ['Vérifiée', 'Verified'],
+  Imported: ['Importée', 'Imported'],
+  Inferred: ['Déduite', 'Inferred'],
+  AiSuggested: ['Proposée par l’IA', 'AI-proposed'],
+  Unknown: ['Non confirmée', 'Unconfirmed'],
+}
+export function confidenceStatusLabel(status: string, t: T): string {
+  const m = CONFIDENCE_STATUS[status]
+  return m ? t(m[0], m[1]) : status
+}
+
+/** État d'une collecte confiée à une sonde. */
+const JOB_STATUS: Record<string, [string, string]> = {
+  pending: ['en attente', 'pending'],
+  running: ['en cours', 'running'],
+  done: ['terminée', 'done'],
+  failed: ['échouée', 'failed'],
+}
+export function jobStatusLabel(status: string, t: T): string {
+  const m = JOB_STATUS[status]
+  return m ? t(m[0], m[1]) : status
+}
+
+/** Origine d'une preuve (Evidence Engine), en clair. */
+const EVIDENCE_SOURCE: Record<string, [string, string]> = {
+  HumanValidation: ['Validation humaine', 'Human validation'],
+  Observation: ['Observation technique', 'Technical observation'],
+  RestApi: ['API interrogée en direct', 'Live API'],
+  DeterministicInference: ['Déduction du moteur', 'Engine deduction'],
+  Import: ['Fichier importé', 'Imported file'],
+  Declared: ['Saisie manuelle', 'Manually declared'],
+  Document: ['Document', 'Document'],
+  AiInference: ['Proposée par l’IA', 'AI-proposed'],
+}
+export function evidenceSourceLabel(source: string, t: T): string {
+  const m = EVIDENCE_SOURCE[source]
+  return m ? t(m[0], m[1]) : source
+}

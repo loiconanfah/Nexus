@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ShieldCheck, ShieldAlert, ShieldQuestion, ChevronDown } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 import type { CascadeEvidence, EvidenceQuality } from '../lib/types'
+import { confidenceStatusLabel, relationTypeLabel } from '../lib/labels'
 
 const mono = 'var(--font-mono)'
 
@@ -73,9 +74,9 @@ export function EvidenceBanner({ evidence, summary }: { evidence: CascadeEvidenc
                 <span>{w.source}</span>
                 <span style={{ color: 'var(--nx-outline)' }}>→</span>
                 <span>{w.target}</span>
-                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{w.type}</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{relationTypeLabel(w.type, t)}</span>
                 <span className="ml-auto" style={{ fontFamily: mono, fontSize: 11, color: w.confidence < 0.5 ? '#d15b54' : '#e0b23c' }}>
-                  {pct(w.confidence)} · {w.status}
+                  {pct(w.confidence)} · {confidenceStatusLabel(w.status, t)}
                 </span>
               </div>
               {w.topEvidence && (

@@ -4,6 +4,7 @@ import { Radio, Plus, Trash2, Play, Copy, Check, Loader2, RefreshCw } from 'luci
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { Collector, CollectorCreated } from '../lib/types'
+import { jobStatusLabel } from '../lib/labels'
 
 const mono = 'var(--font-mono)'
 const CYAN = 'var(--nx-cyan)'
@@ -147,7 +148,7 @@ export function CollectorsPanel() {
                 <div key={j.id} className="flex flex-wrap items-center gap-2 rounded-sm border px-3 py-1.5"
                   style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11 }}>
                   <span style={{ color: j.status === 'done' ? '#4ade80' : j.status === 'failed' ? '#ffb4ab' : j.status === 'running' ? CYAN_T : '#facc15' }}>
-                    {j.status}
+                    {jobStatusLabel(j.status, t)}
                   </span>
                   <span className="truncate" style={{ color: 'var(--nx-text-muted)', maxWidth: 320 }}>{j.url}</span>
                   {j.intervalMinutes ? <span style={{ color: CYAN_T }}>↻ {j.intervalMinutes} min</span> : null}

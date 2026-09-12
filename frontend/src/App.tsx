@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { Layout } from './components/Layout'
+import { useLang } from './lib/i18n'
 import { Dashboard } from './pages/Dashboard'
 import { Simulation } from './pages/Simulation'
 import { GraphExplorer } from './pages/GraphExplorer'
@@ -35,37 +36,40 @@ import { Login } from './pages/Login'
 import { getTenantId } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
 
-const TITLES: Record<string, string> = {
-  '/': 'Overview',
-  '/enterprise': 'Enterprise Model',
-  '/decision': 'Decision & Simulation',
-  '/impact': 'Cross-system Impact',
-  '/attacks': 'Attack Simulation',
-  '/inference': 'Inferred Dependencies',
-  '/graph': 'Graph Explorer',
-  '/assets': 'Assets',
-  '/dependencies': 'Dependencies',
-  '/risks': 'Risk Center',
-  '/suppliers': 'Supplier Intelligence',
-  '/incidents': 'Incident Early-Warning',
-  '/change': 'Change Impact',
-  '/audit': 'Confidence & Audit',
-  '/twin': 'Digital Twin',
-  '/history': 'Digital Twin History',
-  '/documents': 'Document Intelligence',
-  '/onboarding': 'Data Onboarding',
-  '/integrations': 'Integration Marketplace',
-  '/admin': 'Admin & System',
-  '/help': 'Documentation',
-  '/simulations': 'What-If Simulation',
-  '/ai': 'AI Analyst',
-  '/reports': 'Reports',
-  '/human': 'Human Dependency',
-  '/actions': 'Action Plan',
+// Titre affiché en en-tête de chaque écran. Bilingue et aligné sur le libellé
+// du menu : l'utilisateur retrouve en haut de page exactement ce qu'il a cliqué.
+const TITLES: Record<string, [string, string]> = {
+  '/': ['Vue d’ensemble', 'Overview'],
+  '/enterprise': ['Modèle d’entreprise', 'Enterprise Model'],
+  '/decision': ['Décision & simulation', 'Decision & Simulation'],
+  '/impact': ['Impact transversal', 'Cross-system Impact'],
+  '/attacks': ['Simulation d’attaque', 'Attack Simulation'],
+  '/inference': ['Dépendances inférées', 'Inferred Dependencies'],
+  '/graph': ['Graphe de dépendances', 'Dependency Graph'],
+  '/assets': ['Actifs', 'Assets'],
+  '/dependencies': ['Dépendances', 'Dependencies'],
+  '/risks': ['Centre de risques', 'Risk Center'],
+  '/suppliers': ['Fournisseurs', 'Supplier Intelligence'],
+  '/incidents': ['Alerte anticipée', 'Incident Early-Warning'],
+  '/change': ['Impact de changement', 'Change Impact'],
+  '/audit': ['Confiance & audit', 'Confidence & Audit'],
+  '/twin': ['Jumeau numérique', 'Digital Twin'],
+  '/history': ['Historique du jumeau', 'Digital Twin History'],
+  '/documents': ['Documents', 'Document Intelligence'],
+  '/onboarding': ['Import & intégration', 'Data Onboarding'],
+  '/integrations': ['Connecteurs', 'Integrations'],
+  '/admin': ['Admin & système', 'Admin & System'],
+  '/help': ['Documentation', 'Documentation'],
+  '/simulations': ['Simulation « et si ? »', 'What-If Simulation'],
+  '/ai': ['Analyste IA', 'AI Analyst'],
+  '/reports': ['Rapports', 'Reports'],
+  '/human': ['Dépendances humaines', 'Human Dependency'],
+  '/actions': ['Plan d’action', 'Action Plan'],
 }
 
 export default function App() {
   const { pathname } = useLocation()
+  const { t } = useLang()
   const navigate = useNavigate()
   const tenant = getTenantId()
 
@@ -95,7 +99,7 @@ export default function App() {
       header={
         <>
           <h1 className="text-sm font-semibold" style={{ color: 'var(--color-text-strong)' }}>
-            {TITLES[pathname] ?? 'Lenexux'}
+            {TITLES[pathname] ? t(...TITLES[pathname]) : 'Lenexux'}
           </h1>
           <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
             <span title="Tenant (issu du jeton)">tenant&nbsp;·&nbsp;{tenant.slice(0, 8)}</span>

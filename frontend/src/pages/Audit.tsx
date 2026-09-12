@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BadgeCheck, FileSearch, ShieldQuestion, Check, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import type { AuditLowConf, EvidenceSourceName } from '../lib/types'
+import type { AuditLowConf } from '../lib/types'
+import { confidenceStatusLabel, evidenceSourceLabel, relationTypeLabel } from '../lib/labels'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -52,7 +53,7 @@ export function Audit() {
             {data.byStatus.map((s) => (
               <div key={s.status}>
                 <div className="mb-1 flex items-center justify-between" style={{ fontFamily: mono, fontSize: 11 }}>
-                  <span style={{ color: sc(s.status) }}>{s.status}</span>
+                  <span style={{ color: sc(s.status) }}>{confidenceStatusLabel(s.status, t)}</span>
                   <span style={{ color: 'var(--nx-text-muted)' }}>{s.count} · avg {s.avgConfidence}%</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-sm" style={{ background: 'var(--nx-surface)' }}>
@@ -92,10 +93,10 @@ export function Audit() {
             {data.ledger.map((e, idx) => (
               <tr key={idx} className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
                 <td className="px-4 py-2.5" style={{ fontSize: 13, color: CYAN_T }}>{e.source}</td>
-                <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{e.type}</td>
+                <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{relationTypeLabel(e.type, t)}</td>
                 <td className="px-4 py-2.5" style={{ fontSize: 13, color: CYAN_T }}>{e.target}</td>
                 <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: sc(e.status) }}>{e.confidence}%</td>
-                <td className="px-4 py-2.5"><span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: sc(e.status), background: `${sc(e.status)}18` }}>{e.status}</span></td>
+                <td className="px-4 py-2.5"><span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: sc(e.status), background: `${sc(e.status)}18` }}>{confidenceStatusLabel(e.status, t)}</span></td>
                 <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{e.sourceSystem}</td>
               </tr>
             ))}
@@ -106,17 +107,6 @@ export function Audit() {
   )
 }
 
-// Libellés lisibles des sources de preuve (l'API renvoie l'identifiant technique).
-const SOURCE_LABEL: Record<EvidenceSourceName, [string, string]> = {
-  HumanValidation: ['Validation humaine', 'Human validation'],
-  Observation: ['Observation technique', 'Technical observation'],
-  RestApi: ['API interrogée en direct', 'Live API'],
-  DeterministicInference: ['Déduction du moteur', 'Engine deduction'],
-  Import: ['Fichier importé', 'Imported file'],
-  Declared: ['Saisie manuelle', 'Manually declared'],
-  Document: ['Document', 'Document'],
-  AiInference: ['Proposée par l’IA', 'AI-proposed'],
-}
 
 /**
  * Une dépendance à revoir : d'où vient son score (décomposition des preuves) et
@@ -149,14 +139,14 @@ function ReviewRow({ row }: { row: AuditLowConf }) {
       <div className="flex items-center justify-between">
         <span style={{ fontSize: 13, color: 'var(--nx-text)' }}>
           <span style={{ color: CYAN_T }}>{row.source}</span>{' '}
-          <span style={{ color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 11 }}>{row.type}</span>{' '}
+          <span style={{ color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 11 }}>{relationTypeLabel(row.type, t)}</span>{' '}
           <span style={{ color: CYAN_T }}>{row.target}</span>
         </span>
         <span style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: sc(row.status) }}>{row.confidence}%</span>
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-2" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>
-        <span className="rounded px-1.5 py-0.5" style={{ color: sc(row.status), background: `${sc(row.status)}18` }}>{row.status}</span>
+        <span className="rounded px-1.5 py-0.5" style={{ color: sc(row.status), background: `${sc(row.status)}18` }}>{confidenceStatusLabel(row.status, t)}</span>
         <span>src: {row.sourceSystem}</span>
         {row.evidenceCount > 0 && <span>· {row.evidenceCount} {t('preuve(s)', 'evidence')}</span>}
       </div>
@@ -197,7 +187,7 @@ function ReviewRow({ row }: { row: AuditLowConf }) {
           {explain.data && explain.data.contributions.map((c, i) => (
             <div key={i} className="flex flex-col gap-0.5 py-1" style={{ borderTop: i > 0 ? '1px solid var(--nx-border)' : undefined }}>
               <div className="flex items-baseline justify-between gap-2" style={{ fontFamily: mono, fontSize: 11 }}>
-                <span style={{ color: 'var(--nx-text)' }}>{t(...(SOURCE_LABEL[c.source] ?? [c.source, c.source]))}</span>
+                <span style={{ color: 'var(--nx-text)' }}>{evidenceSourceLabel(c.source, t)}</span>
                 <span style={{ color: 'var(--nx-text-muted)' }}>
                   {t('fiab.', 'rel.')} {pct(c.weight)} × {t('fraîch.', 'fresh.')} {pct(c.freshness)} → <b style={{ color: CYAN_T }}>{pct(c.scoreAfter)}</b>
                 </span>

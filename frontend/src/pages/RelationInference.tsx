@@ -5,6 +5,7 @@ import { Sparkles, GitBranch, ArrowRight, Check, Settings } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { ProposedRelation } from '../lib/types'
+import { relationTypeLabel } from '../lib/labels'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -115,7 +116,7 @@ export function RelationInference() {
                   <div className="flex flex-wrap items-center gap-1.5" style={{ fontSize: 13 }}>
                     <span style={{ color: 'var(--nx-text)' }}>{p.source}</span>
                     <span style={{ fontSize: 10, color: 'var(--nx-outline)' }}>{p.sourceType}</span>
-                    <span className="rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, background: 'var(--nx-surface-container)', color: CYAN }}>{p.relationType}</span>
+                    <span className="rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, background: 'var(--nx-surface-container)', color: CYAN }}>{relationTypeLabel(p.relationType, t)}</span>
                     <ArrowRight size={12} style={{ color: 'var(--nx-outline)' }} />
                     <span style={{ color: 'var(--nx-text)' }}>{p.target}</span>
                     <span style={{ fontSize: 10, color: 'var(--nx-outline)' }}>{p.targetType}</span>
