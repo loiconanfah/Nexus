@@ -33,7 +33,11 @@ public sealed record ImpactAnalysis(
     IReadOnlyList<string> Mitigations,
     string Narrative,
     bool AiUsed,
-    IReadOnlyList<FuzzyMatch> Alternatives);
+    IReadOnlyList<FuzzyMatch> Alternatives,
+    /// <summary>Solidité des preuves sur lesquelles repose ce chiffrage.</summary>
+    CascadeEvidence? Evidence = null,
+    /// <summary>Phrase prête à afficher résumant la qualité des preuves.</summary>
+    string? EvidenceSummary = null);
 
 /// <summary>
 /// Intelligence d'impact transversale — LA couche qui relie une question métier en
@@ -48,6 +52,7 @@ public sealed class ImpactIntelligenceService(
     IDependencyQueries queries,
     PropagationEngine propagation,
     ImpactConfigStore impactConfig,
+    IGraphRepository graph,
     IChatCompletion chat)
 {
     private const string Currency = "CAD";
@@ -105,7 +110,16 @@ public sealed class ImpactIntelligenceService(
             .Select(s => new DangerousDependency(s.Entity.Id, s.Entity.Name, s.Entity.EntityType, s.DirectDependents))
             .ToList();
 
-        // 7. Récit + mitigations : IA si configurée, sinon repli déterministe.
+        // 7. Solidité des preuves : sur quoi repose réellement ce chiffrage ?
+        //    Les arêtes internes au périmètre affecté sont les chemins de
+        //    dépendance qui ont produit la cascade.
+        var scope = new HashSet<Guid>(affectedIds) { best.Id };
+        var allEdges = await graph.GetRelationsAsync(tenant, ct: ct);
+        var names = nodes.ToDictionary(n => n.Entity.Id, n => n.Entity.Name);
+        names[best.Id] = best.Name;
+        var cascadeEvidence = CascadeEvidenceAnalyzer.Analyze(scope, allEdges, names);
+
+        // 8. Récit + mitigations : IA si configurée, sinon repli déterministe.
         var (narrative, mitigations, aiUsed) = await NarrateAsync(
             best, scenario, prop.AffectedTotal, prop.AffectedByType, worst, expected, critical, dangerous, lang, ct);
 
@@ -114,7 +128,9 @@ public sealed class ImpactIntelligenceService(
             scenario.ToString(), prop.AffectedTotal, prop.MaxDepth, prop.AffectedByType,
             perHour, worst, expected, maxRecovery, Currency,
             critical, dangerous, mitigations, narrative, aiUsed,
-            matches.Skip(1).ToList());
+            matches.Skip(1).ToList(),
+            cascadeEvidence,
+            CascadeEvidenceAnalyzer.Summarize(cascadeEvidence, lang));
     }
 
     private static int MatchCriticality(IReadOnlyList<CriticalItem> critical, Guid id)

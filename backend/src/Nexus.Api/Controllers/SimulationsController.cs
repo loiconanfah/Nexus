@@ -20,6 +20,7 @@ public sealed class SimulationsController(
     ITenantProvider tenantProvider,
     PropagationEngine propagation,
     Nexus.Api.Impact.ImpactConfigStore impactConfig,
+    Nexus.Graph.IGraphRepository graph,
     IChatCompletion chat) : NexusController(tenantProvider)
 {
     /// <summary>Simule la défaillance d'un actif et renvoie la propagation + l'impact financier estimé.</summary>
@@ -57,8 +58,17 @@ public sealed class SimulationsController(
         var maxRecovery = nodes.Count == 0 ? 0 : nodes.Max(n => n.rtoHours);
         var avgProbability = nodes.Count == 0 ? 0 : Math.Round(nodes.Average(n => n.probability), 2);
 
+        // Sur quoi repose ce chiffrage ? Les arêtes internes au périmètre affecté
+        // sont les chemins de dépendance ayant produit la cascade.
+        var scope = new HashSet<Guid>(result.Affected.Select(a => a.Entity.Id)) { request.AssetId };
+        var allEdges = await graph.GetRelationsAsync(tenant, ct: ct);
+        var names = result.Affected.ToDictionary(a => a.Entity.Id, a => a.Entity.Name);
+        var cascadeEvidence = CascadeEvidenceAnalyzer.Analyze(scope, allEdges, names);
+
         return Ok(new
         {
+            evidence = cascadeEvidence,
+            evidenceSummary = CascadeEvidenceAnalyzer.Summarize(cascadeEvidence, "fr"),
             result.AssetId,
             result.Scenario,
             result.MaxDepth,
