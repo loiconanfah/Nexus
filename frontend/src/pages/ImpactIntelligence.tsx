@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Waypoints, ArrowRight, AlertTriangle, Zap, ShieldAlert, Sparkles, TrendingDown } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { EvidenceBanner } from '../components/EvidenceBanner'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -114,6 +115,9 @@ export function ImpactIntelligence() {
             <Kpi label={t('Pire cas', 'Worst case')} value={money(data.worstCaseImpact)} sub={`${t('rétab.', 'recovery')} ${data.maxRecoveryHours}h`} icon={<TrendingDown size={15} />} accent />
             <Kpi label={t('Attendu (pondéré)', 'Expected (weighted)')} value={money(data.expectedImpact)} sub={data.currency} icon={<TrendingDown size={15} />} />
           </div>
+
+          {/* Sur quoi repose ce chiffrage */}
+          {data.evidence && <EvidenceBanner evidence={data.evidence} summary={data.evidenceSummary} />}
 
           {/* Répartition par type */}
           {Object.keys(data.affectedByType).length > 0 && (

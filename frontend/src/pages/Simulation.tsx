@@ -14,6 +14,7 @@ import type { SimAction, SimCascade } from '../components/Graph3D'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { BlastNode, PropagationResult, ScenarioType, SimExplainPayload } from '../lib/types'
+import { EvidenceBanner } from '../components/EvidenceBanner'
 import { Sparkles } from 'lucide-react'
 
 /** Agrège les KPIs d'un scénario à partir d'une liste de nœuds affectés. */
@@ -474,6 +475,9 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
           <MiniKpi label={t('Probabilité', 'Probability')} value={`${Math.round(r.avgProbability * 100)}`} sub="%" />
         </div>
       </div>
+
+      {/* Sur quoi repose ce chiffrage */}
+      {r.evidence && <EvidenceBanner evidence={r.evidence} summary={r.evidenceSummary} />}
 
       {/* Directs / indirects / épargnés */}
       <div className="grid grid-cols-3 gap-2">

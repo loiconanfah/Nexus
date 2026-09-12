@@ -101,6 +101,7 @@ public sealed class AuditController(
             .OrderBy(e => e.Confidence)
             .Select(e => new
             {
+                id = e.Id,
                 source = Name(e.Source),
                 target = Name(e.Target),
                 type = e.Type,
@@ -108,6 +109,7 @@ public sealed class AuditController(
                 status = e.Status,
                 sourceSystem = e.SourceSystem ?? "—",
                 evidence = e.Evidence ?? "No corroborating evidence recorded.",
+                evidenceCount = e.Evidences?.Count ?? 0,
             })
             .ToList();
 
@@ -115,12 +117,14 @@ public sealed class AuditController(
             .OrderByDescending(e => e.Confidence)
             .Select(e => new
             {
+                id = e.Id,
                 source = Name(e.Source),
                 target = Name(e.Target),
                 type = e.Type,
                 confidence = (int)Math.Round(100 * e.Confidence),
                 status = e.Status,
                 sourceSystem = e.SourceSystem ?? "—",
+                evidenceCount = e.Evidences?.Count ?? 0,
             })
             .ToList();
 

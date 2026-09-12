@@ -96,6 +96,9 @@ export interface PropagationResult {
   avgProbability: number
   currency: string
   nodeDetails: NodeImpact[]
+  /** Solidité des preuves soutenant la cascade (Evidence Engine). */
+  evidence?: CascadeEvidence | null
+  evidenceSummary?: string | null
 }
 export interface NodeImpact {
   id: string
@@ -238,8 +241,54 @@ export interface ActionBoard {
 }
 
 export interface AuditStatusRow { status: string; count: number; avgConfidence: number }
-export interface AuditLowConf { source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string; evidence: string }
-export interface AuditLedgerRow { source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string }
+export interface AuditLowConf { id: string; source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string; evidence: string; evidenceCount: number }
+export interface AuditLedgerRow { id: string; source: string; target: string; type: string; confidence: number; status: string; sourceSystem: string; evidenceCount: number }
+
+// ── Evidence Engine ──
+/** Origine d'une preuve, telle que sérialisée par l'API. */
+export type EvidenceSourceName =
+  | 'HumanValidation' | 'Observation' | 'RestApi' | 'DeterministicInference'
+  | 'Import' | 'Declared' | 'Document' | 'AiInference'
+
+export interface ConfidenceContribution {
+  source: EvidenceSourceName
+  observation: string
+  collectedAt: string
+  weight: number
+  freshness: number
+  effective: number
+  scoreAfter: number
+}
+export interface ConfidenceExplain {
+  id: string
+  type: string
+  storedConfidence: number
+  confidence: number
+  status: string
+  contributions: ConfidenceContribution[]
+}
+export interface VerifyResult {
+  confidence: number
+  status: string
+  contributions: ConfidenceContribution[]
+}
+
+export type EvidenceQuality = 'Solid' | 'Moderate' | 'Fragile'
+export interface WeakLink {
+  id: string; source: string; target: string; type: string
+  confidence: number; status: string; topEvidence: string | null
+}
+export interface CascadeEvidence {
+  relationsTotal: number
+  verified: number
+  solid: number
+  weak: number
+  unvalidated: number
+  averageConfidence: number
+  weakestConfidence: number
+  quality: EvidenceQuality
+  weakestLinks: WeakLink[]
+}
 export interface AuditData {
   summary: { totalDependencies: number; verified: number; verifiedPercent: number; undocumented: number; avgConfidence: number }
   byStatus: AuditStatusRow[]
@@ -365,6 +414,10 @@ export interface ImpactAnalysis {
   narrative: string
   aiUsed: boolean
   alternatives: FuzzyMatch[]
+  /** Solidité des preuves sur lesquelles repose ce chiffrage. */
+  evidence?: CascadeEvidence | null
+  /** Phrase prête à afficher résumant la qualité des preuves. */
+  evidenceSummary?: string | null
 }
 
 export interface ProposedRelation {

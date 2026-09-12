@@ -16,6 +16,8 @@ import type {
   RestPreview,
   ScenarioSummary,
   AuditData,
+  ConfidenceExplain,
+  VerifyResult,
   EntityRisk,
   ExecutiveReport,
   ExtractedEntity,
@@ -120,6 +122,14 @@ export const api = {
   captureSnapshot: () => fetch(`${BASE}/history/snapshot`, { method: 'POST', headers: headers(false) }).then(handle<Snapshot>),
 
   audit: () => fetch(`${BASE}/audit`, { headers: headers(false) }).then(handle<AuditData>),
+
+  /** Décomposition explicable de la confiance d'une dépendance (d'où vient le score). */
+  explainRelationConfidence: (id: string) =>
+    fetch(`${BASE}/audit/relations/${id}/confidence`, { headers: headers(false) }).then(handle<ConfidenceExplain>),
+  /** Validation humaine : ajoute une preuve (n'écrase jamais les sources existantes). */
+  verifyRelation: (id: string, note?: string) =>
+    fetch(`${BASE}/audit/relations/${id}/verify`, { method: 'POST', headers: headers(), body: JSON.stringify({ note: note ?? null }) })
+      .then(handle<VerifyResult>),
 
   actions: () => fetch(`${BASE}/actions`, { headers: headers(false) }).then(handle<ActionBoard>),
 
