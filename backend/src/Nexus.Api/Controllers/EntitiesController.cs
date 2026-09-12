@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Tenancy;
 using Nexus.Domain.Ontology;
 using Nexus.Graph;
@@ -29,6 +29,7 @@ public sealed class EntitiesController(
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         var deleted = await repository.DeleteEntityAsync(tenant, id, ct);
         return deleted ? NoContent() : NotFound(new { error = "entity_not_found" });
     }
@@ -46,6 +47,7 @@ public sealed class EntitiesController(
     public async Task<IActionResult> Decommission(Guid id, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         var ok = await repository.DecommissionEntityAsync(tenant, id, ct);
         return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
     }
@@ -55,6 +57,7 @@ public sealed class EntitiesController(
     public async Task<IActionResult> Reactivate(Guid id, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         var ok = await repository.ReactivateEntityAsync(tenant, id, ct);
         return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
     }
@@ -66,6 +69,7 @@ public sealed class EntitiesController(
     public async Task<IActionResult> SetCost(Guid id, [FromBody] SetCostRequest req, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
         var ok = await repository.SetCostPerHourAsync(tenant, id, req?.CostPerHour, ct);
         return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
     }

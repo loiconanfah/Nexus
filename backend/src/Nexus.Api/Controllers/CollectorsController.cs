@@ -81,6 +81,12 @@ public sealed class CollectorsController(
         if (req is null || string.IsNullOrWhiteSpace(req.Url) || req.Profile is null)
             return BadRequest(new { error = "url_and_profile_required" });
 
+        // SÉCURITÉ : sans ce contrôle, l'administrateur d'un espace pouvait confier
+        // une collecte à la sonde d'un AUTRE client, qui aurait alors interrogé une
+        // URL arbitraire À L'INTÉRIEUR du réseau de ce client.
+        if (!await store.OwnsCollectorAsync(tenant, id, ct))
+            return NotFound(new { error = "collector_not_found" });
+
         var jobId = await store.EnqueueJobAsync(
             tenant, id, "rest", JsonSerializer.Serialize(req, Json),
             req.IntervalMinutes, scheduledFor: null, ct);
@@ -176,20 +182,24 @@ public sealed class CollectorsController(
         if (me is null) return Unauthorized(new { error = "invalid_collector_key" });
         await store.TouchAsync(me.Id, null, ct);
 
-        if (!string.IsNullOrWhiteSpace(req?.Error))
-        {
-            await store.CompleteJobAsync(jobId, "failed", req!.Error, 0, 0, ct);
-            return Ok(new { ok = false, status = "failed" });
-        }
-
+        // SÉCURITÉ : l'appartenance de la tâche est résolue AVANT toute écriture.
+        // Auparavant le chemin d'erreur écrivait d'abord, ce qui permettait au
+        // porteur de n'importe quelle clé valide de clore la tâche d'un autre
+        // espace client et d'y injecter un message.
         var jobs = await store.ListJobsAsync(me.TenantId, 500, ct);
         var job = jobs.FirstOrDefault(j => j.Id == jobId && j.CollectorId == me.Id);
         if (job is null) return NotFound(new { error = "job_not_found" });
 
+        if (!string.IsNullOrWhiteSpace(req?.Error))
+        {
+            await store.CompleteJobAsync(me.TenantId, me.Id, jobId, "failed", req!.Error, 0, 0, ct);
+            return Ok(new { ok = false, status = "failed" });
+        }
+
         var spec = JsonSerializer.Deserialize<RestJobRequest>(job.RequestJson, Json);
         if (spec?.Profile is null)
         {
-            await store.CompleteJobAsync(jobId, "failed", "profil de mapping illisible", 0, 0, ct);
+            await store.CompleteJobAsync(me.TenantId, me.Id, jobId, "failed", "profil de mapping illisible", 0, 0, ct);
             return BadRequest(new { error = "bad_job_profile" });
         }
 
@@ -208,17 +218,17 @@ public sealed class CollectorsController(
             var result = await pipeline.ExecuteAsync(me.TenantId, new InMemoryConnector(dataset, records), profile, ct: ct);
             if (result.IsFailure)
             {
-                await store.CompleteJobAsync(jobId, "failed", result.Error.Message, 0, 0, ct);
+                await store.CompleteJobAsync(me.TenantId, me.Id, jobId, "failed", result.Error.Message, 0, 0, ct);
                 return ToProblem(result.Error);
             }
 
-            await store.CompleteJobAsync(jobId, "done", null,
+            await store.CompleteJobAsync(me.TenantId, me.Id, jobId, "done", null,
                 result.Value.EntitiesCreated, result.Value.RelationsCreated, ct);
             return Ok(new { ok = true, status = "done", result.Value.EntitiesCreated, result.Value.RelationsCreated });
         }
         catch (Exception ex)
         {
-            await store.CompleteJobAsync(jobId, "failed", ex.Message, 0, 0, ct);
+            await store.CompleteJobAsync(me.TenantId, me.Id, jobId, "failed", ex.Message, 0, 0, ct);
             throw;
         }
     }

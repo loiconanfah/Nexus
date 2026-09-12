@@ -111,7 +111,25 @@ public sealed class AuthController(
                      : Guid.Empty;
 
         var admins = _entra.AdminEmails.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var role = admins.Contains(email, StringComparer.OrdinalIgnoreCase) ? "admin" : "user";
+        var role = admins.Contains(email, StringComparer.OrdinalIgnoreCase) ? "admin" : "member";
+
+        // Provisionnement : l'utilisateur SSO est ENREGISTRÉ localement. Sans cela
+        // il resterait invisible de la gestion des comptes, et le contrôle de
+        // révocation (qui exige que la base fasse foi) le déconnecterait.
+        // Le hachage est vide : impossible de se connecter par mot de passe
+        // (PasswordHasher.Verify rejette un format sans « sel.hash »).
+        var existing = await users.FindAsync(email, ct);
+        if (existing is null)
+        {
+            await users.AddAsync(new NexusUser(email, "", tenant, role), ct);
+        }
+        else
+        {
+            // Compte déjà connu : la base fait foi (un administrateur a pu changer
+            // son rôle ou son espace de travail depuis Admin → Comptes & rôles).
+            tenant = existing.TenantId;
+            role = existing.Role;
+        }
 
         var user = new NexusUser(email, "", tenant, role);
         var (token, expires) = tokens.Issue(user);

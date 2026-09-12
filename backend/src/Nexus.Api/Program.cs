@@ -256,6 +256,39 @@ app.UseRateLimiter();
 app.UseHttpsRedirection();
 app.UseCors("nexus");
 app.UseAuthentication();
+
+// ── Révocation effective ────────────────────────────────────────────────────
+// Le rôle et le tenant voyagent dans le jeton, valable 8 h. Sans ce contrôle,
+// retirer un compte ou rétrograder un administrateur restait SANS EFFET jusqu'à
+// l'expiration : la personne conservait ses accès. On confronte donc chaque
+// requête authentifiée à la base, qui fait foi.
+app.Use(async (ctx, next) =>
+{
+    var email = ctx.User?.FindFirst("email")?.Value;
+    if (ctx.User?.Identity?.IsAuthenticated == true && !string.IsNullOrWhiteSpace(email))
+    {
+        var store = ctx.RequestServices.GetRequiredService<Nexus.Api.Auth.PgUserStore>();
+        var current = await store.FindAsync(email, ctx.RequestAborted);
+        if (current is null)
+        {
+            // Compte retiré de l'espace de travail : l'accès cesse immédiatement.
+            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await ctx.Response.WriteAsJsonAsync(new { error = "account_revoked" }, ctx.RequestAborted);
+            return;
+        }
+
+        // Le rôle et le tenant de la BASE priment sur ceux du jeton : une
+        // rétrogradation prend effet à la requête suivante.
+        var claims = ctx.User.Claims.Where(c => c.Type is not ("role" or "tenant")).ToList();
+        claims.Add(new System.Security.Claims.Claim("role", current.Role));
+        claims.Add(new System.Security.Claims.Claim("tenant", current.TenantId.ToString()));
+        ctx.User = new System.Security.Claims.ClaimsPrincipal(
+            new System.Security.Claims.ClaimsIdentity(claims, ctx.User.Identity!.AuthenticationType));
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
 app.MapControllers();
 

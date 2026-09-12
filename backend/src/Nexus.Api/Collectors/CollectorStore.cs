@@ -196,21 +196,36 @@ public sealed class CollectorStore(NexusDbContext db)
     /// suivante. La récurrence survit donc aux redémarrages du cloud comme de la
     /// sonde : il n'y a aucun ordonnanceur à surveiller.
     /// </summary>
-    public async Task CompleteJobAsync(Guid jobId, string status, string? error, int entities, int relations, CancellationToken ct)
+    /// <summary>
+    /// Clôt une collecte et, si elle est récurrente, inscrit d'office la suivante.
+    ///
+    /// SÉCURITÉ : l'écriture est bornée au tenant ET à la sonde propriétaires.
+    /// Sans ce bornage, le porteur de n'importe quelle clé de sonde valide
+    /// pourrait clore — et salir d'un message qu'il contrôle — une tâche
+    /// appartenant à un AUTRE espace client. Renvoie false si la tâche n'existe
+    /// pas ou n'appartient pas à cette sonde.
+    /// </summary>
+    public async Task<bool> CompleteJobAsync(
+        Guid tenantId, Guid collectorId, Guid jobId,
+        string status, string? error, int entities, int relations, CancellationToken ct)
     {
         var conn = await OpenAsync(ct);
+        int affected;
         await using (var cmd = conn.CreateCommand())
         {
             cmd.CommandText = """
                 UPDATE collector_jobs
                 SET status = @s, completed_at = now(), error = @e,
                     entities_created = @en, relations_created = @re
-                WHERE id = @id;
+                WHERE id = @id AND tenant_id = @t AND collector_id = @c;
                 """;
-            P(cmd, "@id", jobId); P(cmd, "@s", status); P(cmd, "@e", error);
+            P(cmd, "@id", jobId); P(cmd, "@t", tenantId); P(cmd, "@c", collectorId);
+            P(cmd, "@s", status); P(cmd, "@e", error);
             P(cmd, "@en", entities); P(cmd, "@re", relations);
-            await cmd.ExecuteNonQueryAsync(ct);
+            affected = await cmd.ExecuteNonQueryAsync(ct);
         }
+
+        if (affected == 0) return false;
 
         await using (var cmd = conn.CreateCommand())
         {
@@ -219,16 +234,28 @@ public sealed class CollectorStore(NexusDbContext db)
                 SELECT gen_random_uuid(), tenant_id, collector_id, kind, request_json, 'pending', now(),
                        now() + make_interval(mins => interval_minutes), interval_minutes
                 FROM collector_jobs
-                WHERE id = @id AND interval_minutes IS NOT NULL
+                WHERE id = @id AND tenant_id = @t AND collector_id = @c AND interval_minutes IS NOT NULL
                   AND NOT EXISTS (
                       SELECT 1 FROM collector_jobs n
                       WHERE n.collector_id = collector_jobs.collector_id
                         AND n.request_json = collector_jobs.request_json
                         AND n.status = 'pending');
                 """;
-            P(cmd, "@id", jobId);
+            P(cmd, "@id", jobId); P(cmd, "@t", tenantId); P(cmd, "@c", collectorId);
             await cmd.ExecuteNonQueryAsync(ct);
         }
+
+        return true;
+    }
+
+    /// <summary>Vrai si la sonde existe ET appartient à cet espace de travail.</summary>
+    public async Task<bool> OwnsCollectorAsync(Guid tenant, Guid collectorId, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT 1 FROM collectors WHERE id = @c AND tenant_id = @t;";
+        P(cmd, "@c", collectorId); P(cmd, "@t", tenant);
+        return await cmd.ExecuteScalarAsync(ct) is not null;
     }
 
     /// <summary>Révoque une sonde : sa clé cesse immédiatement de fonctionner et ses collectes sont retirées.</summary>
