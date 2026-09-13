@@ -358,22 +358,77 @@ export function Simulation() {
         <div className="absolute right-3 top-14 z-40 rounded-sm border px-3 py-2" style={{ borderColor: '#ffb4ab55', color: ERR, fontSize: 12, background: 'var(--nx-panel)' }}>{(run.error as Error).message}</div>
       )}
 
-      {/* Barre d'actions flottante : 10 perturbations à appliquer sur le nœud ciblé */}
+      {/* Perturbations à appliquer sur le nœud ciblé.
+          C'était une rangée d'icônes nues en bas de l'écran : les noms n'étaient
+          affichés qu'en plein écran, si bien qu'on arrivait devant quatorze
+          pastilles colorées sans savoir ce que chacune déclenchait. Présentées
+          comme le panneau Scénario, en face, elles se lisent d'emblée. */}
       {origin && (
-        <div className="absolute bottom-4 left-1/2 z-30 flex max-w-[92%] -translate-x-1/2 flex-col items-center gap-1.5 rounded-lg border px-3 py-2 backdrop-blur"
-          style={{ background: 'color-mix(in srgb, var(--nx-panel) 90%, transparent)', borderColor: 'var(--nx-border)' }}>
-          <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>
-            {t('Cible', 'Target')} : <span style={{ color: 'var(--nx-text)' }}>{origin.name}</span>
-            {run.isPending && <span style={{ color: CYAN }}> · {t('propagation…', 'propagating…')}</span>}
-          </span>
-          <div className="flex max-w-[860px] flex-wrap justify-center gap-1.5">
-            {ACTIONS.map((a) => (
-              <ActionBtn key={a.key} onClick={() => launch(a.key)} busy={run.isPending} showLabel={focus}
-                icon={<a.icon size={15} />} label={t(a.fr, a.en)} color={a.color} active={actionRef.current === a.key && !!modeled} />
-            ))}
+        <DraggablePanel title={t('Que voulez-vous simuler ?', 'What do you want to simulate?')} side="right" top={12} width={270}>
+          <div className="flex flex-col gap-2 p-3">
+            <div className="rounded-sm border px-2.5 py-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+              <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
+                {t('Sur cet élément', 'On this element')}
+              </div>
+              <div className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }} title={origin.name}>{origin.name}</div>
+              {run.isPending && (
+                <div style={{ fontFamily: mono, fontSize: 10.5, color: CYAN }}>{t('propagation…', 'propagating…')}</div>
+              )}
+            </div>
+
+            <ActionGroup label={t('Pannes et incidents', 'Outages and incidents')}
+              actions={ACTIONS.filter((a) => !AI_ACTIONS.has(a.key))}
+              onLaunch={launch} busy={run.isPending} current={actionRef.current} modeled={!!modeled} t={t} />
+
+            <ActionGroup label={t('Dépendances à l’IA', 'AI dependencies')}
+              actions={ACTIONS.filter((a) => AI_ACTIONS.has(a.key))}
+              onLaunch={launch} busy={run.isPending} current={actionRef.current} modeled={!!modeled} t={t} />
           </div>
-        </div>
+        </DraggablePanel>
       )}
+    </div>
+  )
+}
+
+/** Les quatre perturbations propres à la couche IA, séparées des pannes
+ *  classiques : ce ne sont pas les mêmes interlocuteurs qui les explorent. */
+const AI_ACTIONS = new Set<SimAction>(['model-down', 'model-wrong', 'ai-provider', 'agent-rogue'])
+
+/** Un groupe de perturbations, chacune nommée en clair. */
+function ActionGroup({ label, actions, onLaunch, busy, current, modeled, t }: {
+  label: string
+  actions: typeof ACTIONS
+  onLaunch: (k: SimAction) => void
+  busy: boolean
+  current: SimAction | null
+  modeled: boolean
+  t: (fr: string, en: string) => string
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
+        {label}
+      </span>
+      {actions.map((a) => {
+        const active = current === a.key && modeled
+        return (
+          <button
+            key={a.key}
+            onClick={() => onLaunch(a.key)}
+            disabled={busy}
+            className="flex items-center gap-2.5 rounded-sm border px-2.5 py-1.5 text-left transition-all hover:brightness-125 disabled:opacity-50"
+            style={{
+              borderColor: active ? a.color : 'var(--nx-border)',
+              background: active ? `color-mix(in srgb, ${a.color} 16%, transparent)` : 'transparent',
+            }}
+          >
+            <a.icon size={14} style={{ color: a.color, flexShrink: 0 }} />
+            <span className="min-w-0 flex-1 truncate" style={{ fontSize: 12.5, color: active ? a.color : 'var(--nx-text)' }}>
+              {t(a.fr, a.en)}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -600,23 +655,6 @@ function critColorSim(c: number): string {
 }
 
 /* ---------- primitives ---------- */
-function ActionBtn({ onClick, busy, icon, label, color, active, showLabel }: { onClick: () => void; busy: boolean; icon: React.ReactNode; label: string; color: string; active?: boolean; showLabel?: boolean }) {
-  return (
-    <button
-      onClick={onClick} disabled={busy} title={label} aria-label={label}
-      className="flex h-9 items-center gap-1.5 rounded-md border px-2 transition-all hover:brightness-125 disabled:opacity-50"
-      style={{
-        borderColor: active ? color : `color-mix(in srgb, ${color} 45%, transparent)`,
-        color, background: `color-mix(in srgb, ${color} ${active ? 22 : 10}%, transparent)`,
-        boxShadow: active ? `0 0 10px color-mix(in srgb, ${color} 45%, transparent)` : 'none',
-      }}
-    >
-      {icon}
-      {showLabel && <span style={{ fontFamily: mono, fontSize: 11, whiteSpace: 'nowrap' }}>{label}</span>}
-    </button>
-  )
-}
-
 function Select({ label, value, onChange, options, danger }: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; danger?: boolean }) {
   return (
     <div className="flex flex-1 flex-col gap-1.5">

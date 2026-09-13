@@ -92,8 +92,56 @@ const STEPS: Step[] = [
     path: '/dashboard', target: 'page', place: 'top',
     title: ['Votre tableau de bord quotidien', 'Your daily dashboard'],
     body: [
-      'L’état de santé, les risques ouverts et la topologie en un écran. C’est ici qu’on revient chaque matin, une fois la carte en place.',
-      'Health, open risks and topology on one screen. This is where you come back each morning, once the map is in place.',
+      'Vos activités debout, chacune nommée : la hauteur dit ce qu’elle mobilise, la couleur combien de points uniques de défaillance elle traverse. C’est ici qu’on revient chaque matin.',
+      'Your activities standing up, each named: height says what it mobilises, colour how many single points of failure it crosses. This is where you come back each morning.',
+    ],
+  },
+  {
+    path: '/simulations', target: 'page', place: 'top',
+    title: ['Faire tomber un élément, pour voir', 'Take something down, to see'],
+    body: [
+      'Choisissez une cible à gauche, puis la perturbation à droite — panne électrique, coupure réseau, cyberattaque, départ d’un employé clé. La cascade se propage sous vos yeux, sans que rien ne casse pour de vrai.',
+      'Pick a target on the left, then the disturbance on the right — power loss, network outage, cyberattack, key employee leaving. The cascade propagates before your eyes, with nothing actually breaking.',
+    ],
+  },
+  {
+    path: '/attacks', target: 'page', place: 'top',
+    title: ['Suivre une attaque de bout en bout', 'Follow an attack end to end'],
+    body: [
+      'Une intrusion ne s’arrête pas au premier poste : elle progresse. On voit la chaîne complète, l’impact de chaque étape, et ce que chaque contre-mesure permettrait d’éviter.',
+      'An intrusion does not stop at the first machine: it progresses. You see the full chain, the impact of each step, and what each countermeasure would avoid.',
+    ],
+  },
+  {
+    path: '/suppliers', target: 'page', place: 'top',
+    title: ['Vos fournisseurs, et ce qui en dépend', 'Your suppliers, and what depends on them'],
+    body: [
+      'Pour chaque fournisseur : ce qu’il soutient, ce qui est critique, et s’il existe une alternative. C’est la page qui révèle les risques de concentration.',
+      'For each supplier: what it supports, what is critical, and whether an alternative exists. This is the page that reveals concentration risk.',
+    ],
+  },
+  {
+    path: '/human', target: 'page', place: 'top',
+    title: ['Le savoir détenu par une seule personne', 'Knowledge held by one person'],
+    body: [
+      'Une dépendance n’est pas toujours une machine. Ici, les savoirs critiques qu’une seule personne détient — et pour lesquels personne ne peut prendre le relais.',
+      'A dependency is not always a machine. Here: the critical knowledge one person alone holds — with nobody able to take over.',
+    ],
+  },
+  {
+    path: '/decision', target: 'page', place: 'top',
+    title: ['Tester une décision avant de la prendre', 'Test a decision before making it'],
+    body: [
+      'Changer de fournisseur, externaliser, fermer un site : décrivez-le en une phrase. Le modèle d’entreprise — vos revenus, coûts et effectifs, que vous renseignez une fois — convertit la conséquence opérationnelle en dollars.',
+      'Switching supplier, outsourcing, closing a site: describe it in one sentence. The enterprise model — your revenue, costs and headcount, filled in once — converts the operational consequence into dollars.',
+    ],
+  },
+  {
+    path: '/reports', target: 'page', place: 'top',
+    title: ['Le rapport pour la direction', 'The report for leadership'],
+    body: [
+      'Un document prêt à présenter, qui reprend les chiffres du moteur — pas des captures recollées à la main la veille du comité.',
+      'A document ready to present, carrying the engine’s own figures — not screenshots pasted together the night before the committee.',
     ],
   },
   {

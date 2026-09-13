@@ -14,6 +14,22 @@ import type { GraphEntityRecord } from '../lib/types'
 const CYAN = '#00e5ff'
 const ERR = '#d15b54'
 
+/**
+ * Distance de caméra qui fait tenir toute la sphère dans le cadre.
+ *
+ * La caméra était placée à une distance FIXE (z = 640) alors que le rayon du
+ * nuage croît avec le parc : à 119 actifs il atteint 618, et l'on arrivait donc
+ * le nez dans le graphe, sans jamais voir l'ensemble. On résout la distance à
+ * partir du champ de vision, avec une marge pour les étiquettes.
+ */
+const LAYOUT_RADIUS = (total: number) => 160 + Math.sqrt(Math.max(1, total)) * 42
+
+function frameDistance(total: number, fovDeg = 52): number {
+  const r = LAYOUT_RADIUS(total)
+  const halfFov = (fovDeg * Math.PI) / 180 / 2
+  return (r / Math.tan(halfFov)) * 1.32
+}
+
 function bandColor(crit: number): string {
   if (crit >= 80) return '#d15b54'
   if (crit >= 60) return '#c69a4e'
@@ -181,6 +197,8 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const dragRef = useRef<DragControls | null>(null)
   const domRef = useRef<HTMLElement | null>(null)
   const nodeMeshesRef = useRef<THREE.Mesh[]>([])
+  /** Le cadrage initial n'a lieu qu'une fois : ensuite la caméra est à l'utilisateur. */
+  const framedRef = useRef(false)
   const edgeLinesRef = useRef<{ line: THREE.Line; a: THREE.Mesh; b: THREE.Mesh }[]>([])
   const onSelectRef = useRef(onSelect); onSelectRef.current = onSelect
   const queryRef = useRef(query); queryRef.current = query
@@ -319,6 +337,12 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       dragRef.current?.dispose(); orbit.dispose(); renderer.dispose()
       scene.traverse((o) => disposeObject(o))
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement)
+      // Ce garde protège LA caméra créée ci-dessus ; si la scène est recréée
+      // (React monte deux fois en mode strict), la nouvelle caméra n'a pas
+      // encore été cadrée et doit pouvoir l'être. Sans cette remise à zéro, le
+      // cadrage s'appliquait à une caméra déjà jetée — et la vue restait au
+      // plus près, quelle que soit la distance calculée.
+      framedRef.current = false
     }
   }, [])
 
@@ -336,7 +360,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
 
     // Rayon de la sphère selon le nombre de nœuds.
     const total = Math.max(1, nodes.length)
-    const radius = 160 + Math.sqrt(total) * 42
+    const radius = LAYOUT_RADIUS(total)
 
     nodes.forEach((n, k) => {
       const dir = fibSpherePoint(k, total)
@@ -379,6 +403,20 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     }
 
     scene.add(group)
+
+    // Cadrer sur l'ensemble dès l'affichage : c'est la vue d'ensemble qu'on
+    // veut voir en arrivant, pas un gros plan sur trois nœuds.
+    const cam = cameraRef.current
+    const orb = orbitRef.current
+    // On attend d'avoir de VRAIS nœuds : au premier rendu la liste est encore
+    // vide, et cadrer à ce moment-là figeait la caméra sur une sphère d'un seul
+    // point — la vue restait donc au plus près une fois les données arrivées.
+    if (cam && orb && !framedRef.current && nodes.length > 0) {
+      framedRef.current = true
+      cam.position.set(0, LAYOUT_RADIUS(total) * 0.18, frameDistance(total))
+      orb.target.set(0, 0, 0)
+      orb.update()
+    }
     nodeMeshesRef.current = meshes
     edgeLinesRef.current = lines
 
@@ -468,7 +506,13 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       {/* Contrôle : recentrer */}
       <div className="absolute right-4 top-4 z-20">
         <button
-          onClick={() => { const c = cameraRef.current, o = orbitRef.current; if (c && o) { c.position.set(0, 70, 640); o.target.set(0, 0, 0); o.update() } }}
+          onClick={() => {
+            const c = cameraRef.current, o = orbitRef.current
+            if (!c || !o) return
+            const total = Math.max(1, nodes.length)
+            c.position.set(0, LAYOUT_RADIUS(total) * 0.18, frameDistance(total))
+            o.target.set(0, 0, 0); o.update()
+          }}
           title={t('Recentrer', 'Reset view')} aria-label={t('Recentrer', 'Reset view')}
           className="flex h-8 w-8 items-center justify-center rounded-sm border transition-colors hover:brightness-125"
           style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)' }}>
