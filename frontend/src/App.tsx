@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { Layout } from './components/Layout'
+import { GuidedTour } from './components/GuidedTour'
 import { useLang } from './lib/i18n'
 import { Home } from './pages/Home'
 import { Dashboard } from './pages/Dashboard'
@@ -117,6 +118,7 @@ export default function App() {
         </>
       }
     >
+      <GuidedTour />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />

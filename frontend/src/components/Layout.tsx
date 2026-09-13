@@ -86,6 +86,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--nx-bg)', fontFamily: 'var(--font-inter)' }}>
       {/* ===== Sidebar ===== */}
       <nav
+        data-tour="nav"
         className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r px-2 py-4 transition-[width] duration-200 ease-in-out md:flex ${collapsed ? 'w-[68px]' : 'w-[280px]'}`}
         style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}
       >
@@ -158,7 +159,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
             <NavLink to="/admin" title={collapsed ? t('Admin & système', 'Admin & System') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent' })}>
               <Settings size={18} className="shrink-0" /> {!collapsed && t('Admin & système', 'Admin & System')}
             </NavLink>
-            <NavLink to="/help" title={collapsed ? t('Assistance', 'Support') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent' })}>
+            <NavLink to="/help" data-tour="nav-help" title={collapsed ? t('Assistance', 'Support') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent' })}>
               <HelpCircle size={18} className="shrink-0" /> {!collapsed && t('Assistance', 'Support')}
             </NavLink>
           </div>
@@ -188,7 +189,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
           </div>
         </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto p-6" style={{ color: 'var(--nx-text)' }}>{children}</main>
+        <main data-tour="page" className="min-h-0 flex-1 overflow-y-auto p-6" style={{ color: 'var(--nx-text)' }}>{children}</main>
       </div>
     </div>
   )
@@ -250,7 +251,7 @@ function CommandSearch({ inputRef }: { inputRef: React.RefObject<HTMLInputElemen
   }
 
   return (
-    <div className="relative hidden w-64 items-center sm:flex lg:w-96">
+    <div data-tour="search" className="relative hidden w-64 items-center sm:flex lg:w-96">
       <Search size={15} className="absolute left-3 z-10" style={{ color: 'var(--nx-text-muted)' }} />
       <input
         ref={inputRef}

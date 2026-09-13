@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import {
   BookOpen, Rocket, Boxes, LayoutGrid, Gauge, FlaskConical, Plug, FileText,
-  Bot, ShieldCheck, HelpCircle, Search,
+  Bot, ShieldCheck, HelpCircle, Search, Compass,
 } from 'lucide-react'
+import { startGuidedTour } from '../components/GuidedTour'
 import { useLang } from '../lib/i18n'
 
 const mono = 'var(--font-mono)'
@@ -316,6 +317,23 @@ export function Help() {
         <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
           {t('Tout ce qu’il faut savoir pour prendre Lenexux en main — concepts, modules, calcul du risque, sécurité.', 'Everything you need to get started with Lenexux — concepts, modules, risk computation, security.')}
         </p>
+      </div>
+
+      {/* Relancer la visite guidée */}
+      <div className="flex flex-wrap items-center gap-4 rounded-sm border px-5 py-4"
+        style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+        <Compass size={18} style={{ color: CYAN, flexShrink: 0 }} />
+        <div className="min-w-0 flex-1">
+          <p style={{ fontSize: 14, color: 'var(--nx-text)' }}>{t('La visite guidée', 'The guided tour')}</p>
+          <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+            {t('Neuf étapes à travers l’interface, en deux minutes. Rejouable autant de fois que vous voulez.',
+               'Nine steps through the interface, in two minutes. Replay it as often as you like.')}
+          </p>
+        </div>
+        <button onClick={startGuidedTour} className="flex items-center gap-2 rounded-sm px-4 py-2"
+          style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 11.5, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          {t('Revoir la visite', 'Replay the tour')}
+        </button>
       </div>
 
       {/* Recherche */}

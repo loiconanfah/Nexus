@@ -320,7 +320,7 @@ function Tutorial({ t, onGo }: { t: (fr: string, en: string) => string; onGo: (t
   const [open, setOpen] = useState<string | null>(FEATURES[0].to)
 
   return (
-    <section>
+    <section data-tour="tutorial">
       <div className="mb-4">
         <h2 style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>
           {t('Comment utiliser la plateforme', 'How to use the platform')}
