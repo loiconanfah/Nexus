@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { LogOut } from 'lucide-react'
 import { Layout } from './components/Layout'
 import { useLang } from './lib/i18n'
+import { Home } from './pages/Home'
 import { Dashboard } from './pages/Dashboard'
 import { Simulation } from './pages/Simulation'
 import { GraphExplorer } from './pages/GraphExplorer'
@@ -39,7 +40,8 @@ import { isAuthed, logout } from './lib/auth'
 // Titre affiché en en-tête de chaque écran. Bilingue et aligné sur le libellé
 // du menu : l'utilisateur retrouve en haut de page exactement ce qu'il a cliqué.
 const TITLES: Record<string, [string, string]> = {
-  '/': ['Vue d’ensemble', 'Overview'],
+  '/': ['Accueil', 'Home'],
+  '/dashboard': ['Tableau de bord', 'Dashboard'],
   '/enterprise': ['Modèle d’entreprise', 'Enterprise Model'],
   '/decision': ['Décision & simulation', 'Decision & Simulation'],
   '/impact': ['Impact transversal', 'Cross-system Impact'],
@@ -116,7 +118,8 @@ export default function App() {
       }
     >
       <Routes>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/enterprise" element={<EnterpriseModel />} />
         <Route path="/decision" element={<DecisionSim />} />
         <Route path="/impact" element={<ImpactIntelligence />} />

@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertOctagon, AlertTriangle, ArrowRight, DownloadCloud, HelpCircle, History, Network,
-  Package, PieChart, Radar, Compass, X,
+  Package, PieChart, Radar,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { getTenantId } from '../lib/tenant'
@@ -84,9 +84,6 @@ export function Dashboard() {
         <ResiliencePanel score={data.organizationHealthScore} />
       </section>
 
-      {/* Par où commencer */}
-      <GettingStarted data={data} onGo={navigate} />
-
       {/* Métriques */}
       <section className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
         <Metric label={t('Risques critiques', 'Critical risks')} value={data.criticalRiskCount} color={ERR} accent={ERR} icon={<AlertOctagon size={14} />} />
@@ -110,87 +107,6 @@ export function Dashboard() {
 }
 
 /* ---------- Sous-composants ---------- */
-
-/**
- * Le menu compte 25 entrées réparties en 6 groupes : sans point d'entrée, on ne
- * sait pas par où commencer. Ce parcours nomme les quatre premiers gestes, avec
- * les CHIFFRES RÉELS du tenant plutôt qu'un tutoriel générique — et se referme
- * définitivement une fois qu'on n'en a plus besoin.
- */
-const START_KEY = 'nexus.start.dismissed'
-
-function GettingStarted({ data, onGo }: { data: Overview; onGo: (to: string) => void }) {
-  const { t } = useLang()
-  const [hidden, setHidden] = useState(() => {
-    try { return localStorage.getItem(START_KEY) === '1' } catch { return false }
-  })
-  if (hidden) return null
-
-  function dismiss() {
-    try { localStorage.setItem(START_KEY, '1') } catch { /* ignore */ }
-    setHidden(true)
-  }
-
-  const steps: { to: string; n: string; title: string; body: string }[] = [
-    {
-      to: '/graph', n: '1',
-      title: t('Voir votre carte', 'See your map'),
-      body: t(`${data.entityCount} actifs et leurs liens, dans un graphe navigable.`,
-              `${data.entityCount} assets and their links, in a navigable graph.`),
-    },
-    {
-      to: '/risks', n: '2',
-      title: t('Trouver ce qui casse', 'Find what breaks'),
-      body: data.spofCount > 0
-        ? t(`${data.spofCount} point(s) unique(s) de défaillance déjà détecté(s).`,
-            `${data.spofCount} single point(s) of failure already detected.`)
-        : t('Le classement par risque, décomposé en six facteurs.', 'The risk ranking, broken into six factors.'),
-    },
-    {
-      to: '/impact', n: '3',
-      title: t('Chiffrer une panne', 'Quantify an outage'),
-      body: t('Posez la question en français : la cascade et le coût se calculent.',
-              'Ask in plain language: the cascade and the cost are computed.'),
-    },
-    {
-      to: '/audit', n: '4',
-      title: t('Solidifier vos données', 'Strengthen your data'),
-      body: data.unknownDependencyCount > 0
-        ? t(`${data.unknownDependencyCount} dépendance(s) non confirmée(s) à valider.`,
-            `${data.unknownDependencyCount} unconfirmed dependency(ies) to validate.`)
-        : t('Chaque lien expose sur quelles preuves il repose.', 'Every link shows what evidence it rests on.'),
-    },
-  ]
-
-  return (
-    <section className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-      <div className="flex items-center justify-between gap-4 border-b px-5 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-        <div className="flex items-center gap-2">
-          <Compass size={15} style={{ color: CYAN }} />
-          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
-            {t('Par où commencer', 'Where to start')}
-          </span>
-        </div>
-        <button onClick={dismiss} className="flex items-center gap-1 rounded-sm px-2 py-1"
-          style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)', border: '1px solid var(--nx-border)' }}>
-          <X size={12} /> {t('Ne plus afficher', 'Don’t show again')}
-        </button>
-      </div>
-      <div className="grid gap-px sm:grid-cols-2 lg:grid-cols-4" style={{ background: 'var(--nx-border)' }}>
-        {steps.map((s) => (
-          <button key={s.to} onClick={() => onGo(s.to)} className="group flex flex-col items-start p-5 text-left transition-colors"
-            style={{ background: 'var(--nx-surface-container)' }}>
-            <span style={{ fontFamily: geist, fontSize: 26, fontWeight: 300, color: 'var(--nx-outline)', lineHeight: 1 }}>{s.n}</span>
-            <span className="mt-3 flex items-center gap-1.5" style={{ fontSize: 14.5, color: 'var(--nx-text)', fontWeight: 500 }}>
-              {s.title} <ArrowRight size={13} style={{ color: CYAN }} />
-            </span>
-            <span className="mt-1.5" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{s.body}</span>
-          </button>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 function ResiliencePanel({ score }: { score: number }) {
   const { t } = useLang()
@@ -225,12 +141,14 @@ function Metric({ label, value, color, accent, icon }: { label: string; value: n
   )
 }
 
-const CLUSTER: { label: string; color: string; types: string[] }[] = [
-  { label: 'Business Services', color: '#00e5ff', types: ['BusinessProcess', 'BusinessService'] },
-  { label: 'Applications', color: '#a3defe', types: ['Application', 'Service', 'System'] },
-  { label: 'Infrastructure', color: '#849396', types: ['Server', 'Database', 'Network', 'Device', 'CloudResource', 'DataStore', 'Infrastructure'] },
-  { label: 'People (Risk)', color: '#ffb4ab', types: ['Person'] },
-  { label: 'Suppliers', color: '#c8c5cb', types: ['Supplier'] },
+// Familles d'actifs de la topologie. Le libellé est bilingue : ces catégories
+// sont lues par des non-anglophones, « People (Risk) » ne disait rien à personne.
+const CLUSTER: { label: [string, string]; color: string; types: string[] }[] = [
+  { label: ['Services métier', 'Business services'], color: '#00e5ff', types: ['BusinessProcess', 'BusinessService'] },
+  { label: ['Applications', 'Applications'], color: '#a3defe', types: ['Application', 'Service', 'System'] },
+  { label: ['Infrastructure', 'Infrastructure'], color: '#849396', types: ['Server', 'Database', 'Network', 'Device', 'CloudResource', 'DataStore', 'Infrastructure'] },
+  { label: ['Personnes', 'People'], color: '#ffb4ab', types: ['Person'] },
+  { label: ['Fournisseurs', 'Suppliers'], color: '#c8c5cb', types: ['Supplier'] },
 ]
 
 function nodeColor(type: string): string {
@@ -285,10 +203,10 @@ function Topology({ graph, onNode }: { graph?: GraphData; onNode: (id: string, n
 
         {/* Légende */}
         <div className="absolute bottom-4 left-4 space-y-2 rounded-sm border p-3 backdrop-blur" style={{ background: 'rgba(42,42,43,0.8)', borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10 }}>
-          <div className="mb-1 border-b pb-1" style={{ color: 'var(--nx-text-muted)', borderColor: 'rgba(59,73,76,0.5)' }}>NODE CLUSTERS</div>
+          <div className="mb-1 border-b pb-1" style={{ color: 'var(--nx-text-muted)', borderColor: 'rgba(59,73,76,0.5)' }}>{t('Familles d’actifs', 'Asset families')}</div>
           {CLUSTER.map((c) => (
-            <div key={c.label} className="flex items-center gap-2" style={{ color: 'var(--nx-text)' }}>
-              <span className="h-2 w-2 rounded-full" style={{ background: c.color }} /> {c.label}
+            <div key={c.label[1]} className="flex items-center gap-2" style={{ color: 'var(--nx-text)' }}>
+              <span className="h-2 w-2 rounded-full" style={{ background: c.color }} /> {t(...c.label)}
             </div>
           ))}
         </div>
