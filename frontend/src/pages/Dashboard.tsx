@@ -1,10 +1,10 @@
-import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertOctagon, AlertTriangle, ArrowRight, DownloadCloud, HelpCircle, History, Network,
   Package, PieChart, Radar,
 } from 'lucide-react'
+import { Topology3D } from '../components/Topology3D'
 import { api } from '../lib/api'
 import { getTenantId } from '../lib/tenant'
 import { importDemoData } from '../lib/demo'
@@ -141,75 +141,25 @@ function Metric({ label, value, color, accent, icon }: { label: string; value: n
   )
 }
 
-// Familles d'actifs de la topologie. Le libellé est bilingue : ces catégories
-// sont lues par des non-anglophones, « People (Risk) » ne disait rien à personne.
-const CLUSTER: { label: [string, string]; color: string; types: string[] }[] = [
-  { label: ['Services métier', 'Business services'], color: '#00e5ff', types: ['BusinessProcess', 'BusinessService'] },
-  { label: ['Applications', 'Applications'], color: '#a3defe', types: ['Application', 'Service', 'System'] },
-  { label: ['Infrastructure', 'Infrastructure'], color: '#849396', types: ['Server', 'Database', 'Network', 'Device', 'CloudResource', 'DataStore', 'Infrastructure'] },
-  { label: ['Personnes', 'People'], color: '#ffb4ab', types: ['Person'] },
-  { label: ['Fournisseurs', 'Suppliers'], color: '#c8c5cb', types: ['Supplier'] },
-]
-
-function nodeColor(type: string): string {
-  return CLUSTER.find((c) => c.types.includes(type))?.color ?? '#849396'
-}
-
 function Topology({ graph, onNode }: { graph?: GraphData; onNode: (id: string, name: string) => void }) {
   const { t } = useLang()
-  const layout = useMemo(() => {
-    if (!graph) return null
-    const nodes = graph.nodes.slice(0, 40)
-    const idx = new Map(nodes.map((n, i) => [n.id, i]))
-    const n = nodes.length || 1
-    const cx = 50, cy = 50, R = 38
-    const pos = nodes.map((node, i) => {
-      // disposition en anneau, criticité vers le centre
-      const ring = node.criticality >= 80 ? 0.45 : node.criticality >= 50 ? 0.72 : 1
-      const a = (i / n) * 2 * Math.PI - Math.PI / 2
-      return { node, x: cx + Math.cos(a) * R * ring, y: cy + Math.sin(a) * R * ring }
-    })
-    const edges = graph.edges
-      .filter((e) => idx.has(e.source) && idx.has(e.target))
-      .map((e) => ({ e, a: pos[idx.get(e.source)!], b: pos[idx.get(e.target)!] }))
-    return { pos, edges }
-  }, [graph])
-
   return (
     <section className="relative flex flex-col overflow-hidden rounded-sm border lg:col-span-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-      <div className="absolute top-0 z-10 flex w-full items-center justify-between border-b p-3 backdrop-blur-sm" style={{ borderColor: 'var(--nx-border)', background: 'rgba(32,31,32,0.5)' }}>
+      <div className="z-10 flex w-full items-center justify-between border-b p-3" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="flex items-center gap-2">
           <Network size={14} style={{ color: 'var(--nx-text-muted)' }} />
           <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{t('Topologie des dépendances', 'Dependency topology')}</span>
+          <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-outline)' }}>
+            {t('· du métier vers l’infrastructure', '· from business down to infrastructure')}
+          </span>
         </div>
         <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{graph?.nodes.length ?? 0} {t('actifs', 'assets')} · {graph?.edges.length ?? 0} {t('liens', 'links')}</span>
       </div>
 
-      <div className="relative h-full min-h-[420px] w-full" style={{ background: 'var(--nx-panel)' }}>
-        <div className="nx-grid absolute inset-0" />
-        {layout && (
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-            {layout.edges.map(({ e, a, b }) => (
-              <line key={e.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#3b494c" strokeWidth={0.15} opacity={e.confidence < 0.5 ? 0.4 : 0.8} />
-            ))}
-            {layout.pos.map(({ node, x, y }) => (
-              <g key={node.id} style={{ cursor: 'pointer' }} onClick={() => onNode(node.id, node.name)}>
-                <circle cx={x} cy={y} r={node.criticality >= 80 ? 1.1 : 0.8} fill={nodeColor(node.entityType)} />
-                <title>{node.name} · {node.entityType} · crit {node.criticality}</title>
-              </g>
-            ))}
-          </svg>
-        )}
-
-        {/* Légende */}
-        <div className="absolute bottom-4 left-4 space-y-2 rounded-sm border p-3 backdrop-blur" style={{ background: 'rgba(42,42,43,0.8)', borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 10 }}>
-          <div className="mb-1 border-b pb-1" style={{ color: 'var(--nx-text-muted)', borderColor: 'rgba(59,73,76,0.5)' }}>{t('Familles d’actifs', 'Asset families')}</div>
-          {CLUSTER.map((c) => (
-            <div key={c.label[1]} className="flex items-center gap-2" style={{ color: 'var(--nx-text)' }}>
-              <span className="h-2 w-2 rounded-full" style={{ background: c.color }} /> {t(...c.label)}
-            </div>
-          ))}
-        </div>
+      {/* Hauteur bornée : sans plafond, la section s'étirait sur la hauteur du
+          panneau voisin (près de 900 px) et la scène débordait de l'écran. */}
+      <div className="relative w-full flex-1" style={{ background: 'var(--nx-panel)', minHeight: 420, maxHeight: 620 }}>
+        <Topology3D graph={graph} onNode={onNode} />
       </div>
     </section>
   )
