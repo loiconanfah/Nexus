@@ -129,3 +129,28 @@ export function evidenceSourceLabel(source: string, t: T): string {
   const m = EVIDENCE_SOURCE[source]
   return m ? t(m[0], m[1]) : source
 }
+
+/**
+ * Niveau de risque d'une dépendance humaine. L'API renvoie CRITICAL / HIGH /
+ * MODERATE : ces codes ne doivent pas atteindre l'écran tels quels.
+ */
+const RISK_LEVEL: Record<string, [string, string]> = {
+  CRITICAL: ['Critique', 'Critical'],
+  HIGH: ['Élevé', 'High'],
+  MODERATE: ['Modéré', 'Moderate'],
+  LOW: ['Faible', 'Low'],
+}
+export function riskLevelLabel(level: string, t: T): string {
+  const m = RISK_LEVEL[level]
+  return m ? t(m[0], m[1]) : level
+}
+
+/** Rôle d'une personne. Les valeurs par défaut de l'API sont en anglais. */
+const PERSON_ROLE: Record<string, [string, string]> = {
+  'Knowledge Holder': ['Détenteur de savoir', 'Knowledge holder'],
+  'Key Person': ['Personne clé', 'Key person'],
+}
+export function personRoleLabel(role: string, t: T): string {
+  const m = PERSON_ROLE[role]
+  return m ? t(m[0], m[1]) : role
+}

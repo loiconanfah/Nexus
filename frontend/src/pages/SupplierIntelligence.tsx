@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Play, Truck } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { HubSpoke, PickerList, type Spoke } from '../components/HubSpoke'
 import type { Supplier, SupplierIntel } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -93,33 +94,46 @@ export function SupplierIntelligence() {
 
 function NetworkMap({ data, selected, onSupplier }: { data: SupplierIntel; selected: Supplier; onSupplier: (id: string) => void }) {
   const { t } = useLang()
-  const assets = selected.dependents.slice(0, 8)
-  const pos = useMemo(() => {
-    const n = assets.length || 1
-    return assets.map((name, i) => { const a = (i / n) * 2 * Math.PI - Math.PI / 2; return { name, x: 50 + Math.cos(a) * 34, y: 50 + Math.sin(a) * 32 } })
-  }, [assets])
-  const critical = new Set(data.edges.filter((e) => e.supplier === selected.name && e.assetCritical).map((e) => e.asset))
+
+  // Un service est dit critique quand la relation qui le lie au fournisseur
+  // porte ce drapeau : c'est là que la perte du fournisseur fait vraiment mal.
+  const critical = useMemo(
+    () => new Set(data.edges.filter((e) => e.supplier === selected.name && e.assetCritical).map((e) => e.asset)),
+    [data.edges, selected.name],
+  )
+  const spokes: Spoke[] = useMemo(
+    () => selected.dependents.map((name) => ({ name, critical: critical.has(name) })),
+    [selected.dependents, critical],
+  )
 
   return (
-    <div className="relative h-full min-h-[340px] w-full">
-      <div className="nx-grid absolute inset-0" />
-      <div className="absolute left-3 top-3" style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Carte du réseau de dépendances', 'Dependency Network Map')}</div>
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-        {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke={critical.has(p.name) ? ERR : CYAN} strokeWidth={0.4} opacity={0.5} />)}
-        {pos.map((p) => (
-          <g key={p.name}>
-            <rect x={p.x - 9} y={p.y - 3} width={18} height={6} rx={1} fill="var(--nx-surface)" stroke={critical.has(p.name) ? ERR : 'var(--nx-border)'} strokeWidth={0.3} />
-            <text x={p.x} y={p.y + 1.2} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="2.6">{p.name}</text>
-          </g>
-        ))}
-        <rect x={42} y={45} width={16} height={10} rx={1} fill="rgba(0,229,255,0.12)" stroke={CYAN} strokeWidth={0.6} />
-        <text x={50} y={51.5} textAnchor="middle" fill={CYAN_T} fontFamily="JetBrains Mono" fontSize="3" fontWeight="700">{selected.name}</text>
-      </svg>
-      {/* Autres fournisseurs cliquables */}
-      <div className="absolute bottom-3 left-3 flex gap-2">
-        {data.suppliers.map((s) => (
-          <button key={s.id} onClick={() => onSupplier(s.id)} className="rounded border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: s.id === selected.id ? CYAN : 'var(--nx-border)', color: s.id === selected.id ? CYAN_T : 'var(--nx-text-muted)', background: s.id === selected.id ? 'rgba(0,229,255,0.08)' : 'var(--nx-surface)' }}>{s.name}</button>
-        ))}
+    <div className="flex h-full min-h-[340px] w-full flex-col lg:flex-row">
+      <PickerList
+        title={t('Fournisseurs', 'Suppliers')}
+        items={data.suppliers}
+        selectedId={selected.id}
+        onPick={onSupplier}
+        meta={(s) => ({ text: s.riskScore.toFixed(0), color: bandColor(s.riskScore) })}
+      />
+      <div className="relative min-w-0 flex-1">
+        <div className="nx-grid absolute inset-0" />
+        <div className="relative flex items-baseline gap-2 px-4 pt-3">
+          <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--nx-text-muted)' }}>
+            {t('Ce qui dépend de ce fournisseur', 'What depends on this supplier')}
+          </span>
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-outline)' }}>
+            {selected.dependents.length}
+          </span>
+        </div>
+        <div className="relative px-2 pb-3 pt-1">
+          <HubSpoke
+            hub={selected.name}
+            hubNote={selected.alternatives === 0 ? t('aucune alternative', 'no alternative') : t(`${selected.alternatives} alternative(s)`, `${selected.alternatives} alternative(s)`)}
+            spokes={spokes}
+            emptyLabel={t('Aucun service ne dépend de ce fournisseur dans la cartographie actuelle.',
+                          'No service depends on this supplier in the current map.')}
+          />
+        </div>
       </div>
     </div>
   )

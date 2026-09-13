@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { BookOpen, FileDown, Server, ShieldPlus, User } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { personRoleLabel, riskLevelLabel } from '../lib/labels'
+import { HubSpoke, PickerList, type Spoke } from '../components/HubSpoke'
 import { ActionModal } from '../components/ActionModal'
 import { downloadCsv } from '../lib/download'
 import type { HumanDependencies, HumanPerson } from '../lib/types'
@@ -74,7 +76,7 @@ export function HumanDependency() {
       {/* Graphe + profil */}
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="min-h-[320px] flex-1 rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-          {selected && <KnowledgeGraph person={selected} onSystem={(name) => navigate(`/simulations?name=${encodeURIComponent(name)}`)} />}
+          {selected && <KnowledgeGraph data={data} person={selected} onPerson={setSelId} onSystem={(name) => navigate(`/simulations?name=${encodeURIComponent(name)}`)} />}
         </div>
         {selected && <Profile person={selected} onSimulate={() => navigate(`/simulations?asset=${selected.knownSystems[0] ?? ''}&name=${encodeURIComponent(selected.knownSystems[0] ?? '')}`)} />}
       </div>
@@ -99,10 +101,10 @@ export function HumanDependency() {
               return (
                 <tr key={p.id} onClick={() => setSelId(p.id)} className="cursor-pointer border-b transition-colors" style={{ borderColor: 'var(--nx-border)', background: sel ? 'var(--nx-surface-high)' : 'transparent', borderLeft: `2px solid ${sel ? CYAN : 'transparent'}` }}>
                   <td className="px-4 py-3" style={{ fontSize: 13, fontWeight: 500, color: CYAN_T }}>{p.name}</td>
-                  <td className="px-4 py-3" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{p.role}</td>
+                  <td className="px-4 py-3" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{personRoleLabel(p.role, t)}</td>
                   <td className="px-4 py-3" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{p.knownSystems.join(', ')}</td>
                   <td className="px-4 py-3 text-right" style={{ fontFamily: mono, fontSize: 12, color: p.backupExperts === 0 ? ERR : 'var(--nx-text-muted)' }}>{p.backupExperts}</td>
-                  <td className="px-4 py-3"><span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, color: c, background: `color-mix(in srgb, ${c} 18%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 30%, transparent)` }}>{p.riskLevel}</span></td>
+                  <td className="px-4 py-3"><span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, color: c, background: `color-mix(in srgb, ${c} 18%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 30%, transparent)` }}>{riskLevelLabel(p.riskLevel, t)}</span></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-1 w-16 overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-highest)' }}><div className="h-full" style={{ width: `${p.documentationPercent}%`, background: p.documentationPercent < 40 ? ERR : CYAN }} /></div>
@@ -119,30 +121,57 @@ export function HumanDependency() {
   )
 }
 
-function KnowledgeGraph({ person, onSystem }: { person: HumanPerson; onSystem: (name: string) => void }) {
+function KnowledgeGraph({ data, person, onPerson, onSystem }: {
+  data: HumanDependencies; person: HumanPerson; onPerson: (id: string) => void; onSystem: (name: string) => void
+}) {
   const { t } = useLang()
-  const systems = person.knownSystems.slice(0, 6)
-  const pos = useMemo(() => {
-    const n = systems.length || 1
-    return systems.map((name, i) => { const a = (i / n) * 2 * Math.PI - Math.PI / 2; return { name, x: 50 + Math.cos(a) * 32, y: 50 + Math.sin(a) * 30 } })
-  }, [systems])
+
+  // Un savoir est critique quand il porte sur un système lui-même critique :
+  // c'est ce croisement qui fait qu'un départ devient un problème d'entreprise.
+  const criticalSystems = useMemo(
+    () => new Set(data.edges.filter((e) => e.person === person.name && e.systemCritical).map((e) => e.system)),
+    [data.edges, person.name],
+  )
+  const spokes: Spoke[] = useMemo(
+    () => person.knownSystems.map((name) => ({ name, critical: criticalSystems.has(name) })),
+    [person.knownSystems, criticalSystems],
+  )
+  const accent = RISK_COLOR[person.riskLevel] ?? CYAN
+
   return (
-    <div className="relative h-full min-h-[320px] w-full">
-      <div className="nx-grid absolute inset-0" />
-      <div className="absolute left-3 top-3" style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Concentration de savoir', 'Knowledge Concentration')}</div>
-      <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-        {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke={CYAN} strokeWidth={0.4} strokeDasharray="2 1" opacity={0.5} />)}
-        {pos.map((p) => (
-          <g key={p.name} style={{ cursor: 'pointer' }} onClick={() => onSystem(p.name)}>
-            <rect x={p.x - 9} y={p.y - 3} width={18} height={6} rx={1} fill="var(--nx-surface)" stroke="var(--nx-border)" strokeWidth={0.3} />
-            <text x={p.x} y={p.y + 1.2} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="2.6">{p.name}</text>
-          </g>
-        ))}
-        <circle cx={50} cy={50} r={6} fill="rgba(0,229,255,0.1)" stroke={CYAN} strokeWidth={0.6} />
-        <circle cx={50} cy={46.5} r={1.6} fill={CYAN} />
-        <path d={`M ${50 - 2.5} ${52.5} q 2.5 -2 5 0`} fill="none" stroke={CYAN} strokeWidth={0.5} />
-        <text x={50} y={60} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="3" fontWeight="700">{person.name}</text>
-      </svg>
+    <div className="flex h-full min-h-[320px] w-full flex-col lg:flex-row">
+      <PickerList
+        title={t('Personnes clés', 'Key people')}
+        items={data.people}
+        selectedId={person.id}
+        onPick={onPerson}
+        meta={(p) => p.backupExperts === 0
+          ? { text: t('seule', 'sole'), color: ERR }
+          : { text: t(`${p.backupExperts} relève`, `${p.backupExperts} backup`), color: 'var(--nx-text-muted)' }}
+      />
+      <div className="relative min-w-0 flex-1">
+        <div className="nx-grid absolute inset-0" />
+        <div className="relative flex items-baseline gap-2 px-4 pt-3">
+          <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--nx-text-muted)' }}>
+            {t('Ce que cette personne est seule à bien connaître', 'What this person alone knows well')}
+          </span>
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-outline)' }}>{person.knownSystems.length}</span>
+        </div>
+        <div className="relative px-2 pb-3 pt-1">
+          <HubSpoke
+            icon="person"
+            accent={accent}
+            hub={person.name}
+            hubNote={person.backupExperts === 0
+              ? t('personne pour prendre le relais', 'nobody to take over')
+              : t(`${person.backupExperts} personne(s) pour prendre le relais`, `${person.backupExperts} person(s) can take over`)}
+            spokes={spokes}
+            onSpoke={onSystem}
+            emptyLabel={t('Aucun savoir critique rattaché à cette personne pour l’instant.',
+                          'No critical knowledge attached to this person yet.')}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -157,10 +186,10 @@ function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () =
         <div className="flex h-12 w-12 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface)', borderColor: CYAN }}><User size={22} style={{ color: CYAN }} /></div>
         <div>
           <div style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{person.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{person.role}</div>
+          <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{personRoleLabel(person.role, t)}</div>
         </div>
       </div>
-      {person.soleKnowledgeSystems > 0 && <span className="w-fit rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>⚠ {t('CONCENTRATION CRITIQUE', 'CRITICAL CONCENTRATION')}</span>}
+      {person.soleKnowledgeSystems > 0 && <span className="w-fit rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>⚠ {t('SAVOIR DÉTENU PAR UNE SEULE PERSONNE', 'KNOWLEDGE HELD BY ONE PERSON ONLY')}</span>}
 
       <div>
         <h4 className="mb-2 border-b pb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Domaines de savoir clés', 'Core Knowledge Areas')}</h4>
