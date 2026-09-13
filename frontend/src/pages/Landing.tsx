@@ -56,7 +56,10 @@ export function Landing() {
         <nav className="slb-nav-links">
           <a href="#probleme">{t('Le problème', 'Problem')}</a>
           <a href="#fonctionnement">{t('Fonctionnement', 'How it works')}</a>
+          <a href="#minute">{t('En une minute', 'In one minute')}</a>
           <a href="#produit">{t('Le produit', 'Product')}</a>
+          <a href="#difference">{t('Pourquoi Lenexux', 'Why Lenexux')}</a>
+          <a href="#demarrer">{t('Démarrer', 'Get started')}</a>
           <a href="#plateforme">{t('Plateforme', 'Platform')}</a>
           <a href="#secteurs">{t('Secteurs', 'Industries')}</a>
           <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }}>Documentation</a>
@@ -78,7 +81,10 @@ export function Landing() {
           <div className="slb-mobile-menu">
             <a href="#probleme" onClick={() => setMenuOpen(false)}>{t('Le problème', 'Problem')}</a>
             <a href="#fonctionnement" onClick={() => setMenuOpen(false)}>{t('Fonctionnement', 'How it works')}</a>
+            <a href="#minute" onClick={() => setMenuOpen(false)}>{t('En une minute', 'In one minute')}</a>
             <a href="#produit" onClick={() => setMenuOpen(false)}>{t('Le produit', 'Product')}</a>
+            <a href="#difference" onClick={() => setMenuOpen(false)}>{t('Pourquoi Lenexux', 'Why Lenexux')}</a>
+            <a href="#demarrer" onClick={() => setMenuOpen(false)}>{t('Démarrer', 'Get started')}</a>
             <a href="#plateforme" onClick={() => setMenuOpen(false)}>{t('Plateforme', 'Platform')}</a>
             <a href="#secteurs" onClick={() => setMenuOpen(false)}>{t('Secteurs', 'Industries')}</a>
             <a href="/docs" onClick={(e) => { e.preventDefault(); setMenuOpen(false); navigate('/docs') }}>Documentation</a>
@@ -124,6 +130,33 @@ export function Landing() {
           <Persona icon={EyeOff} role={t('Angles morts', 'Blind spots')} body={t('Les dépendances transversales (systèmes ↔ fournisseurs ↔ personnes ↔ IA) ne vivent dans aucun outil.', 'Cross-cutting dependencies (systems ↔ suppliers ↔ people ↔ AI) live in no single tool.')} />
           <Persona icon={AlertTriangle} role={t('Surprises coûteuses', 'Costly surprises')} body={t('On découvre un point unique de défaillance le jour où il tombe — pas avant.', 'You discover a single point of failure the day it fails — not before.')} />
           <Persona icon={LineChart} role={t('Décisions à l’aveugle', 'Decisions in the dark')} body={t('Impossible de chiffrer l’impact d’une panne ou d’une décision sans un modèle relié au réel.', 'Impossible to quantify the impact of an outage or a decision without a model tied to reality.')} />
+        </div>
+      </Section>
+
+      {/* ══════════ EN UNE MINUTE — le scénario raconté ══════════ */}
+      <Section id="minute">
+        <Label>{t('En une minute', 'In one minute')}</Label>
+        <SectionH>{t('Un lundi matin, raconté du début à la fin.', 'A Monday morning, told from start to finish.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+          {t('Si vous ne devez lire qu’une chose sur cette page, lisez ceci. Aucun jargon.',
+             'If you read only one thing on this page, read this. No jargon.')}
+        </p>
+        <div className="mt-10 flex flex-col gap-px" style={{ background: '#1c1c22' }}>
+          <Beat time="09:02" t={t}
+            fr="Votre fournisseur d’identité — celui qui laisse entrer vos employés dans leurs outils — tombe. Personne ne sait encore jusqu’où ça va."
+            en="Your identity provider — the one that lets employees into their tools — goes down. Nobody yet knows how far this goes." />
+          <Beat time="09:04" t={t}
+            fr="Vous ouvrez Lenexux et tapez la question telle quelle : « et si nous perdons notre fournisseur d’identité ? »"
+            en="You open Lenexux and type the question as-is: “what if we lose our identity provider?”" />
+          <Beat time="09:05" t={t}
+            fr="Réponse : 16 éléments touchés, dont 8 n’ont aucune solution de repli. Impact estimé 1,70 M$, remise en service 4,9 h. Chaque chiffre est cliquable jusqu’à sa source."
+            en="Answer: 16 elements affected, 8 of them with no fallback. Estimated impact $1.70M, 4.9 h to restore. Every figure is clickable down to its source." />
+          <Beat time="09:07" t={t}
+            fr="Lenexux vous dit aussi sur quoi il s’avance : 21 dépendances traversées, confiance moyenne 88 %, et le maillon le plus faible est nommé pour que vous alliez le vérifier."
+            en="Lenexux also tells you how sure it is: 21 dependencies traversed, 88 % average confidence, and the weakest link is named so you can go check it." />
+          <Beat time="09:15" t={t} last
+            fr="Vous arbitrez avec des montants, pas des intuitions — et le rapport pour la direction est déjà écrit."
+            en="You decide with amounts, not hunches — and the report for leadership is already written." />
         </div>
       </Section>
 
@@ -273,6 +306,108 @@ export function Landing() {
         </div>
       </Section>
 
+      {/* ══════════ LE VOCABULAIRE ══════════ */}
+      <Section id="vocabulaire" alt>
+        <Label>{t('Le vocabulaire', 'The vocabulary')}</Label>
+        <SectionH>{t('Six mots à connaître. C’est tout.', 'Six words to know. That’s all.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+          {t('Vous n’avez pas besoin d’être technique pour vous servir de Lenexux. Voici les seuls termes qui reviennent.',
+             'You do not need to be technical to use Lenexux. Here are the only terms that keep coming up.')}
+        </p>
+        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Term t={t} term={['Dépendance', 'Dependency']}
+            def={['« Ceci a besoin de cela pour fonctionner. » Votre facturation dépend de sa base de données, qui dépend d’un serveur, qui dépend d’un hébergeur.',
+                  '“This needs that in order to work.” Your billing depends on its database, which depends on a server, which depends on a host.']} />
+          <Term t={t} term={['Point unique de défaillance', 'Single point of failure']}
+            def={['Un élément dont plusieurs choses dépendent, et qui n’a aucun remplaçant. S’il tombe, tout ce qui est derrière tombe avec lui.',
+                  'An element several things depend on, with no stand-in. If it fails, everything behind it fails with it.']} />
+          <Term t={t} term={['Rayon d’impact', 'Blast radius']}
+            def={['Le nombre de choses qui s’arrêtent quand un élément tombe — pas seulement ses voisins directs, mais toute la chaîne derrière.',
+                  'How many things stop when one element fails — not just its direct neighbours, but the whole chain behind it.']} />
+          <Term t={t} term={['Temps de reprise (RTO)', 'Recovery time (RTO)']}
+            def={['Combien de temps il faut pour tout remettre en service. C’est ce délai, multiplié par ce que vous perdez chaque heure, qui donne le coût.',
+                  'How long it takes to bring everything back. That delay, times what you lose per hour, is what gives the cost.']} />
+          <Term t={t} term={['Confiance', 'Confidence']}
+            def={['À quel point on est sûr qu’une dépendance existe vraiment. Une information validée par un humain vaut plus qu’une supposition — et toute information vieillit.',
+                  'How sure we are a dependency really exists. Information validated by a human is worth more than a guess — and all information ages.']} />
+          <Term t={t} term={['Preuve', 'Evidence']}
+            def={['D’où vient l’information : un fichier importé, une interrogation en direct d’un système, une déduction, ou quelqu’un qui l’a confirmée. Chaque preuve est conservée.',
+                  'Where the information came from: an imported file, a live query to a system, a deduction, or someone who confirmed it. Every piece of evidence is kept.']} />
+        </div>
+      </Section>
+
+      {/* ══════════ EN QUOI C'EST DIFFÉRENT ══════════ */}
+      <Section id="difference">
+        <Label>{t('En quoi c’est différent', 'How it differs')}</Label>
+        <SectionH>{t('« J’ai déjà des outils. Pourquoi celui-ci ? »', '“I already have tools. Why this one?”')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+          {t('Lenexux ne remplace rien de ce que vous avez. Il répond à une question qu’aucun de ces outils ne se pose.',
+             'Lenexux replaces nothing you already have. It answers a question none of those tools asks itself.')}
+        </p>
+        <div className="mt-12 flex flex-col gap-px" style={{ background: '#1c1c22' }}>
+          <Versus t={t} tool={['Votre CMDB / outil ITSM', 'Your CMDB / ITSM']}
+            has={['Sait quels serveurs et applications existent, et qui les exploite.', 'Knows which servers and applications exist, and who runs them.']}
+            lacks={['Ne sait pas ce qu’une panne coûte, ni qu’un fournisseur ou une personne peut être le vrai point faible.',
+                    'Does not know what an outage costs, nor that a supplier or a person can be the real weak point.']} />
+          <Versus t={t} tool={['Votre outil de risque / conformité (GRC)', 'Your risk / compliance tool (GRC)']}
+            has={['Tient un registre de risques et les contrôles associés.', 'Keeps a risk register and the related controls.']}
+            lacks={['Les risques y sont saisis à la main et notés « élevé / moyen / faible ». Ici, ils sont CALCULÉS à partir de dépendances réelles et chiffrés en dollars.',
+                    'Risks there are hand-entered and rated “high / medium / low”. Here they are COMPUTED from real dependencies and quantified in dollars.']} />
+          <Versus t={t} tool={['Votre BI / vos tableaux de bord', 'Your BI / dashboards']}
+            has={['Montrent ce qui s’est passé, avec beaucoup de précision.', 'Show what happened, in great detail.']}
+            lacks={['Regardent le passé. Lenexux répond à « et si », sur un événement qui n’a pas encore eu lieu.',
+                    'They look at the past. Lenexux answers “what if”, about an event that has not happened yet.']} />
+          <Versus t={t} last tool={['Votre plan de continuité en tableur', 'Your continuity plan in a spreadsheet']}
+            has={['Existe, et c’est déjà beaucoup.', 'Exists, and that already counts for a lot.']}
+            lacks={['N’a jamais été testé, et vieillit dès le lendemain de sa rédaction. Ici, le scénario se rejoue à la demande sur des données rafraîchies.',
+                    'Has never been tested, and starts ageing the day after it is written. Here the scenario replays on demand, on refreshed data.']} />
+        </div>
+        <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
+          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>
+            <EyeOff size={14} /> {t('Ce que Lenexux ne fait pas', 'What Lenexux does not do')}
+          </div>
+          <ul className="mt-4 flex flex-col gap-2">
+            {[
+              t('Il ne surveille pas vos systèmes en temps réel — ce n’est pas un outil de supervision, et il ne remplacera pas celui que vous avez.',
+                'It does not monitor your systems in real time — it is not a monitoring tool, and it will not replace the one you have.'),
+              t('Il n’agit pas sur vos systèmes : il lit ce que vous lui donnez, il ne redémarre ni ne reconfigure rien.',
+                'It does not act on your systems: it reads what you give it, it restarts and reconfigures nothing.'),
+              t('Il n’invente aucun montant. Sans données sur votre activité, il vous le dit au lieu de produire un chiffre rassurant.',
+                'It invents no amounts. Without data about your business, it tells you so rather than producing a reassuring figure.'),
+            ].map((x) => (
+              <li key={x} className="flex gap-2.5" style={{ fontSize: 14.5, color: '#a2a2b0', lineHeight: 1.6 }}>
+                <span style={{ color: '#6b6b78' }}>—</span> <span>{x}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Section>
+
+      {/* ══════════ DÉMARRER ══════════ */}
+      <Section id="demarrer" alt>
+        <Label>{t('Démarrer', 'Getting started')}</Label>
+        <SectionH>{t('Ce que ça vous demande, concrètement.', 'What it actually asks of you.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+          {t('Pas de projet d’intégration de six mois, pas d’accès administrateur à vos systèmes.',
+             'No six-month integration project, no administrator access to your systems.')}
+        </p>
+        <div className="mt-12 grid gap-px md:grid-cols-3" style={{ background: '#1c1c22' }}>
+          <Phase t={t} when={['Le premier jour', 'Day one']}
+            what={['Vous créez un espace et chargez un jeu de démonstration, ou un premier export de votre inventaire — un simple CSV suffit.',
+                   'You create a workspace and load a demo dataset, or a first export of your inventory — a plain CSV is enough.']}
+            who={['Une personne. Aucune installation.', 'One person. Nothing to install.']} />
+          <Phase t={t} when={['La première semaine', 'Week one']}
+            what={['Vous complétez avec vos fournisseurs et vos personnes clés, puis vous validez les dépendances que vous savez justes. Le graphe devient le vôtre.',
+                   'You add your suppliers and key people, then validate the dependencies you know are right. The graph becomes yours.']}
+            who={['Celles et ceux qui connaissent le terrain : IT, achats, continuité.', 'The people who know the ground: IT, procurement, continuity.']} />
+          <Phase t={t} when={['Le premier mois', 'Month one']}
+            what={['Vous branchez vos sources vivantes en lecture seule pour que la carte se rafraîchisse toute seule — et vous passez vos premiers scénarios en comité.',
+                   'You connect your live sources read-only so the map refreshes itself — and you take your first scenarios to committee.']}
+            who={['Une sonde installée chez vous si vos systèmes ne sont pas exposés sur Internet.',
+                  'A probe installed on your side if your systems are not exposed to the internet.']} />
+        </div>
+      </Section>
+
       {/* ══════════ STAT ══════════ */}
       <section className="slb-stat">
         <div className="slb-light slb-light-soft" aria-hidden><span className="slb-silk slb-silk-2" /></div>
@@ -372,6 +507,67 @@ export function Landing() {
           </div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+// ── Primitives « compréhension acheteur » ────────────────────────────────────
+type T = (fr: string, en: string) => string
+
+/** Un temps du scénario raconté : une heure, une phrase, aucun jargon. */
+function Beat({ time, fr, en, t, last }: { time: string; fr: string; en: string; t: T; last?: boolean }) {
+  return (
+    <div className="flex flex-col gap-2 p-6 sm:flex-row sm:gap-8" style={{ background: '#050506' }}>
+      <div className="flex shrink-0 items-center gap-3 sm:w-32">
+        <span style={{ fontFamily: mono, fontSize: 13, color: last ? '#22d3ee' : '#7fe8f7' }}>{time}</span>
+        {last && <ArrowRight size={13} style={{ color: '#22d3ee' }} />}
+      </div>
+      <p className="max-w-3xl" style={{ fontSize: 16, lineHeight: 1.65, color: last ? '#f3f3f6' : '#c8c8d2' }}>{t(fr, en)}</p>
+    </div>
+  )
+}
+
+/** Un terme du glossaire, défini sans autre terme technique. */
+function Term({ t, term, def }: { t: T; term: [string, string]; def: [string, string] }) {
+  return (
+    <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
+      <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16, color: '#f3f3f6' }}>{t(...term)}</h3>
+      <p className="mt-2" style={{ fontSize: 13.5, color: '#a2a2b0', lineHeight: 1.6 }}>{t(...def)}</p>
+    </div>
+  )
+}
+
+/** Comparaison honnête avec un outil que l'acheteur possède déjà. */
+function Versus({ t, tool, has, lacks, last }: { t: T; tool: [string, string]; has: [string, string]; lacks: [string, string]; last?: boolean }) {
+  return (
+    <div className="grid gap-5 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)] md:gap-8" style={{ background: '#050506' }}>
+      <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16, color: '#f3f3f6' }}>{t(...tool)}</h3>
+      <div>
+        <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6b78' }}>
+          {t('Ce qu’il fait bien', 'What it does well')}
+        </p>
+        <p className="mt-1.5" style={{ fontSize: 13.5, color: '#a2a2b0', lineHeight: 1.55 }}>{t(...has)}</p>
+      </div>
+      <div>
+        <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: last ? '#22d3ee' : '#7fe8f7' }}>
+          {t('Ce qui manque — et que Lenexux apporte', 'What’s missing — and Lenexux brings')}
+        </p>
+        <p className="mt-1.5" style={{ fontSize: 13.5, color: '#c8c8d2', lineHeight: 1.55 }}>{t(...lacks)}</p>
+      </div>
+    </div>
+  )
+}
+
+/** Une étape du démarrage : quand, quoi, et qui doit être là. */
+function Phase({ t, when, what, who }: { t: T; when: [string, string]; what: [string, string]; who: [string, string] }) {
+  return (
+    <div className="p-7" style={{ background: '#050506' }}>
+      <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>{t(...when)}</span>
+      <p className="mt-4" style={{ fontSize: 15, color: '#f3f3f6', lineHeight: 1.6 }}>{t(...what)}</p>
+      <div className="mt-4 flex gap-2 border-t pt-4" style={{ borderColor: '#1c1c22' }}>
+        <Users size={14} style={{ color: '#6b6b78', flexShrink: 0, marginTop: 2 }} />
+        <span style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>{t(...who)}</span>
+      </div>
     </div>
   )
 }
