@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ArrowRight, Bot, Building2, ChevronDown, ClipboardList, FileSearch,
   GitBranch, LayoutDashboard, Network, PlayCircle, Radar, ShieldAlert, Sparkles,
-  Truck, Upload, Users, Video, Waypoints, Zap, Eye, Lightbulb,
+  Truck, Upload, Users, Video, Waypoints, Zap, Eye, Lightbulb, Compass,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
+import { startGuidedTour } from '../components/GuidedTour'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -301,6 +302,19 @@ function Intro({ t }: { t: (fr: string, en: string) => string }) {
         {t('Vos outils voient chacun leur silo : l’ERP les fournisseurs, l’ITSM les serveurs, le RH les personnes. Lenexux relie ces silos en une seule carte de dépendances, y révèle vos points de fragilité, rejoue les pannes et les attaques, et en chiffre l’impact sur votre compte de résultat.',
            'Each of your tools sees its own silo: the ERP sees suppliers, the ITSM sees servers, HR sees people. Lenexux links those silos into a single dependency map, reveals your weak points, replays outages and attacks, and quantifies the impact on your P&L.')}
       </p>
+      {/* La visite guidée n'existait que dans Assistance, dernière entrée d'un
+          menu de 25 : personne ne l'y trouvait. Sa place est ici, sur la page
+          qui explique le produit. */}
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <button onClick={startGuidedTour} className="flex items-center gap-2 rounded-sm px-4 py-2.5"
+          style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <Compass size={15} /> {t('Lancer la visite guidée', 'Start the guided tour')}
+        </button>
+        <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+          {t('Neuf étapes à travers l’interface, en deux minutes.', 'Nine steps through the interface, in two minutes.')}
+        </span>
+      </div>
+
       <div className="mt-6 grid gap-px sm:grid-cols-3" style={{ background: 'var(--nx-border)' }}>
         <Pillar t={t}
           title={['Déterministe', 'Deterministic']}

@@ -4,12 +4,13 @@ import { useQuery } from '@tanstack/react-query'
 import {
   AlertTriangle, Blocks, Boxes, Building2, Database, FileSearch, GitBranch, GitPullRequest,
   ClipboardList, HelpCircle, History, LayoutDashboard, Moon, Network, PanelLeftClose, PanelLeftOpen,
-  Home, Radar, Radio, ScanText, ScrollText, Search,
+  Compass, Home, Radar, Radio, ScanText, ScrollText, Search,
   Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Waypoints, Zap, ShieldAlert,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { useTheme } from '../lib/theme'
+import { startGuidedTour } from './GuidedTour'
 
 type NavItem = { to: string; fr: string; en: string; icon: typeof LayoutDashboard }
 const NAV: { fr: string; en: string; items: NavItem[] }[] = [
@@ -183,6 +184,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
             <CommandSearch inputRef={searchRef} />
           </div>
           <div className="flex items-center gap-3">
+            <TourButton />
             <ThemeToggle />
             <LangToggle />
             {header}
@@ -192,6 +194,22 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
         <main data-tour="page" className="min-h-0 flex-1 overflow-y-auto p-6" style={{ color: 'var(--nx-text)' }}>{children}</main>
       </div>
     </div>
+  )
+}
+
+/** Relance la visite guidée depuis n'importe quel écran. */
+function TourButton() {
+  const { t } = useLang()
+  return (
+    <button
+      onClick={startGuidedTour}
+      className="flex shrink-0 items-center justify-center rounded-sm p-1.5 transition-colors hover:brightness-125"
+      style={{ color: 'var(--nx-text-muted)', border: '1px solid var(--nx-border)' }}
+      title={t('Lancer la visite guidée', 'Start the guided tour')}
+      aria-label={t('Lancer la visite guidée', 'Start the guided tour')}
+    >
+      <Compass size={18} />
+    </button>
   )
 }
 
