@@ -227,7 +227,10 @@ export function Topology3D({ graph, onNode }: { graph?: GraphData; onNode?: (id:
       const w = mount!.clientWidth
       const h = mount!.clientHeight
       if (w === 0 || h === 0) return
-      renderer.setSize(w, h, false)
+      // Sans updateStyle, le canvas garde la taille de son attribut — soit deux
+      // fois trop grande avec un pixelRatio de 2 : la scène débordait à droite
+      // et paraissait collée dans le coin gauche de la carte.
+      renderer.setSize(w, h)
       camera.aspect = w / h
       camera.updateProjectionMatrix()
     }
