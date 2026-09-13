@@ -11,9 +11,13 @@ const CYAN = 'var(--nx-cyan-text)'
 // Dénomination sociale exacte : c'est elle qui engage dans un document
 // contractuel, pas la forme d'affichage employée ailleurs sur le site.
 const COMPANY = 'SPLITSPAY INC.'
-const CONTACT = '[courriel de contact]'
-const DPO = '[responsable de la protection des renseignements personnels]'
-const ADDRESS = '[adresse postale]'
+const CONTACT = 'yvanloic@lenexux.com'
+// La Loi 25 impose de DÉSIGNER une personne responsable et de la rendre
+// joignable. Par défaut, c'est la personne ayant la plus haute autorité.
+const DPO = 'Yvan Loic Nanfah Wamba, responsable de la protection des renseignements personnels'
+// TODO : compléter ville, province et code postal — une adresse incomplète
+// dans des mentions légales n'est pas opposable.
+const ADDRESS = '905, rue Sainte-Cécile'
 const UPDATED = '2 septembre 2026'
 
 type Doc = 'terms' | 'privacy' | 'dpa'
@@ -68,6 +72,47 @@ export function Legal() {
 function H1({ children }: { children: React.ReactNode }) {
   return <h1 style={{ fontFamily: geist, fontSize: 26, color: 'var(--nx-text)', marginBottom: 4 }}>{children}</h1>
 }
+/**
+ * Sous-traitants ultérieurs. La Loi 25 comme le RGPD exigent de les NOMMER,
+ * avec leur rôle et le lieu de traitement : c'est la première pièce que le
+ * service juridique d'un client demande. Les régions proviennent de la
+ * configuration de déploiement réelle (render.yaml), pas d'une estimation.
+ */
+const SUBPROCESSORS: { name: string; role: string; place: string }[] = [
+  { name: 'Vercel Inc.', role: 'Hébergement du site public et de l’interface', place: 'États-Unis (réseau de diffusion mondial)' },
+  { name: 'Render Services, Inc.', role: 'Hébergement de l’API et exécution applicative', place: 'États-Unis — Oregon' },
+  { name: 'Render Services, Inc.', role: 'Base de données PostgreSQL managée (comptes, configuration)', place: 'États-Unis — Oregon' },
+  { name: 'Render Services, Inc.', role: 'Base de données de graphe Neo4j (cartographie du client)', place: 'États-Unis — Oregon' },
+  { name: 'Google LLC', role: 'Modèles d’intelligence artificielle (Gemini), sur appel', place: 'États-Unis' },
+  { name: 'Anthropic PBC', role: 'Modèles d’intelligence artificielle (Claude), sur appel', place: 'États-Unis' },
+  { name: 'Google LLC', role: 'Mesure d’audience du site public (Google Analytics), uniquement après consentement', place: 'États-Unis' },
+]
+
+function SubList({ rows }: { rows: typeof SUBPROCESSORS }) {
+  return (
+    <div className="my-4 overflow-x-auto rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+      <table className="w-full text-left" style={{ fontSize: 13 }}>
+        <thead>
+          <tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
+            {['Sous-traitant', 'Rôle', 'Lieu de traitement'].map((h) => (
+              <th key={h} className="px-3 py-2" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={`${r.name}-${i}`} className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
+              <td className="px-3 py-2" style={{ color: 'var(--nx-text)' }}>{r.name}</td>
+              <td className="px-3 py-2" style={{ color: 'var(--nx-text-muted)' }}>{r.role}</td>
+              <td className="px-3 py-2" style={{ color: 'var(--nx-text-muted)' }}>{r.place}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="mt-4" style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{children}</h2>
 }
@@ -114,7 +159,7 @@ function Terms() {
       <P>Le client peut cesser d’utiliser le Service à tout moment. À la résiliation, les données sont restituées ou supprimées selon la Politique de confidentialité et le DPA.</P>
 
       <H2>9. Droit applicable</H2>
-      <P>Les présentes sont régies par le droit de la province de Québec (Canada). Tout litige relève des tribunaux compétents du district de [district].</P>
+      <P>Les présentes sont régies par le droit de la province de Québec (Canada). Tout litige relève des tribunaux compétents du district judiciaire du siège de l’éditeur.</P>
 
       <H2>10. Contact</H2>
       <P>Questions : {CONTACT}.</P>
@@ -148,10 +193,16 @@ function Privacy() {
       <P>Le Service s’appuie sur des sous-traitants (hébergement, base de données, fournisseur(s) de modèles d’IA). La liste à jour est disponible sur demande et annexée au DPA. Des mesures contractuelles encadrent chaque sous-traitant.</P>
 
       <H2>6. Transferts hors Québec / UE</H2>
-      <P>Certains sous-traitants peuvent traiter des données hors du Québec ou de l’UE. Le cas échéant, une évaluation des facteurs relatifs à la vie privée (Loi 25) est réalisée et des garanties appropriées (clauses contractuelles) sont mises en place. [À préciser selon l’hébergement retenu.]</P>
+      <P>
+        L’hébergement et les modèles d’intelligence artificielle sont situés aux États-Unis : l’application
+        et les bases de données en Oregon, les fournisseurs de modèles aux États-Unis. Ces transferts hors du
+        Québec font l’objet d’une évaluation des facteurs relatifs à la vie privée au sens de la Loi 25, et
+        sont encadrés par les engagements contractuels des sous-traitants. La liste nominative, avec le rôle
+        et le lieu de traitement de chacun, figure en annexe de l’Addendum de traitement des données.
+      </P>
 
       <H2>7. Conservation</H2>
-      <P>Les données sont conservées pour la durée de la relation contractuelle, puis supprimées ou anonymisées dans un délai de [durée] après la résiliation, sauf obligation légale contraire.</P>
+      <P>Les données sont conservées pour la durée de la relation contractuelle, puis supprimées ou anonymisées dans un délai de trente (30) jours après la résiliation, sauf obligation légale contraire.</P>
 
       <H2>8. Sécurité</H2>
       <P>Isolation multi-tenant, chiffrement en transit, contrôle d’accès par jeton, journalisation, limitation de débit, et garde anti-SSRF sur les connecteurs. Un audit de sécurité indépendant est prévu avant la mise en marché générale.</P>
@@ -195,13 +246,29 @@ function Dpa() {
       <P>Le Responsable autorise le recours aux sous-traitants listés en annexe (hébergement, base de données, fournisseur(s) d’IA). Le Sous-traitant informe de tout changement et impose des obligations équivalentes.</P>
 
       <H2>5. Transferts</H2>
-      <P>Tout transfert hors Québec/UE est encadré par des garanties appropriées et, pour la Loi 25, une évaluation des facteurs relatifs à la vie privée. [À compléter selon l’hébergement.]</P>
+      <P>
+        Les données sont hébergées aux États-Unis (Oregon) et les modèles d’intelligence artificielle y sont
+        également exploités, comme détaillé en annexe. Ces transferts hors du Québec sont encadrés par les
+        engagements contractuels des sous-traitants concernés. Conformément à la Loi 25, une évaluation des
+        facteurs relatifs à la vie privée est réalisée préalablement à toute communication de renseignements
+        personnels hors du Québec, et tenue à la disposition du client.
+      </P>
 
       <H2>6. Audit</H2>
       <P>Le Sous-traitant met à disposition les informations nécessaires pour démontrer la conformité et permet des audits raisonnables, sous préavis.</P>
 
-      <H2>Annexe — Sous-traitants</H2>
-      <P>[Liste à compléter : hébergeur, base de données managée, fournisseur de modèles d’IA, avec localisation et rôle.]</P>
+      <H2>Annexe — Sous-traitants ultérieurs</H2>
+      <P>
+        Le Sous-traitant fait appel aux sous-traitants ultérieurs suivants. Cette liste est tenue à jour ;
+        le client est informé de toute addition ou remplacement avant sa prise d’effet, et peut s’y opposer
+        pour un motif raisonnable tenant à la protection des renseignements personnels.
+      </P>
+      <SubList rows={SUBPROCESSORS} />
+      <P>
+        Les modèles d’intelligence artificielle ne sont sollicités que pour interpréter, reformuler et
+        expliquer des résultats déjà calculés. Les données transmises ne servent pas à entraîner de modèles,
+        conformément aux conditions commerciales des fournisseurs concernés.
+      </P>
     </>
   )
 }
