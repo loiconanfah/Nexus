@@ -79,8 +79,17 @@ public class GraphModelTests
         rel.Verify("user:alice", DateTimeOffset.UtcNow);
 
         Assert.Equal(ConfidenceStatus.Verified, rel.Status);
-        Assert.Equal(1.0, rel.Confidence.Value);
         Assert.True(rel.IsFirm);
+
+        // Depuis l'Evidence Engine, Verify() n'ECRASE plus la confiance à 1.0 :
+        // il AJOUTE une preuve de validation humaine, et le score se recalcule à
+        // partir de toutes les preuves accumulées. Il ne peut donc pas atteindre
+        // 1.0 — aucune source n'est infaillible — mais il domine largement la
+        // confiance d'origine, et la trace de cette origine est préservée.
+        Assert.True(rel.Confidence.Value > 0.95, $"confiance attendue > 0.95, obtenue {rel.Confidence.Value}");
+        Assert.True(rel.Confidence.Value < 1.0);
+        Assert.Contains(rel.Evidences, e => e.Source == EvidenceSource.HumanValidation);
+        Assert.Contains(rel.Evidences, e => e.Source != EvidenceSource.HumanValidation);
         Assert.Equal("user:alice", rel.VerifiedBy);
         Assert.NotNull(rel.VerifiedAt);
     }
