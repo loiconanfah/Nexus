@@ -497,7 +497,7 @@ export function Landing() {
           <div className="flex items-center gap-2">
             <Share2 size={15} style={{ color: '#22d3ee' }} />
             <span style={{ fontFamily: geist, fontSize: 14 }}>Lenexux</span>
-            <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· MJ Corp</span>
+            <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· SplitsPay Inc.</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1" style={{ fontFamily: mono, fontSize: 11 }}>
             <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }} style={{ color: '#8a8a98' }}>Documentation</a>

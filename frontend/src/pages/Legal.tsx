@@ -8,7 +8,9 @@ const CYAN = 'var(--nx-cyan-text)'
 // NB : ces textes sont des MODÈLES de départ. Ils doivent être revus et complétés
 // par un conseiller juridique (raison sociale, coordonnées, sous-traitants, etc.)
 // avant tout usage commercial. Rédigés pour le contexte Québec (Loi 25) + RGPD.
-const COMPANY = '[Raison sociale de l’éditeur de Lenexux]'
+// Dénomination sociale exacte : c'est elle qui engage dans un document
+// contractuel, pas la forme d'affichage employée ailleurs sur le site.
+const COMPANY = 'SPLITSPAY INC.'
 const CONTACT = '[courriel de contact]'
 const DPO = '[responsable de la protection des renseignements personnels]'
 const ADDRESS = '[adresse postale]'
