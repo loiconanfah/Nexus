@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 import { usePageMeta } from '../lib/seo'
+import { reopenConsent } from '../components/CookieConsent'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -503,6 +504,7 @@ export function Landing() {
             <a href="/legal?doc=terms" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=terms') }} style={{ color: '#8a8a98' }}>{t('Conditions', 'Terms')}</a>
             <a href="/legal?doc=privacy" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=privacy') }} style={{ color: '#8a8a98' }}>{t('Confidentialité', 'Privacy')}</a>
             <a href="/legal?doc=dpa" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=dpa') }} style={{ color: '#8a8a98' }}>DPA</a>
+            <button onClick={reopenConsent} style={{ color: '#8a8a98' }}>{t('Témoins', 'Cookies')}</button>
             <button onClick={() => navigate('/login')} className="flex items-center gap-1" style={{ color: '#7fe8f7' }}>{t('Se connecter', 'Sign in')} <ArrowUpRight size={14} /></button>
           </div>
         </div>

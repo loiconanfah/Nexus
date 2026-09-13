@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { LogOut } from 'lucide-react'
 import { Layout } from './components/Layout'
 import { GuidedTour } from './components/GuidedTour'
+import { CookieConsent } from './components/CookieConsent'
 import { useLang } from './lib/i18n'
 import { Home } from './pages/Home'
 import { Dashboard } from './pages/Dashboard'
@@ -78,19 +79,19 @@ export default function App() {
 
   // Pages publiques plein écran (hors du layout applicatif).
   if (pathname === '/welcome') {
-    return <Landing />
+    return <><Landing /><CookieConsent /></>
   }
   if (pathname === '/demo') {
-    return <DemoChoice />
+    return <><DemoChoice /><CookieConsent /></>
   }
   if (pathname === '/login') {
-    return <Login />
+    return <><Login /><CookieConsent /></>
   }
   if (pathname === '/legal') {
-    return <Legal />
+    return <><Legal /><CookieConsent /></>
   }
   if (pathname === '/docs') {
-    return <Docs />
+    return <><Docs /><CookieConsent /></>
   }
   // Gate d'authentification : les visiteurs non connectés arrivent sur la landing.
   if (!isAuthed()) {
@@ -119,6 +120,7 @@ export default function App() {
       }
     >
       <GuidedTour />
+      <CookieConsent />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
