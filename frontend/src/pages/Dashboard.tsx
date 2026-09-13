@@ -4,13 +4,13 @@ import {
   AlertOctagon, AlertTriangle, ArrowRight, DownloadCloud, HelpCircle, History, Network,
   Package, PieChart, Radar,
 } from 'lucide-react'
-import { Topology3D } from '../components/Topology3D'
+import { CompanyOverview3D } from '../components/CompanyOverview3D'
 import { api } from '../lib/api'
 import { getTenantId } from '../lib/tenant'
 import { importDemoData } from '../lib/demo'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
-import type { GraphData, Overview, PriorityItem } from '../lib/types'
+import type { GraphData, Overview, PriorityItem, RiskRow } from '../lib/types'
 
 function priorityText(it: PriorityItem, t: (fr: string, en: string) => string): string {
   const type = entityTypeLabel(it.entityType, t)
@@ -35,6 +35,7 @@ export function Dashboard() {
   const { t } = useLang()
   const { data, isLoading, error } = useQuery({ queryKey: ['overview'], queryFn: api.overview })
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
+  const risks = useQuery({ queryKey: ['riskEntities'], queryFn: api.riskEntities })
 
   const importDemo = useMutation({
     mutationFn: importDemoData,
@@ -96,7 +97,7 @@ export function Dashboard() {
 
       {/* Grille principale */}
       <div className="grid min-h-[460px] grid-cols-1 gap-4 lg:grid-cols-4">
-        <Topology graph={graph.data} onNode={(id, name) => navigate(`/simulations?asset=${id}&name=${encodeURIComponent(name)}`)} />
+        <Topology graph={graph.data} risks={risks.data} company={companyName()} health={data.organizationHealthScore} onNode={(id, name) => navigate(`/simulations?asset=${id}&name=${encodeURIComponent(name)}`)} />
         <PriorityIntelligence items={data.priorityIntelligence} onInvestigate={() => navigate('/risks')} />
       </div>
 
@@ -141,16 +142,16 @@ function Metric({ label, value, color, accent, icon }: { label: string; value: n
   )
 }
 
-function Topology({ graph, onNode }: { graph?: GraphData; onNode: (id: string, name: string) => void }) {
+function Topology({ graph, risks, company, health, onNode }: { graph?: GraphData; risks?: RiskRow[]; company: string; health: number; onNode: (id: string, name: string) => void }) {
   const { t } = useLang()
   return (
     <section className="relative flex flex-col overflow-hidden rounded-sm border lg:col-span-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="z-10 flex w-full items-center justify-between border-b p-3" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="flex items-center gap-2">
           <Network size={14} style={{ color: 'var(--nx-text-muted)' }} />
-          <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{t('Topologie des dépendances', 'Dependency topology')}</span>
+          <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{t('L’entreprise en un coup d’œil', 'The company at a glance')}</span>
           <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-outline)' }}>
-            {t('· du métier vers l’infrastructure', '· from business down to infrastructure')}
+            {t('· vos activités, leur poids, leur santé', '· your activities, their weight, their health')}
           </span>
         </div>
         <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{graph?.nodes.length ?? 0} {t('actifs', 'assets')} · {graph?.edges.length ?? 0} {t('liens', 'links')}</span>
@@ -159,7 +160,7 @@ function Topology({ graph, onNode }: { graph?: GraphData; onNode: (id: string, n
       {/* Hauteur bornée : sans plafond, la section s'étirait sur la hauteur du
           panneau voisin (près de 900 px) et la scène débordait de l'écran. */}
       <div className="relative w-full flex-1" style={{ background: 'var(--nx-panel)', minHeight: 420, maxHeight: 620 }}>
-        <Topology3D graph={graph} onNode={onNode} />
+        <CompanyOverview3D graph={graph} risks={risks} company={company} health={health} onPick={onNode} />
       </div>
     </section>
   )
@@ -235,6 +236,15 @@ function ErrorBox({ message }: { message: string }) {
       <div><div className="font-medium">{t('Erreur API', 'API error')}</div><div style={{ color: 'var(--nx-text-muted)' }}>{message}</div></div>
     </div>
   )
+}
+
+/** Nom d'affichage du tenant. Les deux jeux de démonstration sont nommés ; à
+ *  défaut, on reste neutre plutôt que d'inventer une raison sociale. */
+function companyName(): string {
+  const id = getTenantId()
+  if (id.startsWith('be11')) return 'Bell Telecom'
+  if (id.startsWith('c610')) return 'CGI Inc.'
+  return 'Organisation'
 }
 
 function greeting(t: (fr: string, en: string) => string): string {
