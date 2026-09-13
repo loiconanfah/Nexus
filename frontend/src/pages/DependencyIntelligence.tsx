@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, CheckCircle2, Database, Route, Search, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import { relationTypeLabel } from '../lib/labels'
+import { confidenceStatusLabel, relationTypeLabel } from '../lib/labels'
 import type { GraphEdge, GraphEntityRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -146,8 +146,8 @@ function DependencyDetail({ row, onTarget, onMap, onClose }: { row: Row; onTarge
   const why = edge.evidence
     ? edge.evidence
     : t(
-        `${source?.name ?? 'Source'} établit une relation « ${rel} » avec ${target?.name ?? 'la cible'}. Classée ${edge.status} à ${conf}% de confiance.`,
-        `${source?.name ?? 'Source'} establishes a ${edge.type} relationship with ${target?.name ?? 'target'}. Classified ${edge.status.toLowerCase()} with ${conf}% confidence.`,
+        `${source?.name ?? 'Source'} établit une relation « ${rel} » avec ${target?.name ?? 'la cible'}. Classée « ${confidenceStatusLabel(edge.status, t)} » à ${conf}% de confiance.`,
+        `${source?.name ?? 'Source'} establishes a “${relationTypeLabel(edge.type, t)}” relationship with ${target?.name ?? 'target'}. Classified ${confidenceStatusLabel(edge.status, t).toLowerCase()} with ${conf}% confidence.`,
       )
 
   return (
@@ -174,7 +174,7 @@ function DependencyDetail({ row, onTarget, onMap, onClose }: { row: Row; onTarge
           <div className="flex h-7 w-7 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-highest)' }}><Database size={14} style={{ color: CYAN_T }} /></div>
           <div>
             <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--nx-text)' }}>{edge.sourceSystem ?? t('Système de référence', 'System of record')}</div>
-            <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{edge.status} · {t('traçabilité', 'data lineage')}</div>
+            <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{confidenceStatusLabel(edge.status, t)} · {t('traçabilité', 'data lineage')}</div>
           </div>
         </div>
       </Section>
@@ -183,7 +183,7 @@ function DependencyDetail({ row, onTarget, onMap, onClose }: { row: Row; onTarge
         <div className="rounded-sm border p-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('CONFIANCE', 'CONFIDENCE')}</div>
           <div className="flex items-center gap-1" style={{ fontFamily: geist, fontSize: 22, fontWeight: 600, color: conf < 50 ? ERR : CYAN_T }}>{conf}%</div>
-          <div className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}><CheckCircle2 size={11} /> {edge.status}</div>
+          <div className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}><CheckCircle2 size={11} /> {confidenceStatusLabel(edge.status, t)}</div>
         </div>
         <div className="rounded-sm border p-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('RAYON D’IMPACT', 'IMPACT RADIUS')}</div>

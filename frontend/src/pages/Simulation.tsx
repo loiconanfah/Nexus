@@ -326,7 +326,7 @@ export function Simulation() {
       {/* Panneau CONFIG flottant & déplaçable */}
       <DraggablePanel title={t('Scénario', 'Scenario')} side="left" top={12} width={288}>
         <div className="flex flex-col gap-4 p-3">
-          <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+          <Select label={t('Nœud d’origine cible', 'Target Origin Node')} value={assetId} onChange={setAssetId} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${entityTypeLabel(n.entityType, t)}` }))} />
           <Select label={t('Profondeur d’analyse', 'Analysis depth')} value={String(depth)} onChange={(v) => setDepth(Number(v))} options={[{ value: '3', label: t('Court terme (3 sauts)', 'Short (3 hops)') }, { value: '6', label: t('Moyen terme (6 sauts)', 'Mid (6 hops)') }, { value: '10', label: t('Long terme (10 sauts)', 'Long (10 hops)') }]} />
           {secondary ? (
             <div className="flex flex-col gap-2 rounded-sm border p-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
@@ -334,7 +334,7 @@ export function Simulation() {
                 <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: ORANGE }}>{t('Événement secondaire', 'Secondary event')}</span>
                 <button onClick={() => setSecondary(null)} style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>
               </div>
-              <Select label={t('Nœud', 'Node')} value={secondary.assetId} onChange={(v) => setSecondary({ ...secondary, assetId: v })} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${n.entityType}` }))} />
+              <Select label={t('Nœud', 'Node')} value={secondary.assetId} onChange={(v) => setSecondary({ ...secondary, assetId: v })} options={nodes.map((n) => ({ value: n.id, label: `${n.name} · ${entityTypeLabel(n.entityType, t)}` }))} />
               <Select label={t('Type', 'Type')} value={secondary.scenario} onChange={(v) => setSecondary({ ...secondary, scenario: v as ScenarioType })} options={scenarioOptions} />
             </div>
           ) : (

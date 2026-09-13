@@ -216,7 +216,7 @@ function Telemetry({ data }: { data: Overview }) {
         <div className="z-10 flex w-max gap-12 px-4">
           {events.map((e, i) => (
             <div key={i} className="flex flex-col items-center">
-              <span className="mb-1" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-text-muted)' }}>{i === 0 ? 'LIVE' : '—'}</span>
+              <span className="mb-1" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-text-muted)' }}>{i === 0 ? t('DIRECT', 'LIVE') : '—'}</span>
               <div className="h-3 w-3 rounded-full" style={{ background: 'var(--nx-surface)', border: `2px solid ${e.kind}` }} />
               <span className="mt-1 whitespace-nowrap" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text)' }}>{e.label}</span>
             </div>

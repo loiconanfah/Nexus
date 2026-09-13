@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import { entityTypeLabel } from '../lib/labels'
+import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -181,7 +181,7 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
                       <div className="flex h-6 w-6 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface-highest)', borderColor: 'var(--nx-border)' }}>{typeIcon(d.target.entityType, 12)}</div>
                       <div className="min-w-0">
                         <div className="truncate" style={{ fontSize: 12, fontWeight: 500, color: 'var(--nx-text)' }}>{d.target.name}</div>
-                        <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{d.relationType} · {Math.round(d.confidence * 100)}%</div>
+                        <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{relationTypeLabel(d.relationType, t)} · {Math.round(d.confidence * 100)}%</div>
                       </div>
                     </div>
                   )) : <div style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t(`Source : ${asset.sourceSystem ?? 'inconnue'} — aucune dépendance amont.`, `Source: ${asset.sourceSystem ?? 'unknown'} — no upstream dependencies.`)}</div>}
@@ -191,7 +191,7 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
           </>
         )}
 
-        {tab === 'Dependencies' && <EntityList title={t('Dépend de', 'Depends on')} items={(deps.data ?? []).map((d) => ({ id: d.target.id, name: d.target.name, type: entityTypeLabel(d.target.entityType, t), meta: `${d.relationType} · ${Math.round(d.confidence * 100)}% · ${d.status}` }))} />}
+        {tab === 'Dependencies' && <EntityList title={t('Dépend de', 'Depends on')} items={(deps.data ?? []).map((d) => ({ id: d.target.id, name: d.target.name, type: entityTypeLabel(d.target.entityType, t), meta: `${relationTypeLabel(d.relationType, t)} · ${Math.round(d.confidence * 100)}% · ${confidenceStatusLabel(d.status, t)}` }))} />}
         {tab === 'Dependents' && <EntityList title={t('Dont dépendent', 'Depended on by')} items={(dependents.data ?? []).map((d) => ({ id: d.id, name: d.name, type: entityTypeLabel(d.entityType, t), meta: `${t('criticité', 'criticality')} ${d.criticality}` }))} />}
         {tab === 'Risks' && (
           <Panel title={t('Décomposition du risque', 'Risk Breakdown')}>

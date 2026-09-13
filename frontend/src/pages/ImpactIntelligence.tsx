@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Waypoints, ArrowRight, AlertTriangle, Zap, ShieldAlert, Sparkles, TrendingDown } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { entityTypeLabel } from '../lib/labels'
 import { EvidenceBanner } from '../components/EvidenceBanner'
 
 const mono = 'var(--font-mono)'
@@ -142,7 +143,7 @@ export function ImpactIntelligence() {
                     <div className="flex items-center gap-2 truncate">
                       <span className="rounded px-1.5 py-0.5" style={{ background: critColor(c.criticality), fontFamily: mono, fontSize: 10, color: '#04121a' }}>{c.criticality}</span>
                       <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
-                      <span style={{ fontSize: 11, color: 'var(--nx-outline)' }}>{c.type}</span>
+                      <span style={{ fontSize: 11, color: 'var(--nx-outline)' }}>{entityTypeLabel(c.type, t)}</span>
                     </div>
                     <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{money(c.nodeImpact)}</span>
                   </div>

@@ -13,7 +13,7 @@ import {
 import { api } from '../lib/api'
 import { layoutGraph } from '../lib/layout'
 import { useLang } from '../lib/i18n'
-import { entityTypeLabel } from '../lib/labels'
+import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
 
 const Graph3D = lazy(() => import('../components/Graph3D').then((m) => ({ default: m.Graph3D })))
@@ -312,7 +312,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
               <div className="flex h-6 w-6 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-container)' }}>{typeIcon(d.target.entityType, 12)}</div>
               <div className="min-w-0 flex-1">
                 <div className="truncate" style={{ fontSize: 12, fontWeight: 500, color: 'var(--nx-text)' }}>{d.target.name}</div>
-                <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{d.relationType} · {Math.round(d.confidence * 100)}% · {d.status}</div>
+                <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{relationTypeLabel(d.relationType, t)} · {Math.round(d.confidence * 100)}% · {confidenceStatusLabel(d.status, t)}</div>
               </div>
             </div>
           )) : (

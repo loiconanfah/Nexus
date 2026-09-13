@@ -154,3 +154,24 @@ export function personRoleLabel(role: string, t: T): string {
   const m = PERSON_ROLE[role]
   return m ? t(m[0], m[1]) : role
 }
+
+/** Priorité d'une action du plan (valeurs API : High / Medium / Low). */
+const PRIORITY: Record<string, [string, string]> = {
+  High: ['Priorité haute', 'High priority'],
+  Medium: ['Priorité moyenne', 'Medium priority'],
+  Low: ['Priorité basse', 'Low priority'],
+}
+export function priorityLabel(priority: string, t: T): string {
+  const m = PRIORITY[priority]
+  return m ? t(m[0], m[1]) : priority
+}
+
+/** Nature d'une action : corriger un risque, ou préparer une solution de repli. */
+const ACTION_KIND: Record<string, [string, string]> = {
+  remediation: ['correction', 'remediation'],
+  contingency: ['plan de repli', 'contingency'],
+}
+export function actionKindLabel(kind: string, t: T): string {
+  const m = ACTION_KIND[kind]
+  return m ? t(m[0], m[1]) : kind
+}

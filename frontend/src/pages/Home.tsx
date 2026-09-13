@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle, ArrowRight, Bot, Building2, ChevronDown, ClipboardList, FileSearch,
   GitBranch, LayoutDashboard, Network, PlayCircle, Radar, ShieldAlert, Sparkles,
-  Truck, Upload, Users, Video, Waypoints, Zap,
+  Truck, Upload, Users, Video, Waypoints, Zap, Eye, Lightbulb,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 
@@ -40,6 +40,10 @@ type Feature = {
   why: [string, string]
   steps: [string, string][]
   result: [string, string]
+  /** Un cas nommé, pris sur un jeu de données réel — pas une paraphrase. */
+  example: [string, string]
+  /** Le piège dans lequel on tombe la première fois. */
+  tip: [string, string]
 }
 
 const FEATURES: Feature[] = [
@@ -59,6 +63,14 @@ const FEATURES: Feature[] = [
       'Une carte navigable où vous voyez enfin les chaînes de dépendance complètes, y compris celles qui traversent l’IT, les achats et les RH.',
       'A navigable map where you finally see complete dependency chains, including those crossing IT, procurement and HR.',
     ],
+    example: [
+      'Sur la démo Bell, « Data Center Montréal » paraît n’être qu’un site. En cliquant dessus, on découvre que 11 actifs en dépendent sans aucune solution de repli — dont la facturation.',
+      'On the Bell demo, “Data Center Montréal” looks like just a site. Click it and you find 11 assets depending on it with no fallback — billing among them.',
+    ],
+    tip: [
+      'Ne cherchez pas à tout cartographier d’emblée. Commencez par les dix systèmes dont l’arrêt se verrait le jour même : le reste viendra en s’y raccrochant.',
+      'Do not try to map everything at once. Start with the ten systems whose outage would be noticed the same day: the rest will attach itself to those.',
+    ],
   },
   {
     to: '/risks', icon: AlertTriangle, n: '02',
@@ -75,6 +87,14 @@ const FEATURES: Feature[] = [
     result: [
       'Une liste priorisée, justifiable en comité, de ce qu’il faut sécuriser en premier — et pourquoi.',
       'A prioritized list, defensible in committee, of what to secure first — and why.',
+    ],
+    example: [
+      '« HSS — Home Subscriber Server » sort à 98 % de confiance : 10 actifs en dépendent, aucune redondance. Il n’était dans aucun registre de risques.',
+      '“HSS — Home Subscriber Server” comes out at 98 % confidence: 10 assets depend on it, no redundancy. It was in no risk register.',
+    ],
+    tip: [
+      'Un score élevé ne veut pas dire « à remplacer ». Il veut dire « rien ne prend le relais ». Souvent la réponse est un contrat de secours, pas un projet.',
+      'A high score does not mean “replace it”. It means “nothing takes over”. Often the answer is a standby contract, not a project.',
     ],
   },
   {
@@ -93,6 +113,14 @@ const FEATURES: Feature[] = [
       'Un montant, un délai de reprise et la liste des éléments touchés — avec le niveau de confiance affiché honnêtement.',
       'An amount, a recovery time and the list of affected elements — with the confidence level honestly displayed.',
     ],
+    example: [
+      '« Et si nous perdons Entra ID ? » donne 1,70 M$, 16 éléments touchés, reprise 4,9 h — et nomme le maillon le moins sûr du calcul.',
+      '“What if we lose Entra ID?” returns $1.70M, 16 affected elements, 4.9 h recovery — and names the least reliable link in the calculation.',
+    ],
+    tip: [
+      'Regardez toujours la confiance moyenne avant de citer le montant en comité. Sous 70 %, allez d’abord valider les maillons faibles.',
+      'Always check the average confidence before quoting the amount in committee. Below 70 %, go validate the weak links first.',
+    ],
   },
   {
     to: '/simulations', icon: Zap, n: '04',
@@ -109,6 +137,14 @@ const FEATURES: Feature[] = [
     result: [
       'La cascade complète, le temps de reprise et le coût — de quoi transformer un plan théorique en plan éprouvé.',
       'The full cascade, recovery time and cost — enough to turn a theoretical plan into a tested one.',
+    ],
+    example: [
+      'Couper un seul serveur d’authentification arrête les outils de 9 équipes : la cascade traverse trois niveaux avant d’atteindre le client.',
+      'Cutting a single authentication server stops the tools of 9 teams: the cascade crosses three levels before reaching the customer.',
+    ],
+    tip: [
+      'Comparez toujours deux scénarios. Un chiffre seul ne se juge pas ; deux chiffres côte à côte, si.',
+      'Always compare two scenarios. A single number cannot be judged; two side by side can.',
     ],
   },
   {
@@ -127,6 +163,14 @@ const FEATURES: Feature[] = [
       'Un scénario d’attaque chiffré et la contre-mesure qui rapporte le plus — pas une liste d’alertes.',
       'A quantified attack scenario and the countermeasure with the best return — not a list of alerts.',
     ],
+    example: [
+      'Un employé hameçonné mène, en quatre bonds, à l’exfiltration par un agent IA : 4,75 M$. Isoler le partage cloud en évite l’essentiel.',
+      'A phished employee leads, in four hops, to exfiltration through an AI agent: $4.75M. Isolating the cloud share avoids most of it.',
+    ],
+    tip: [
+      'Le point d’entrée le plus coûteux est rarement le plus technique : c’est souvent une personne ou un outil externe oublié de l’inventaire.',
+      'The costliest entry point is rarely the most technical: it is often a person, or an external tool missing from the inventory.',
+    ],
   },
   {
     to: '/decision', icon: Sparkles, n: '06',
@@ -143,6 +187,14 @@ const FEATURES: Feature[] = [
     result: [
       'L’effet chiffré d’une décision, opérationnel ET financier, dans le même écran.',
       'The quantified effect of a decision, operational AND financial, on the same screen.',
+    ],
+    example: [
+      'Remplacer un fournisseur unique par deux prestataires coûte 240 k$ par an — et supprime une exposition chiffrée à 1,2 M$.',
+      'Replacing a sole supplier with two providers costs $240k a year — and removes an exposure quantified at $1.2M.',
+    ],
+    tip: [
+      'Renseignez le modèle d’entreprise AVANT de tester une décision. Sans chiffre d’affaires ni coûts, Lenexux vous le dira plutôt que d’inventer un montant.',
+      'Fill in the enterprise model BEFORE testing a decision. Without revenue and costs, Lenexux will say so rather than invent an amount.',
     ],
   },
   {
@@ -161,6 +213,14 @@ const FEATURES: Feature[] = [
       'Une cartographie dont vous connaissez la solidité, maillon par maillon — et qui se renforce à l’usage.',
       'A map whose solidity you know, link by link — and which strengthens as you use it.',
     ],
+    example: [
+      'Valider une seule dépendance faible — « CGI Advantage → Microsoft 365 » — fait passer sa confiance de 45 % à 98 %, et la base du chiffrage de « correcte » à « solide ».',
+      'Validating one weak dependency — “CGI Advantage → Microsoft 365” — takes its confidence from 45 % to 98 %, and the estimate’s basis from “moderate” to “solid”.',
+    ],
+    tip: [
+      'Validez ce que vous savez, pas ce qui vous arrange. Une confiance honnêtement basse vaut mieux qu’un chiffre faussement rassurant.',
+      'Validate what you know, not what suits you. Honestly low confidence beats a falsely reassuring figure.',
+    ],
   },
   {
     to: '/onboarding', icon: Upload, n: '08',
@@ -177,6 +237,14 @@ const FEATURES: Feature[] = [
     result: [
       'Un graphe alimenté par vos sources réelles, rafraîchi automatiquement — et donc une confiance qui ne vieillit pas en silence.',
       'A graph fed by your real sources, refreshed automatically — so confidence never ages silently.',
+    ],
+    example: [
+      'Un export CSV de l’inventaire — nom, type, criticité — suffit à faire apparaître le graphe, les scores et les premiers points de défaillance.',
+      'A CSV export of the inventory — name, type, criticality — is enough to surface the graph, the scores and the first failure points.',
+    ],
+    tip: [
+      'Réimporter ne détruit rien : vos validations humaines sont conservées et fusionnées avec les nouvelles données.',
+      'Re-importing destroys nothing: your human validations are kept and merged with the incoming data.',
     ],
   },
 ]
@@ -209,6 +277,7 @@ export function Home() {
       <Intro t={t} />
       <VideoSection t={t} />
       <Tutorial t={t} onGo={navigate} />
+      <Glossary t={t} />
       <Shortcuts t={t} onGo={navigate} />
     </div>
   )
@@ -377,6 +446,21 @@ function FeatureBlock({ f, t, open, onToggle, onGo }:
             <p className="mt-1 max-w-3xl" style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--nx-text)' }}>{t(...f.result)}</p>
           </div>
 
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-sm border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+              <p className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
+                <Eye size={12} /> {t('Un cas réel', 'A real case')}
+              </p>
+              <p className="mt-1.5" style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...f.example)}</p>
+            </div>
+            <div className="rounded-sm border p-4" style={{ borderColor: 'rgba(200,176,64,0.3)', background: 'rgba(200,176,64,0.06)' }}>
+              <p className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c8b040' }}>
+                <Lightbulb size={12} /> {t('Le piège à éviter', 'The trap to avoid')}
+              </p>
+              <p className="mt-1.5" style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...f.tip)}</p>
+            </div>
+          </div>
+
           <button onClick={() => onGo(f.to)} className="mt-5 flex items-center gap-2 rounded-sm px-4 py-2"
             style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 11.5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {t('Ouvrir', 'Open')} <ArrowRight size={14} />
@@ -384,6 +468,69 @@ function FeatureBlock({ f, t, open, onToggle, onGo }:
         </div>
       )}
     </div>
+  )
+}
+
+/* ---------- Vocabulaire ---------- */
+
+/**
+ * Les mots que la plateforme emploie partout. Ils sont ici, à portée de clic,
+ * parce qu'un écran de risque perd son lecteur dès la première fois qu'il dit
+ * « rayon d'impact » sans jamais l'avoir défini.
+ */
+const TERMS: { term: [string, string]; def: [string, string] }[] = [
+  {
+    term: ['Dépendance', 'Dependency'],
+    def: ['« Ceci a besoin de cela pour fonctionner. » Votre facturation dépend de sa base de données, qui dépend d’un serveur, qui dépend d’un hébergeur.',
+          '“This needs that in order to work.” Your billing depends on its database, which depends on a server, which depends on a host.'],
+  },
+  {
+    term: ['Point unique de défaillance', 'Single point of failure'],
+    def: ['Un élément dont plusieurs choses dépendent et qui n’a aucun remplaçant. S’il tombe, tout ce qui est derrière tombe avec lui.',
+          'An element several things depend on, with no stand-in. If it fails, everything behind it fails with it.'],
+  },
+  {
+    term: ['Rayon d’impact', 'Blast radius'],
+    def: ['Le nombre de choses qui s’arrêtent quand un élément tombe — pas seulement ses voisins directs, mais toute la chaîne derrière.',
+          'How many things stop when one element fails — not just its direct neighbours, but the whole chain behind it.'],
+  },
+  {
+    term: ['Criticité', 'Criticality'],
+    def: ['L’importance qu’on accorde à un actif, de 0 à 100. Elle vient de vous ; le score de risque, lui, est calculé à partir d’elle et du reste du graphe.',
+          'How important an asset is, from 0 to 100. It comes from you; the risk score is computed from it and from the rest of the graph.'],
+  },
+  {
+    term: ['Temps de reprise (RTO)', 'Recovery time (RTO)'],
+    def: ['Combien de temps il faut pour tout remettre en service. Ce délai, multiplié par ce que vous perdez chaque heure, donne le coût.',
+          'How long it takes to bring everything back. That delay, times what you lose per hour, gives the cost.'],
+  },
+  {
+    term: ['Confiance & preuve', 'Confidence & evidence'],
+    def: ['À quel point on est sûr qu’une dépendance existe vraiment, et d’où vient cette information : fichier importé, système interrogé, déduction, ou quelqu’un qui l’a confirmée. Toute information vieillit, donc la confiance décote.',
+          'How sure we are a dependency really exists, and where that came from: imported file, queried system, deduction, or someone who confirmed it. All information ages, so confidence decays.'],
+  },
+]
+
+function Glossary({ t }: { t: (fr: string, en: string) => string }) {
+  return (
+    <section>
+      <h2 className="mb-1" style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>
+        {t('Le vocabulaire de la plateforme', 'The platform’s vocabulary')}
+      </h2>
+      <p className="mb-4 max-w-3xl" style={{ fontSize: 13.5, color: 'var(--nx-text-muted)' }}>
+        {t('Six mots reviennent sur tous les écrans. Les voici, définis sans autre terme technique.',
+           'Six words come up on every screen. Here they are, defined without using another technical term.')}
+      </p>
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+        {TERMS.map((x) => (
+          <div key={x.term[1]} className="rounded-sm border p-4"
+            style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+            <h3 style={{ fontSize: 14, fontWeight: 500, color: 'var(--nx-text)' }}>{t(...x.term)}</h3>
+            <p className="mt-1.5" style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...x.def)}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
 

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, Plus } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { actionKindLabel, priorityLabel } from '../lib/labels'
 import { ActionModal } from '../components/ActionModal'
 import type { ActionStatus, RemediationAction } from '../lib/types'
 
@@ -73,13 +74,14 @@ export function ActionPlan() {
 }
 
 function ActionRow({ a, statusLabel, onStatus }: { a: RemediationAction; statusLabel: (s: ActionStatus) => string; onStatus: (s: ActionStatus) => void }) {
+  const { t } = useLang()
   return (
     <div className="flex flex-col gap-2 rounded-sm border p-4 md:flex-row md:items-center md:justify-between" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', borderLeft: `3px solid ${PRIO[a.priority]}` }}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: PRIO[a.priority], background: `${PRIO[a.priority]}18` }}>{a.priority.toUpperCase()}</span>
+          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: PRIO[a.priority], background: `${PRIO[a.priority]}18` }}>{priorityLabel(a.priority, t)}</span>
           {a.targetName !== '—' && <span style={{ fontFamily: mono, fontSize: 10, color: CYAN_T }}>→ {a.targetName}</span>}
-          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{a.kind}</span>
+          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{actionKindLabel(a.kind, t)}</span>
         </div>
         <div className="mt-1" style={{ fontSize: 14, color: 'var(--nx-text)' }}>{a.title}</div>
         {a.detail && <div style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{a.detail}</div>}
