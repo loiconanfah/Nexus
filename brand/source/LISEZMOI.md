@@ -25,6 +25,24 @@ nuage.
 
 Le prospectus dense (2 pages) reste disponible pour les échanges techniques.
 
+## Régénérer le document de concept (8 pages A4)
+
+    python brand/source/build_concept.py
+    chrome --headless=new --no-pdf-header-footer --virtual-time-budget=18000       --print-to-pdf=brand/Concept-Lenexux.pdf file:///<chemin>/concept.html
+
+Destiné aux investisseurs, aux incubateurs et aux prospects qui veulent
+comprendre le fond : raison d'être, architecture, moteur de confiance,
+positionnement, modèle d'adoption, état d'avancement.
+
+`build_concept.py` IMPORTE `build_brochure.py` : logo, icônes, constellations et
+feuille de style sont partagés, les deux documents ne peuvent donc pas diverger.
+Modifier la mise en forme de la brochure modifie aussi le document de concept —
+régénérer les deux après un changement de style.
+
+Les fiabilités des sources de preuve (page 5) reprennent les valeurs réelles de
+`backend/src/Nexus.Domain/ValueObjects/EvidenceSource.cs`. Si elles changent dans
+le code, les mettre à jour dans la constante `SOURCES`.
+
 ## Régénérer la charte graphique
 
     chrome --headless=new --no-pdf-header-footer --virtual-time-budget=15000 \

@@ -149,10 +149,10 @@ def constellation(width=760, height=760, seed=7, nodes=54, cx=None, cy=None):
 
 
 # ── Fragments réutilisés ──────────────────────────────────────────────────────
-def head(num):
+def head(num, total='04', label='Prospectus<br>de présentation'):
     return ('<div class="phead">'
-            '<span class="phead-l"><i></i>Prospectus<br>de présentation</span>'
-            f'<span class="phead-n">{num}/04</span></div>')
+            f'<span class="phead-l"><i></i>{label}</span>'
+            f'<span class="phead-n">{num}/{total}</span></div>')
 
 
 def foot(left, right):
