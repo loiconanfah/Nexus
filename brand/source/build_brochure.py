@@ -164,6 +164,11 @@ def step(n, ic, title, body):
             f'<b>{n}. {title}</b><span>{body}</span></div>')
 
 
+def family(title, items):
+    lis = ''.join(f'<li>{it}</li>' for it in items)
+    return f'<div class="fam"><b>{title}</b><ul>{lis}</ul></div>'
+
+
 def card(ic, title, body):
     return (f'<div class="card">{badge(ic, 46, 21)}<b>{title}</b><span>{body}</span></div>')
 
@@ -252,16 +257,27 @@ CSS = """
   .arrow { color: #a8ccd7; font-size: 12pt; margin-top: 14px; }
 
   /* Cartes de capacités */
-  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-top: 5mm; }
-  .card { border: 1px solid #e3edf0; border-radius: 10px; padding: 13px 14px 15px;
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 3.5mm; }
+  .card { border: 1px solid #e3edf0; border-radius: 10px; padding: 11px 12px 12px;
           background: linear-gradient(180deg, #ffffff 0%, #f8fcfd 100%); }
-  .card b { font-family: "Geist"; font-weight: 600; font-size: 10pt; display: block; margin: 9px 0 5px; }
-  .card span { font-size: 8.4pt; color: #5b6870; line-height: 1.55; display: block; }
+  .card b { font-family: "Geist"; font-weight: 600; font-size: 9.6pt; display: block; margin: 7px 0 4px; }
+  .card span { font-size: 8.1pt; color: #5b6870; line-height: 1.5; display: block; }
+
+  /* Catalogue complet des capacités */
+  .fams { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 4mm; }
+  .fam { padding: 0 9px; border-left: 1px solid #e3edf0; }
+  .fam:first-child { padding-left: 0; border-left: 0; }
+  .fam b { font-family: "JetBrains Mono"; font-size: 6.8pt; letter-spacing: .13em;
+           text-transform: uppercase; color: #0b7f94; display: block; margin-bottom: 6px; }
+  .fam ul { list-style: none; margin: 0; padding: 0; }
+  .fam li { font-size: 7.6pt; color: #37424a; line-height: 1.45; padding: 1.8px 0 1.8px 9px; position: relative; }
+  .fam li::before { content: ""; position: absolute; left: 0; top: 9px; width: 3px; height: 3px;
+                    border-radius: 50%; background: #16b3ce; }
 
   /* Bandeau de chiffres */
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 6mm;
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 4mm;
            border: 1px solid #dceaee; border-radius: 12px; background: #f6fbfc; overflow: hidden; }
-  .stat { padding: 13px 10px; text-align: center; border-left: 1px solid #e3edf0;
+  .stat { padding: 11px 10px; text-align: center; border-left: 1px solid #e3edf0;
           display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .stat:first-child { border-left: 0; }
   .stat b { font-family: "Geist"; font-weight: 700; font-size: 19pt; letter-spacing: -.03em; line-height: 1.1; }
@@ -269,16 +285,16 @@ CSS = """
                text-transform: uppercase; color: #5b6870; }
 
   /* Bandeau public visé */
-  .who { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 5mm; }
+  .who { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; margin-top: 4mm; }
   .who > div { text-align: center; padding: 0 5px; border-left: 1px solid #e8f0f2;
                display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .who > div:first-child { border-left: 0; }
   .who span { font-size: 7.6pt; color: #37424a; line-height: 1.3; }
 
   /* Page 4 */
-  .points { margin-top: 7mm; display: grid; gap: 11px; }
+  .points { margin-top: 6mm; display: grid; gap: 8px; }
   .point { display: flex; align-items: center; gap: 13px; font-family: "Geist"; font-weight: 500; font-size: 12pt; }
-  .cta { margin-top: 8mm; display: inline-flex; align-items: center; gap: 14px;
+  .cta { margin-top: 6mm; display: inline-flex; align-items: center; gap: 14px;
          background: #0d0d0d; color: #fff; border-radius: 999px; padding: 13px 26px;
          font-family: "Geist"; font-weight: 600; font-size: 12pt; }
   .cta i { font-style: normal; color: #22c9e4; font-size: 14pt; }
@@ -402,21 +418,37 @@ def build():
       <h2 style="font-size:27pt">De la donnée <em>à la décision</em></h2>
       <p style="font-family:Geist;font-weight:500;font-size:12.5pt;color:#0b7f94;margin:6px 0 0;
                 letter-spacing:.01em">Voir. Comprendre. Anticiper. Décider.</p>
-      <p class="sub" style="margin-top:12px;max-width:125mm">Lenexux transforme la complexité de vos
+      <p class="sub" style="margin-top:10px;max-width:125mm">Lenexux transforme la complexité de vos
         dépendances en analyses claires, en simulations réalistes et en décisions chiffrées —
         en affichant toujours le degré de confiance de ce qu’il avance.</p>
     </div>
 
     <div class="cards">
-      {card('graph', 'Graphe 2D et 3D', 'Visualisez les dépendances entre applications, données, fournisseurs et personnes.')}
-      {card('shield', 'Score de risque explicable', 'Un score transparent, décomposé en six facteurs mesurables. Aucune boîte noire.')}
-      {card('play', 'Simulation « et si ? »', 'Rejouez une panne, une cyberattaque ou une décision, et mesurez la cascade.')}
-      {card('chart', 'Impact financier', 'Estimez les conséquences directes et indirectes d’une interruption, en dollars.')}
-      {card('users', 'Dépendance humaine', 'Repérez les savoirs critiques détenus par une seule personne, sans relève.')}
-      {card('brain', 'Analyste IA ancré', 'Posez vos questions en langage courant : l’IA explique, le moteur calcule.')}
+      {card('graph', 'Graphe et jumeau numérique', 'Vos dépendances en 2D et en 3D, avec l’historique daté de chaque changement.')}
+      {card('shield', 'Score de risque explicable', 'Un score décomposé en six facteurs mesurables, et les points uniques de défaillance.')}
+      {card('play', 'Simulation et cyberattaque', 'Rejouez une panne ou une intrusion : cascade, temps de reprise, contre-mesures.')}
+      {card('money', 'Impact et modèle d’entreprise', 'Vos revenus, coûts et effectifs convertissent une panne technique en dollars.')}
+      {card('users', 'Fournisseurs et personnes', 'Concentration des fournisseurs, et savoirs détenus par une seule personne.')}
+      {card('file', 'Confiance et preuves', 'Chaque dépendance affiche d’où vient l’information et à quel point elle est sûre.')}
     </div>
 
-    <div style="margin-top:7mm">
+    <div style="margin-top:4.5mm">
+      <p class="eyebrow">Les vingt-cinq écrans de la plateforme</p>
+      <div class="fams">
+        {family('Intelligence', ['Tableau de bord', 'Modèle d’entreprise', 'Décision &amp; simulation',
+                                 'Impact transversal', 'Graphe de dépendances', 'Jumeau numérique',
+                                 'Historique du jumeau'])}
+        {family('Analyse', ['Dépendances', 'Centre de risques', 'Alerte anticipée',
+                            'Simulation d’attaque', 'Impact de changement', 'Confiance &amp; audit'])}
+        {family('Résilience', ['Fournisseurs', 'Dépendances humaines', 'Plan d’action',
+                               'Simulations « et si ? »'])}
+        {family('Connaissance', ['Analyste IA', 'Extraction documentaire', 'Rapports exécutifs'])}
+        {family('Données', ['Inventaire des actifs', 'Import &amp; intégration',
+                            'Dépendances inférées', 'Connecteurs &amp; sonde'])}
+      </div>
+    </div>
+
+    <div style="margin-top:5mm">
       <p class="eyebrow">Exemple illustratif — panne d’un fournisseur d’identité</p>
       <div class="stats">
         {stat('app', '16', 'éléments impactés')}
@@ -426,19 +458,6 @@ def build():
       </div>
       <p style="font-size:7.8pt;color:#8a97a0;margin-top:7px;font-style:italic">
         Chiffres issus du jeu de démonstration fourni avec la plateforme, reproductibles en séance.</p>
-    </div>
-
-    <div style="margin-top:7mm">
-      <p class="eyebrow">Une solution pour tous les acteurs de l’organisation</p>
-      <div class="who">
-        <div>{icon('building', 24, DEEP, 1.6)}<span>Direction<br>générale</span></div>
-        <div>{icon('server', 24, DEEP, 1.6)}<span>DSI / IT</span></div>
-        <div>{icon('lock', 24, DEEP, 1.6)}<span>Cybersécurité</span></div>
-        <div>{icon('process', 24, DEEP, 1.6)}<span>Continuité /<br>résilience</span></div>
-        <div>{icon('shield', 24, DEEP, 1.6)}<span>Gestion<br>des risques</span></div>
-        <div>{icon('money', 24, DEEP, 1.6)}<span>Finance</span></div>
-        <div>{icon('chart', 24, DEEP, 1.6)}<span>Opérations</span></div>
-      </div>
     </div>
 
     {foot('Lenexux · Des décisions appuyées sur des preuves', 'Système Lenexux · Dépendances · Impact')}
@@ -471,11 +490,24 @@ def build():
       <div class="cta-note">Cartographier. Simuler. Décider.</div>
     </div>
 
+    <div style="margin-top:7mm">
+      <p class="eyebrow">Une solution pour tous les acteurs de l’organisation</p>
+      <div class="who">
+        <div>{icon('building', 22, DEEP, 1.6)}<span>Direction<br>générale</span></div>
+        <div>{icon('server', 22, DEEP, 1.6)}<span>DSI / IT</span></div>
+        <div>{icon('lock', 22, DEEP, 1.6)}<span>Cybersécurité</span></div>
+        <div>{icon('process', 22, DEEP, 1.6)}<span>Continuité /<br>résilience</span></div>
+        <div>{icon('shield', 22, DEEP, 1.6)}<span>Gestion<br>des risques</span></div>
+        <div>{icon('money', 22, DEEP, 1.6)}<span>Finance</span></div>
+        <div>{icon('chart', 22, DEEP, 1.6)}<span>Opérations</span></div>
+      </div>
+    </div>
+
     <div class="trust">
       <div>{icon('brain', 22, DEEP, 1.6)}<span>IA explicable,<br>jamais inventive</span></div>
       <div>{icon('down', 22, DEEP, 1.6)}<span>Import simple,<br>sans accès privilégié</span></div>
-      <div>{icon('lock', 22, DEEP, 1.6)}<span>Espace client<br>cloisonné</span></div>
-      <div>{icon('users', 22, DEEP, 1.6)}<span>SSO Microsoft<br>Entra ID</span></div>
+      <div>{icon('server', 22, DEEP, 1.6)}<span>Sonde interne,<br>aucun port ouvert</span></div>
+      <div>{icon('users', 22, DEEP, 1.6)}<span>Comptes, rôles<br>et SSO Entra ID</span></div>
       <div>{icon('file', 22, DEEP, 1.6)}<span>Pensé pour la<br>Loi 25 et le RGPD</span></div>
     </div>
   </div>
