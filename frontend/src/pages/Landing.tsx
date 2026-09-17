@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Share2, ArrowRight, ArrowUpRight, PlayCircle, ShieldCheck,
+  ArrowRight, ArrowUpRight, PlayCircle, ShieldCheck,
   Plug, Bot, CheckCircle2, Lock, Shield, Server, AlertTriangle,
   Activity, Briefcase, Landmark, HeartPulse, Building2, Factory, Zap, ChevronDown, KeyRound,
   Scale, Menu, Network, LineChart, Radar, Users, Workflow, Upload, Boxes, EyeOff,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 import { usePageMeta } from '../lib/seo'
+import { Logo } from '../components/Logo'
 import { reopenConsent } from '../components/CookieConsent'
 
 const mono = 'var(--font-mono)'
@@ -48,12 +49,9 @@ export function Landing() {
 
       {/* ══════════ NAV ══════════ */}
       <header className="slb-nav">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center" style={{ background: '#22d3ee', clipPath: 'polygon(0 0,100% 0,100% 70%,70% 100%,0 100%)' }}>
-            <Share2 size={16} strokeWidth={2.4} style={{ color: '#070714' }} />
-          </div>
-          <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexux</span>
-        </div>
+        <a href="/welcome" aria-label="Lenexux — accueil" className="flex items-center">
+          <Logo size={34} variant="dark" wordSize={20} />
+        </a>
         <nav className="slb-nav-links">
           <a href="#probleme">{t('Le problème', 'Problem')}</a>
           <a href="#fonctionnement">{t('Fonctionnement', 'How it works')}</a>
@@ -495,8 +493,7 @@ export function Landing() {
       <footer className="border-t px-6 py-10" style={{ borderColor: '#1c1c22' }}>
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2">
-            <Share2 size={15} style={{ color: '#22d3ee' }} />
-            <span style={{ fontFamily: geist, fontSize: 14 }}>Lenexux</span>
+            <Logo size={24} variant="dark" wordSize={15} />
             <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· SplitsPay Inc.</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1" style={{ fontFamily: mono, fontSize: 11 }}>

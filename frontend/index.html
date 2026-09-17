@@ -22,13 +22,16 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="format-detection" content="telephone=no" />
-    <meta name="theme-color" content="#06070c" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#eef1f3" media="(prefers-color-scheme: light)" />
     <meta name="color-scheme" content="light dark" />
 
     <!-- Icônes & manifeste -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!-- Repli matriciel : moteurs de recherche et navigateurs sans SVG. -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <!-- iOS ignore le SVG et applique son propre arrondi : carré plein en PNG. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
     <!-- Canonique (domaine principal : lenexux.com, apex) -->
@@ -71,7 +74,7 @@
         "name": "Lenexux",
         "legalName": "SPLITSPAY INC.",
         "url": "https://lenexux.com/",
-        "logo": "https://lenexux.com/favicon.svg",
+        "logo": "https://lenexux.com/logo-512.png",
         "description": "Éditeur de Lenexux, plateforme d’intelligence des dépendances et d’impact opérationnel.",
         "slogan": "Sachez ce qui casse avant que l’activité n’en pâtisse."
       }

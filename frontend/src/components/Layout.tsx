@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  AlertTriangle, Blocks, Boxes, Building2, Database, FileSearch, GitBranch, GitPullRequest,
+  AlertTriangle, Blocks, Boxes, Building2, FileSearch, GitBranch, GitPullRequest,
   ClipboardList, HelpCircle, History, LayoutDashboard, Moon, Network, PanelLeftClose, PanelLeftOpen,
   Compass, Home, Radar, Radio, ScanText, ScrollText, Search,
   Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Waypoints, Zap, ShieldAlert,
@@ -10,6 +10,7 @@ import {
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { useTheme } from '../lib/theme'
+import { LogoMark } from './Logo'
 import { startGuidedTour } from './GuidedTour'
 
 type NavItem = { to: string; fr: string; en: string; icon: typeof LayoutDashboard }
@@ -93,12 +94,10 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
       >
         {/* Marque + bascule */}
         <div className={`mb-8 mt-2 flex items-center px-3 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm" style={{ background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.35)' }}>
-            <Database size={18} style={{ color: 'var(--nx-cyan)' }} />
-          </div>
+          <LogoMark size={collapsed ? 30 : 34} title={collapsed ? 'Lenexux' : ''} />
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-bold tracking-tighter" style={{ fontFamily: geist, fontSize: 20, lineHeight: 1, color: 'var(--nx-cyan-text)' }}>Lenexux</div>
+              <div className="font-bold" style={{ fontFamily: geist, fontSize: 20, lineHeight: 1, letterSpacing: '-0.035em', color: 'var(--nx-text)' }}>Lenexux</div>
               <div className="mt-1 truncate" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', opacity: 0.8 }}>{t('Intelligence opérationnelle', 'Operational Intel')}</div>
             </div>
           )}

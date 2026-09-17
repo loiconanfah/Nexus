@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Share2, ArrowRight, ArrowLeft, Building2, Radio, Loader2, Boxes, Share as ShareIcon, ShieldAlert } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Building2, Radio, Loader2, Boxes, Share as ShareIcon, ShieldAlert } from 'lucide-react'
 import { login } from '../lib/auth'
 import { useLang } from '../lib/i18n'
+import { Logo } from '../components/Logo'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -58,10 +59,7 @@ export function DemoChoice() {
       {/* Barre */}
       <header className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid var(--nx-border)' }}>
         <button onClick={() => navigate('/welcome')} className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded" style={{ background: 'var(--nx-cyan)' }}>
-            <Share2 size={17} strokeWidth={2.4} style={{ color: 'var(--nx-on-cyan)' }} />
-          </div>
-          <span className="text-lg font-semibold tracking-tight" style={{ fontFamily: geist }}>Lenexux</span>
+          <Logo size={32} wordSize={19} />
         </button>
         <button onClick={() => navigate('/welcome')} className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>
           <ArrowLeft size={14} /> {t('Retour', 'Back')}

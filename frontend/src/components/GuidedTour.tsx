@@ -36,8 +36,8 @@ const STEPS: Step[] = [
     path: '/',
     title: ['Bienvenue dans Lenexux', 'Welcome to Lenexux'],
     body: [
-      'Deux minutes pour faire le tour. Lenexux relie vos systèmes, fournisseurs et personnes en une seule carte, puis vous dit ce qui casse quand l’un d’eux tombe — et ce que ça coûte.',
-      'Two minutes for the tour. Lenexux links your systems, suppliers and people into a single map, then tells you what breaks when one of them fails — and what it costs.',
+      'Quelques minutes pour faire le tour. Lenexux relie vos systèmes, fournisseurs et personnes en une seule carte, puis vous dit ce qui casse quand l’un d’eux tombe — et ce que ça coûte.',
+      'A few minutes for the tour. Lenexux links your systems, suppliers and people into a single map, then tells you what breaks when one of them fails — and what it costs.',
     ],
   },
   {

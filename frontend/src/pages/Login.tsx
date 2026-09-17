@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Building2, KeyRound, LogIn, Mail, Share2, ShieldCheck } from 'lucide-react'
+import { Building2, KeyRound, LogIn, Mail, ShieldCheck } from 'lucide-react'
+import { LogoMark } from '../components/Logo'
 import { login, loginWithEntra, register } from '../lib/auth'
 import { getAuthConfig, signInWithMicrosoft } from '../lib/entra'
 import { useLang } from '../lib/i18n'
@@ -132,16 +133,11 @@ export function Login() {
 
         {/* Branding */}
         <div className="relative z-10 flex flex-col items-start gap-4">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-sm"
-              style={{ background: 'var(--nx-cyan)', boxShadow: '0 0 15px rgba(0,229,255,0.25)' }}
-            >
-              <Share2 size={20} strokeWidth={2.4} style={{ color: 'var(--nx-on-cyan)' }} />
-            </div>
+          <div className="flex items-center gap-4">
+            <LogoMark size={58} title="" />
             <h1
-              className="text-4xl font-semibold tracking-tighter"
-              style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text)' }}
+              className="text-4xl font-bold"
+              style={{ fontFamily: 'var(--font-geist)', color: 'var(--nx-text)', letterSpacing: '-0.035em' }}
             >
               Lenexux
             </h1>
@@ -203,7 +199,7 @@ export function Login() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="commander@nexus.gov"
+                  placeholder="prenom@entreprise.com"
                   className="w-full bg-transparent p-2 outline-none"
                   style={{ color: 'var(--nx-text)', fontFamily: 'var(--font-inter)' }}
                 />

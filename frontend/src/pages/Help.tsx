@@ -326,8 +326,8 @@ export function Help() {
         <div className="min-w-0 flex-1">
           <p style={{ fontSize: 14, color: 'var(--nx-text)' }}>{t('La visite guidée', 'The guided tour')}</p>
           <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
-            {t('Neuf étapes à travers l’interface, en deux minutes. Rejouable autant de fois que vous voulez.',
-               'Nine steps through the interface, in two minutes. Replay it as often as you like.')}
+            {t('Quinze étapes à travers l’interface, en quelques minutes. Rejouable autant de fois que vous voulez.',
+               'Fifteen steps through the interface, in a few minutes. Replay it as often as you like.')}
           </p>
         </div>
         <button onClick={startGuidedTour} className="flex items-center gap-2 rounded-sm px-4 py-2"

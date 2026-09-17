@@ -88,6 +88,9 @@ body {
   --nx-text: #14181a;
   --nx-text-muted: #55626a;
   --nx-cyan: #0aa5bd;
+  /* Couleurs exactes du logo (charte graphique) — version principale. */
+  --nx-logo-ink: #0d0d0d;
+  --nx-logo-accent: #16b3ce;
   --nx-cyan-text: #0a7385;
   --nx-cyan-hover: #086070;
   --nx-on-cyan: #ffffff;
@@ -127,6 +130,9 @@ body {
   --nx-text: #e6eaee;
   --nx-text-muted: #98a4ae;
   --nx-cyan: #22d3ee;
+  /* Couleurs exactes du logo (charte graphique) — version inversée. */
+  --nx-logo-ink: #ffffff;
+  --nx-logo-accent: #22c9e4;
   --nx-cyan-text: #7fe8f7;
   --nx-cyan-hover: #a5eefb;
   --nx-on-cyan: #04252b;

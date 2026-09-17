@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Logo } from '../components/Logo'
 import { usePageMeta } from '../lib/seo'
 
 const geist = 'var(--font-geist)'
@@ -75,7 +76,7 @@ export function Docs() {
     <div className="min-h-screen" style={{ background: 'var(--nx-bg)', color: 'var(--nx-text)' }}>
       <header className="sticky top-0 z-20 flex items-center justify-between border-b px-6 py-3 backdrop-blur" style={{ borderColor: 'var(--nx-border)', background: 'color-mix(in srgb, var(--nx-bg) 88%, transparent)' }}>
         <button onClick={() => nav('/welcome')} className="flex items-center gap-2" style={{ fontFamily: geist, fontSize: 16 }}>
-          <span style={{ color: CYAN }}>◈</span> Lenexux <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>· Documentation</span>
+          <Logo size={26} wordSize={16} /> <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>· Documentation</span>
         </button>
         <div className="flex items-center gap-3" style={{ fontFamily: mono, fontSize: 12 }}>
           <button onClick={() => nav('/demo')} style={{ color: CYAN }}>Essayer la démo →</button>

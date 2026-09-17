@@ -311,7 +311,7 @@ function Intro({ t }: { t: (fr: string, en: string) => string }) {
           <Compass size={15} /> {t('Lancer la visite guidée', 'Start the guided tour')}
         </button>
         <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
-          {t('Neuf étapes à travers l’interface, en deux minutes.', 'Nine steps through the interface, in two minutes.')}
+          {t('Quinze étapes à travers l’interface, en quelques minutes.', 'Fifteen steps through the interface, in a few minutes.')}
         </span>
       </div>
 
