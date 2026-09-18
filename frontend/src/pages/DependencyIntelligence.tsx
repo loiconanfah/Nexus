@@ -11,14 +11,14 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
 type T = (fr: string, en: string) => string
 function critColor(v: number): string {
   if (v >= 80) return ERR
-  if (v >= 60) return '#fb923c'
-  if (v >= 40) return '#facc15'
-  return '#849396'
+  if (v >= 60) return 'var(--nx-orange)'
+  if (v >= 40) return 'var(--nx-warning)'
+  return 'var(--nx-text-muted)'
 }
 function critBand(v: number, t: T): string {
   if (v >= 80) return t('Critique', 'Critical')
@@ -28,9 +28,9 @@ function critBand(v: number, t: T): string {
 }
 function tier(v: number, t: T): { label: string; color: string } {
   if (v >= 80) return { label: t('Niveau 1 · Critique', 'Tier 1 · Critical'), color: ERR }
-  if (v >= 60) return { label: t('Niveau 2 · Élevé', 'Tier 2 · High'), color: '#fb923c' }
-  if (v >= 40) return { label: t('Niveau 3 · Modéré', 'Tier 3 · Moderate'), color: '#facc15' }
-  return { label: t('Niveau 4 · Faible', 'Tier 4 · Low'), color: '#849396' }
+  if (v >= 60) return { label: t('Niveau 2 · Élevé', 'Tier 2 · High'), color: 'var(--nx-orange)' }
+  if (v >= 40) return { label: t('Niveau 3 · Modéré', 'Tier 3 · Moderate'), color: 'var(--nx-warning)' }
+  return { label: t('Niveau 4 · Faible', 'Tier 4 · Low'), color: 'var(--nx-text-muted)' }
 }
 
 interface Row { edge: GraphEdge; source?: GraphEntityRecord; target?: GraphEntityRecord }
@@ -77,7 +77,7 @@ export function DependencyIntelligence() {
           <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Comprenez ce qui dépend de quoi — et où l’organisation est exposée.', 'Understand what depends on what — and where the organization is exposed.')}</p>
         </div>
         <button onClick={() => setOnlyUnknown((v) => !v)} className="flex items-center gap-2 rounded-sm border px-3 py-1.5"
-          style={{ borderColor: onlyUnknown ? CYAN : 'var(--nx-border)', color: onlyUnknown ? CYAN_T : 'var(--nx-text-muted)', background: onlyUnknown ? 'rgba(0,229,255,0.08)' : 'transparent', fontFamily: mono, fontSize: 12 }}>
+          style={{ borderColor: onlyUnknown ? CYAN : 'var(--nx-border)', color: onlyUnknown ? CYAN_T : 'var(--nx-text-muted)', background: onlyUnknown ? 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)' : 'transparent', fontFamily: mono, fontSize: 12 }}>
           <Search size={14} /> {t('Découvrir les dépendances inconnues', 'Discover Unknown Dependencies')}
         </button>
       </div>
@@ -86,8 +86,8 @@ export function DependencyIntelligence() {
       <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
         <Tile label={t('TOTAL DÉPENDANCES', 'TOTAL DEPENDENCIES')} value={stats.total} color="var(--nx-text)" />
         <Tile label={t('VÉRIFIÉES', 'VERIFIED')} value={stats.verified} color={CYAN_T} />
-        <Tile label={t('INFÉRÉES', 'INFERRED')} value={stats.inferred} color="#facc15" />
-        <Tile label={t('INCONNUES', 'UNKNOWN')} value={stats.unknown} color="#fb923c" />
+        <Tile label={t('INFÉRÉES', 'INFERRED')} value={stats.inferred} color="var(--nx-warning)" />
+        <Tile label={t('INCONNUES', 'UNKNOWN')} value={stats.unknown} color="var(--nx-orange)" />
         <Tile label={t('EXPOSITIONS CRITIQUES', 'CRITICAL EXPOSURES')} value={stats.exposures} color={ERR} />
       </div>
 
@@ -117,7 +117,7 @@ export function DependencyIntelligence() {
                     <tr key={r.edge.id} onClick={() => setSelId(r.edge.id)} className="cursor-pointer border-b transition-colors"
                       style={{ borderColor: 'var(--nx-border)', background: sel ? 'var(--nx-surface-high)' : 'transparent', borderLeft: `2px solid ${sel ? CYAN : 'transparent'}` }}>
                       <td className="px-3 py-2.5" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{r.source?.name ?? '—'}</td>
-                      <td className="px-3 py-2.5"><span style={{ fontFamily: mono, fontSize: 11, color: unknown ? '#fb923c' : 'var(--nx-text-muted)' }}>{relationTypeLabel(r.edge.type, t)}</span></td>
+                      <td className="px-3 py-2.5"><span style={{ fontFamily: mono, fontSize: 11, color: unknown ? 'var(--nx-orange)' : 'var(--nx-text-muted)' }}>{relationTypeLabel(r.edge.type, t)}</span></td>
                       <td className="px-3 py-2.5" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{r.target?.name ?? '—'}</td>
                       <td className="px-3 py-2.5 text-right"><span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: critColor(crit), background: `color-mix(in srgb, ${critColor(crit)} 18%, transparent)` }}>{critBand(crit, t)}</span></td>
                       <td className="px-3 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: r.edge.confidence < 0.5 ? ERR : CYAN_T }}>{Math.round(r.edge.confidence * 100)}%</td>
@@ -193,7 +193,7 @@ function DependencyDetail({ row, onTarget, onMap, onClose }: { row: Row; onTarge
 
       {crit >= 60 && (
         <Section title={t('Risques associés', 'Related Risks')}>
-          <div className="rounded-sm border p-3" style={{ borderColor: 'rgba(255,180,171,0.3)', background: 'color-mix(in srgb, #ffb4ab 8%, transparent)' }}>
+          <div className="rounded-sm border p-3" style={{ borderColor: 'color-mix(in srgb, var(--nx-danger) 30%, transparent)', background: 'color-mix(in srgb, var(--nx-danger) 8%, transparent)' }}>
             <div className="mb-1 flex items-center gap-1" style={{ color: ERR, fontFamily: mono, fontSize: 11 }}><AlertTriangle size={12} /> {t('RISQUE AMONT', 'UPSTREAM RISK')}</div>
             <p style={{ fontSize: 12, color: 'var(--nx-text)' }}>{t(`${target?.name} est un nœud ${critBand(crit, t).toLowerCase()}. Sa défaillance se propagerait à ${source?.name} et à ses dépendants.`, `${target?.name} is a ${critBand(crit, t).toLowerCase()} node. Its failure would propagate to ${source?.name} and dependents.`)}</p>
           </div>

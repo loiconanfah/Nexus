@@ -10,7 +10,7 @@ import { relationTypeLabel } from '../lib/labels'
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const NEG = '#d15b54'
+const NEG = 'var(--nx-danger)'
 
 export function RelationInference() {
   const { t } = useLang()
@@ -54,7 +54,7 @@ export function RelationInference() {
           onClick={() => infer.mutate()}
           disabled={infer.isPending}
           className="flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium"
-          style={{ background: CYAN, color: '#04121a', opacity: infer.isPending ? 0.6 : 1 }}
+          style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: infer.isPending ? 0.6 : 1 }}
         >
           <Sparkles size={16} /> {infer.isPending ? t('Analyse du graphe…', 'Analyzing graph…') : t('Analyser mon graphe et proposer des dépendances', 'Analyze my graph and propose dependencies')}
         </button>
@@ -92,7 +92,7 @@ export function RelationInference() {
                   onClick={submit}
                   disabled={ingest.isPending || selected.size === 0}
                   className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium"
-                  style={{ background: CYAN, color: '#04121a', opacity: ingest.isPending || selected.size === 0 ? 0.5 : 1 }}
+                  style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: ingest.isPending || selected.size === 0 ? 0.5 : 1 }}
                 >
                   <Check size={14} /> {t(`Ingérer (${selected.size})`, `Ingest (${selected.size})`)}
                 </button>
@@ -134,7 +134,7 @@ export function RelationInference() {
 }
 
 function confColor(c: number): string {
-  if (c >= 0.75) return '#3fb27f'
-  if (c >= 0.5) return '#e0a458'
-  return '#8aa0ad'
+  if (c >= 0.75) return 'var(--nx-success)'
+  if (c >= 0.5) return 'var(--nx-orange)'
+  return 'var(--nx-text-muted)'
 }

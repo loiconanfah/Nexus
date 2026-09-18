@@ -16,8 +16,8 @@ const Enterprise3D = lazy(() => import('../components/Enterprise3D').then((m) =>
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const POS = '#3fb27f'
-const NEG = '#d15b54'
+const POS = 'var(--nx-success)'
+const NEG = 'var(--nx-danger)'
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 
 type Drivers = EnterpriseModel['drivers']
@@ -202,7 +202,7 @@ export function DecisionSim() {
     return <div className="rounded-lg border p-10 text-center" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Modèle d’entreprise requis (voir « Modèle d’entreprise »).', 'Enterprise model required (see “Enterprise Model”).')}</div>
   }
   const { base, sim, scores } = model
-  const scoreColor = scores.overall >= 70 ? POS : scores.overall >= 45 ? '#c69a4e' : NEG
+  const scoreColor = scores.overall >= 70 ? POS : scores.overall >= 45 ? 'var(--nx-warning)' : NEG
   const selectedElement = selectedId?.startsWith('el:') ? elements.find((e) => `el:${e.id}` === selectedId) ?? null : null
 
   const hologram = (
@@ -215,7 +215,7 @@ export function DecisionSim() {
         <div className="flex-1" />
         <ToolBtn onClick={() => setFullscreen((f) => !f)} icon={fullscreen ? Minimize2 : Maximize2}>{fullscreen ? t('Quitter le plein écran', 'Exit fullscreen') : t('Plein écran', 'Fullscreen')}</ToolBtn>
       </div>
-      {relMode && <div className="rounded-sm border px-3 py-1.5" style={{ borderColor: 'rgba(0,229,255,0.4)', background: 'rgba(0,229,255,0.06)', fontFamily: mono, fontSize: 11, color: 'var(--nx-cyan-text)' }}>{relFrom ? t(`Reliant « ${nodeName(relFrom)} » — cliquez le nœud cible.`, `Linking “${nodeName(relFrom)}” — click the target node.`) : t('Cliquez le premier nœud à relier.', 'Click the first node to link.')}</div>}
+      {relMode && <div className="rounded-sm border px-3 py-1.5" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 40%, transparent)', background: 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)', fontFamily: mono, fontSize: 11, color: 'var(--nx-cyan-text)' }}>{relFrom ? t(`Reliant « ${nodeName(relFrom)} » — cliquez le nœud cible.`, `Linking “${nodeName(relFrom)}” — click the target node.`) : t('Cliquez le premier nœud à relier.', 'Click the first node to link.')}</div>}
 
       <div className={fullscreen ? 'flex min-h-0 flex-1 gap-3' : 'grid gap-3 lg:grid-cols-[1fr_340px]'}>
         {/* Scène 3D */}
@@ -269,7 +269,7 @@ export function DecisionSim() {
           {(elements.length > 0 || relations.length > 0) && (
             <Card title={t('Diagramme', 'Diagram')}>
               {elements.map((e) => (
-                <div key={e.id} className="flex items-center justify-between rounded-sm border p-2" style={{ borderColor: selectedId === `el:${e.id}` ? CYAN : 'rgba(0,229,255,0.3)', background: 'rgba(0,229,255,0.05)', marginBottom: 6, cursor: 'pointer' }} onClick={() => setSelectedId(`el:${e.id}`)}>
+                <div key={e.id} className="flex items-center justify-between rounded-sm border p-2" style={{ borderColor: selectedId === `el:${e.id}` ? CYAN : 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', background: 'color-mix(in srgb, var(--nx-cyan) 5%, transparent)', marginBottom: 6, cursor: 'pointer' }} onClick={() => setSelectedId(`el:${e.id}`)}>
                   <div><div style={{ fontSize: 13, color: 'var(--nx-text)' }}>{e.name}</div><div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{e.type} · {money(e.revenue)} · {e.headcount} {t('empl.', 'staff')}</div></div>
                   <button onClick={(ev) => { ev.stopPropagation(); removeElement(e.id) }} style={{ color: 'var(--nx-text-muted)' }}><Trash2 size={13} /></button>
                 </div>
@@ -352,7 +352,7 @@ export function DecisionSim() {
           <div className="mb-2 flex items-center gap-2">
             <Lightbulb size={15} style={{ color: CYAN }} />
             <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Analyste IA', 'AI Analyst')}</h3>
-            {analysis && <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: analysis.aiUsed ? CYAN : 'var(--nx-outline)', border: `1px solid ${analysis.aiUsed ? 'rgba(0,229,255,0.4)' : 'var(--nx-border)'}` }}>{analysis.aiUsed ? t('IA', 'AI') : t('RÈGLES', 'RULES')}</span>}
+            {analysis && <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: analysis.aiUsed ? CYAN : 'var(--nx-outline)', border: `1px solid ${analysis.aiUsed ? 'color-mix(in srgb, var(--nx-cyan) 40%, transparent)' : 'var(--nx-border)'}` }}>{analysis.aiUsed ? t('IA', 'AI') : t('RÈGLES', 'RULES')}</span>}
             {busy && <Loader2 size={13} className="animate-spin" style={{ color: 'var(--nx-outline)' }} />}
           </div>
           {analysis ? (
@@ -361,7 +361,7 @@ export function DecisionSim() {
               <p style={{ fontSize: 13.5, color: 'var(--nx-text)', lineHeight: 1.55 }}>{analysis.narrative}</p>
               <div className="grid gap-3 md:grid-cols-3">
                 {analysis.consequences.length > 0 && <IconList icon={CircleCheck} color={POS} title={t('Conséquences', 'Consequences')} items={analysis.consequences} />}
-                {analysis.risks.length > 0 && <IconList icon={AlertTriangle} color="#c69a4e" title={t('Risques', 'Risks')} items={analysis.risks} />}
+                {analysis.risks.length > 0 && <IconList icon={AlertTriangle} color="var(--nx-warning)" title={t('Risques', 'Risks')} items={analysis.risks} />}
                 <IconList icon={ArrowRight} color={CYAN} title={t('Recommandation', 'Recommendation')} items={[analysis.recommendation]} />
               </div>
             </div>
@@ -407,9 +407,9 @@ function ComparePanel({ base, sim, money, nf, t, compact }: { base: Metrics; sim
             <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
             <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 10, fontFamily: mono }} axisLine={false} tickLine={false} width={40} />
             <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(v, n) => [`${Number(v).toFixed(1)} ${m.millions}`, String(n) === 'actuel' ? t('Actuel', 'Current') : t('Simulé', 'Simulated')]} />
-            <Bar dataKey="actuel" fill="#5f7079" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="actuel" fill="var(--nx-outline)" radius={[2, 2, 0, 0]} />
             <Bar dataKey="simule" radius={[2, 2, 0, 0]}>
-              {chart.map((c, i) => <Cell key={i} fill={c.simule >= c.actuel ? '#3fb27f' : '#d15b54'} />)}
+              {chart.map((c, i) => <Cell key={i} fill={c.simule >= c.actuel ? 'var(--nx-success)' : 'var(--nx-danger)'} />)}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -462,7 +462,7 @@ function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparab
               <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={false} tickLine={false} width={40} />
               <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} formatter={(v) => [`${Number(v).toFixed(1)} ${m.millions}`, t('Résultat net', 'Net profit')]} />
               <Bar dataKey="net" radius={[3, 3, 0, 0]}>
-                {chart.map((_, i) => <Cell key={i} fill={comparables[i].id === winnerId ? '#3fb27f' : '#5f7079'} />)}
+                {chart.map((_, i) => <Cell key={i} fill={comparables[i].id === winnerId ? 'var(--nx-success)' : 'var(--nx-outline)'} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -487,7 +487,7 @@ function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparab
               const vals = comparables.map(r.get)
               const bestVal = r.best ? Math.max(...vals) : NaN
               return (
-                <tr key={r.label} style={{ borderBottom: '1px solid rgba(59,73,76,0.2)' }}>
+                <tr key={r.label} style={{ borderBottom: '1px solid color-mix(in srgb, var(--nx-border) 20%, transparent)' }}>
                   <td className="p-3" style={{ color: 'var(--nx-text-muted)' }}>{r.label}</td>
                   {comparables.map((c, i) => {
                     const isBest = r.best && vals[i] === bestVal && comparables.length > 1
@@ -497,7 +497,7 @@ function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparab
               )
             })}
             {/* Ligne score */}
-            <tr style={{ background: 'rgba(0,229,255,0.04)' }}>
+            <tr style={{ background: 'color-mix(in srgb, var(--nx-cyan) 4%, transparent)' }}>
               <td className="p-3" style={{ color: CYAN, fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Score de décision', 'Decision score')}</td>
               {comparables.map((c) => (
                 <td key={c.id} className="p-3 text-right" style={{ fontFamily: geist, fontSize: 16, color: c.id === winnerId ? POS : 'var(--nx-text)', fontWeight: c.id === winnerId ? 700 : 400 }}>{c.score}</td>
@@ -537,10 +537,10 @@ function NumRow({ label, value, onChange, step = 100000 }: { label: string; valu
   return <Row label={label}><input type="number" step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full rounded-sm border px-2 py-1 outline-none" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }} /></Row>
 }
 function ToolBtn({ onClick, active, icon: Icon, children }: { onClick: () => void; active?: boolean; icon: typeof Plus; children: React.ReactNode }) {
-  return <button onClick={onClick} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 transition-colors" style={{ borderColor: active ? CYAN : 'var(--nx-border)', background: active ? 'rgba(0,229,255,0.1)' : 'var(--nx-panel)', color: active ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}><Icon size={14} /> {children}</button>
+  return <button onClick={onClick} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 transition-colors" style={{ borderColor: active ? CYAN : 'var(--nx-border)', background: active ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'var(--nx-panel)', color: active ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}><Icon size={14} /> {children}</button>
 }
 function TabBtn({ active, onClick, icon: Icon, children }: { active: boolean; onClick: () => void; icon: typeof Box; children: React.ReactNode }) {
-  return <button onClick={onClick} className="flex items-center gap-1.5 px-3 py-1.5 transition-colors" style={{ background: active ? 'rgba(0,229,255,0.1)' : 'transparent', color: active ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}><Icon size={14} /> {children}</button>
+  return <button onClick={onClick} className="flex items-center gap-1.5 px-3 py-1.5 transition-colors" style={{ background: active ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent', color: active ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}><Icon size={14} /> {children}</button>
 }
 function Lever({ label, unit, min, max, step, value, onChange }: { label: string; unit: string; min: number; max: number; step: number; value: number; onChange: (v: number) => void }) {
   const active = value !== 0
@@ -550,7 +550,7 @@ function Lever({ label, unit, min, max, step, value, onChange }: { label: string
         <label style={{ fontSize: 13, color: 'var(--nx-text)' }}>{label}</label>
         <span style={{ fontFamily: mono, fontSize: 12, color: active ? CYAN : 'var(--nx-text-muted)' }}>{value > 0 ? '+' : ''}{value} {unit}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full" style={{ accentColor: '#00e5ff' }} />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full" style={{ accentColor: 'var(--nx-cyan)' }} />
     </div>
   )
 }
@@ -560,7 +560,7 @@ function Compare({ label, a, b, fmt }: { label: string; a: number; b: number; fm
   const col = Math.abs(delta) < 1e-6 ? 'var(--nx-text-muted)' : delta > 0 ? POS : NEG
   const Icon = Math.abs(delta) < 1e-6 ? Minus : delta > 0 ? TrendingUp : TrendingDown
   return (
-    <div className="flex items-center justify-between border-b py-1.5" style={{ borderColor: 'rgba(59,73,76,0.25)' }}>
+    <div className="flex items-center justify-between border-b py-1.5" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 25%, transparent)' }}>
       <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{label}</span>
       <div className="flex items-baseline gap-2" style={{ fontFamily: mono, fontSize: 12 }}>
         <span style={{ color: 'var(--nx-text-muted)' }}>{fmt(a)}</span>

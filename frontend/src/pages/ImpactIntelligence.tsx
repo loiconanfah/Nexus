@@ -11,7 +11,7 @@ import { EvidenceBanner } from '../components/EvidenceBanner'
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const NEG = '#d15b54'
+const NEG = 'var(--nx-danger)'
 
 /**
  * Questions d'exemple tirées de l'espace lui-même : un fournisseur, un système et
@@ -76,7 +76,7 @@ export function ImpactIntelligence() {
             onClick={() => q.trim() && analyze.mutate(q.trim())}
             disabled={analyze.isPending || !q.trim()}
             className="flex items-center justify-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-medium"
-            style={{ background: CYAN, color: '#04121a', opacity: analyze.isPending || !q.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}
+            style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: analyze.isPending || !q.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}
           >
             {analyze.isPending ? t('Analyse…', 'Analyzing…') : <>{t('Analyser l’impact', 'Analyze impact')} <ArrowRight size={15} /></>}
           </button>
@@ -150,7 +150,7 @@ export function ImpactIntelligence() {
                 {data.criticalItems.map((c) => (
                   <div key={c.id} className="flex items-center justify-between border-b py-2" style={{ borderColor: 'var(--nx-border)' }}>
                     <div className="flex items-center gap-2 truncate">
-                      <span className="rounded px-1.5 py-0.5" style={{ background: critColor(c.criticality), fontFamily: mono, fontSize: 10, color: '#04121a' }}>{c.criticality}</span>
+                      <span className="rounded px-1.5 py-0.5" style={{ background: critColor(c.criticality), fontFamily: mono, fontSize: 10, color: 'var(--nx-on-cyan)' }}>{c.criticality}</span>
                       <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
                       <span style={{ fontSize: 11, color: 'var(--nx-outline)' }}>{entityTypeLabel(c.type, t)}</span>
                     </div>
@@ -207,10 +207,10 @@ export function ImpactIntelligence() {
 }
 
 function critColor(c: number): string {
-  if (c >= 85) return '#d15b54'
-  if (c >= 65) return '#e0a458'
-  if (c >= 40) return '#4bb3c9'
-  return '#8aa0ad'
+  if (c >= 85) return 'var(--nx-danger)'
+  if (c >= 65) return 'var(--nx-orange)'
+  if (c >= 40) return 'var(--nx-cyan)'
+  return 'var(--nx-text-muted)'
 }
 
 function Kpi({ label, value, sub, icon, accent }: { label: string; value: string; sub?: string; icon: React.ReactNode; accent?: boolean }) {

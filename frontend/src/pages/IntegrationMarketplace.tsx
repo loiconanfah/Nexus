@@ -79,13 +79,13 @@ export function IntegrationMarketplace() {
 function Card({ k, onImport, onKey }: { k: Connector; onImport: () => void; onKey: () => void }) {
   const { t, lang } = useLang()
   const meta = TIER_META[k.tier]
-  const border = k.tier === 'active' ? 'rgba(74,222,128,0.35)' : k.tier === 'key' ? 'rgba(192,132,252,0.35)' : 'var(--nx-border)'
+  const border = k.tier === 'active' ? 'color-mix(in srgb, var(--nx-success) 35%, transparent)' : k.tier === 'key' ? 'color-mix(in srgb, var(--nx-violet) 35%, transparent)' : 'var(--nx-border)'
 
   return (
     <div className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: border }}>
       <div className="flex items-start justify-between">
         <div className="flex h-10 w-10 items-center justify-center rounded-sm" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', fontFamily: mono, fontSize: 10, color: 'var(--nx-text)' }}>{k.glyph}</div>
-        <span className="flex items-center gap-1 rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: meta.color, background: `${meta.color}18`, border: `1px solid ${meta.color}40` }}>
+        <span className="flex items-center gap-1 rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: meta.color, background: `color-mix(in srgb, ${meta.color} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${meta.color} 25%, transparent)` }}>
           {k.tier === 'active' ? <Check size={10} /> : k.tier === 'key' ? <KeyRound size={10} /> : k.tier === 'assisted' ? <Plug size={10} /> : <Clock size={10} />} {lang === 'fr' ? meta.fr : meta.en}
         </span>
       </div>
@@ -98,15 +98,15 @@ function Card({ k, onImport, onKey }: { k: Connector; onImport: () => void; onKe
       <div className="flex items-center gap-2">
         {(k.tier === 'active' || k.tier === 'assisted') && (
           k.category === 'ai'
-            ? <a href={k.docUrl} target="_blank" rel="noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+            ? <a href={k.docUrl} target="_blank" rel="noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 <Plug size={13} /> {t('Configurer', 'Set up')}
               </a>
-            : <button onClick={onImport} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+            : <button onClick={onImport} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 {k.tier === 'active' ? <><Sparkles size={13} /> {t('Connecter', 'Connect')}</> : <><Plug size={13} /> {t('Importer l’export', 'Import export')}</>}
               </button>
         )}
         {k.tier === 'key' && (
-          <button onClick={onKey} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'rgba(192,132,252,0.12)', border: '1px solid rgba(192,132,252,0.35)', color: '#c084fc', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+          <button onClick={onKey} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-violet) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-violet) 35%, transparent)', color: 'var(--nx-violet)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
             <KeyRound size={13} /> {t('Ajouter une clé', 'Add a key')}
           </button>
         )}
@@ -125,7 +125,7 @@ function Card({ k, onImport, onKey }: { k: Connector; onImport: () => void; onKe
 
 function TierChip({ label, active, color, count, onClick }: { label: string; active: boolean; color: string; count: number; onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1" style={{ borderColor: active ? color : 'var(--nx-border)', background: active ? `${color}18` : 'transparent', fontFamily: mono, fontSize: 11, color: active ? 'var(--nx-text)' : 'var(--nx-text-muted)' }}>
+    <button onClick={onClick} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1" style={{ borderColor: active ? color : 'var(--nx-border)', background: active ? `color-mix(in srgb, ${color} 9%, transparent)` : 'transparent', fontFamily: mono, fontSize: 11, color: active ? 'var(--nx-text)' : 'var(--nx-text-muted)' }}>
       <span className="inline-block h-2 w-2 rounded-full" style={{ background: color }} /> {label} <span style={{ opacity: 0.6 }}>{count}</span>
     </button>
   )

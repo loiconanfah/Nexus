@@ -22,13 +22,13 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
 function bandColor(crit: number): string {
   if (crit >= 80) return ERR
-  if (crit >= 60) return '#ff897d'
-  if (crit >= 40) return '#e08a3c'
-  return '#00daf3'
+  if (crit >= 60) return 'var(--nx-high)'
+  if (crit >= 40) return 'var(--nx-orange)'
+  return 'var(--nx-cyan)'
 }
 
 function typeIcon(type: string, size = 14) {
@@ -55,12 +55,12 @@ function EntityNode({ data, selected }: NodeProps) {
         background: selected ? 'var(--nx-surface)' : 'var(--nx-surface-container)',
         border: `${selected ? 2 : 1}px solid ${selected ? CYAN : 'var(--nx-border)'}`,
         borderLeft: `2px solid ${c}`,
-        boxShadow: selected ? '0 0 15px rgba(0,229,255,0.15)' : 'none',
+        boxShadow: selected ? '0 0 15px color-mix(in srgb, var(--nx-cyan) 15%, transparent)' : 'none',
         opacity: dim ? 0.25 : 1,
       }}
     >
       <Handle type="target" position={Position.Left} style={{ background: 'var(--nx-border)', width: 6, height: 6 }} />
-      <div className="flex items-center justify-between border-b p-2" style={{ borderColor: 'var(--nx-border)', background: selected ? 'rgba(0,229,255,0.05)' : 'rgba(42,42,43,0.4)' }}>
+      <div className="flex items-center justify-between border-b p-2" style={{ borderColor: 'var(--nx-border)', background: selected ? 'color-mix(in srgb, var(--nx-cyan) 5%, transparent)' : 'rgba(42,42,43,0.4)' }}>
         <div className="flex items-center gap-1.5" style={{ color: selected ? CYAN : 'var(--nx-text-muted)' }}>
           {typeIcon(rec.entityType)}
           <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase' }}>{entityTypeLabel(rec.entityType, t)}</span>
@@ -88,7 +88,7 @@ function CommandBar({ selected, onSimulate }: { selected: string | null; onSimul
     <button
       onClick={onClick}
       className="flex items-center gap-1 rounded px-3 py-1 transition-colors"
-      style={{ fontSize: 13, fontWeight: 500, color: active ? CYAN_T : 'var(--nx-text-muted)', background: active ? 'rgba(0,229,255,0.1)' : 'transparent', border: active ? '1px solid rgba(0,229,255,0.3)' : '1px solid transparent' }}
+      style={{ fontSize: 13, fontWeight: 500, color: active ? CYAN_T : 'var(--nx-text-muted)', background: active ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent', border: active ? '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' : '1px solid transparent' }}
     >
       {icon}{label}
     </button>
@@ -147,7 +147,7 @@ function GraphInner() {
       id: e.id, source: e.source, target: e.target,
       label: e.type === 'DEPENDS_ON' ? undefined : e.type,
       animated: true,
-      style: { stroke: e.status === 'AiSuggested' ? '#e08a3c' : '#00e5ff', strokeWidth: 1.5, opacity: e.confidence < 0.5 ? 0.4 : 0.65, strokeDasharray: e.status === 'AiSuggested' ? '4 3' : undefined },
+      style: { stroke: e.status === 'AiSuggested' ? 'var(--nx-orange)' : 'var(--nx-cyan)', strokeWidth: 1.5, opacity: e.confidence < 0.5 ? 0.4 : 0.65, strokeDasharray: e.status === 'AiSuggested' ? '4 3' : undefined },
       labelStyle: { fill: 'var(--nx-text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono' },
       labelBgStyle: { fill: 'var(--nx-panel)' },
     }))
@@ -172,7 +172,7 @@ function GraphInner() {
       const conn = e.source === selId || e.target === selId
       return {
         ...e, animated: conn, zIndex: conn ? 10 : 0,
-        style: { ...e.style, stroke: conn ? '#00e5ff' : e.style?.stroke, strokeWidth: conn ? 2.4 : 1.5, opacity: conn ? 0.95 : 0.05 },
+        style: { ...e.style, stroke: conn ? 'var(--nx-cyan)' : e.style?.stroke, strokeWidth: conn ? 2.4 : 1.5, opacity: conn ? 0.95 : 0.05 },
         labelStyle: { ...(e.labelStyle as object), opacity: conn ? 1 : 0.08 },
       }
     })
@@ -213,7 +213,7 @@ function GraphInner() {
 
       {/* Canevas */}
       <div ref={canvasRef} className="relative flex-1 overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-        <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 50% 45%, rgba(0,229,255,0.05) 0%, transparent 60%)' }} />
+        <div className="pointer-events-none absolute inset-0 z-0" style={{ background: 'radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--nx-cyan) 5%, transparent) 0%, transparent 60%)' }} />
 
         {view === 'flow' ? (
           <ReactFlow
@@ -223,7 +223,7 @@ function GraphInner() {
             onPaneClick={() => setSelected(null)}
             style={{ background: 'var(--nx-panel)' }}
           >
-            <Background variant={BackgroundVariant.Lines} gap={40} color="rgba(59,73,76,0.15)" />
+            <Background variant={BackgroundVariant.Lines} gap={40} color="color-mix(in srgb, var(--nx-border) 15%, transparent)" />
             <Panel position="top-center"><CommandBar selected={selected?.id ?? null} onSimulate={() => selected && navigate(`/simulations?asset=${selected.id}&name=${encodeURIComponent(selected.name)}`)} /></Panel>
           </ReactFlow>
         ) : (
@@ -308,7 +308,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
         {/* Evidence & sources */}
         <Section title={t('Preuves & sources', 'Evidence & Sources')}>
           {deps.data && deps.data.length > 0 ? deps.data.slice(0, 6).map((d) => (
-            <div key={d.target.id} className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'rgba(59,73,76,0.5)', background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)' }}>
+            <div key={d.target.id} className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 50%, transparent)', background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)' }}>
               <div className="flex h-6 w-6 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-container)' }}>{typeIcon(d.target.entityType, 12)}</div>
               <div className="min-w-0 flex-1">
                 <div className="truncate" style={{ fontSize: 12, fontWeight: 500, color: 'var(--nx-text)' }}>{d.target.name}</div>
@@ -316,7 +316,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
               </div>
             </div>
           )) : (
-            <div className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'rgba(59,73,76,0.5)' }}>
+            <div className="flex items-center gap-3 rounded-sm border p-2" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 50%, transparent)' }}>
               <div className="flex h-6 w-6 items-center justify-center rounded-sm" style={{ background: 'var(--nx-surface-container)' }}><FileText size={12} style={{ color: CYAN_T }} /></div>
               <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{rec.sourceSystem ?? t('Aucune dépendance amont', 'No upstream dependencies')}</div>
             </div>
@@ -345,7 +345,7 @@ function Badge({ children, color, dot }: { children: React.ReactNode; color: str
 
 function Stat({ label, value, suffix, color }: { label: string; value: string; suffix: string; color: string }) {
   return (
-    <div className="rounded-sm border p-3" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', boxShadow: 'inset 0 0 0 1px rgba(0,229,255,0.05)' }}>
+    <div className="rounded-sm border p-3" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', boxShadow: 'inset 0 0 0 1px color-mix(in srgb, var(--nx-cyan) 5%, transparent)' }}>
       <div className="mb-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{label}</div>
       <div style={{ fontFamily: geist, fontSize: 24, fontWeight: 600, color }}>{value}<span style={{ fontSize: 13, fontWeight: 400, color: 'var(--nx-text-muted)' }}>{suffix}</span></div>
     </div>

@@ -11,6 +11,8 @@ import { importDemoData } from '../lib/demo'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphData, Overview, PriorityItem, RiskRow } from '../lib/types'
+import { useOrganization } from '../lib/money'
+import { SECTOR_LABELS } from './Setup'
 
 function priorityText(it: PriorityItem, t: (fr: string, en: string) => string): string {
   const type = entityTypeLabel(it.entityType, t)
@@ -26,13 +28,14 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
-const HIGH = '#ff897d'
+const ERR = 'var(--nx-danger)'
+const HIGH = 'var(--nx-high)'
 
 export function Dashboard() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const { t } = useLang()
+  const org = useOrganization()
   const { data, isLoading, error } = useQuery({ queryKey: ['overview'], queryFn: api.overview })
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const risks = useQuery({ queryKey: ['riskEntities'], queryFn: api.riskEntities })
@@ -51,7 +54,7 @@ export function Dashboard() {
   if (empty) {
     return (
       <div className="mx-auto flex max-w-lg flex-col items-center gap-4 rounded-sm border p-14 text-center" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-        <div className="rounded-sm p-4" style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)' }}>
+        <div className="rounded-sm p-4" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
           <Network size={26} style={{ color: CYAN }} />
         </div>
         <div style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{t('Aucune télémétrie pour ce tenant', 'No telemetry for this tenant')}</div>
@@ -71,7 +74,7 @@ export function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <section className="flex flex-col items-start justify-between gap-4 border-b pb-4 lg:flex-row lg:items-end" style={{ borderColor: 'rgba(59,73,76,0.3)' }}>
+      <section className="flex flex-col items-start justify-between gap-4 border-b pb-4 lg:flex-row lg:items-end" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 30%, transparent)' }}>
         <div>
           <div className="mb-1 flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN }} />
@@ -79,7 +82,8 @@ export function Dashboard() {
           </div>
           <h2 className="mb-1" style={{ fontFamily: geist, fontSize: 24, letterSpacing: '-0.01em', color: 'var(--nx-text)' }}>{greeting(t)}, {t('équipe Opérations', 'Operations Team')}</h2>
           <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>
-            {t('Organisation', 'Organization')}: {getTenantId().startsWith('be11') ? 'Bell Telecom' : 'CGI Inc.'} <span className="mx-2 opacity-50">|</span> {t('Région', 'Region')}: {getTenantId().startsWith('be11') ? 'Canada' : t('Canada — Montréal', 'Canada — Montreal')}
+            {t('Organisation', 'Organization')}: {companyName(org.data?.profile?.name)}
+            {org.data?.profile && <><span className="mx-2 opacity-50">|</span> {t('Secteur', 'Industry')}: {t(...(SECTOR_LABELS[org.data.profile.sector] ?? [org.data.profile.sector, org.data.profile.sector]))}</>}
           </p>
         </div>
         <ResiliencePanel score={data.organizationHealthScore} />
@@ -89,7 +93,7 @@ export function Dashboard() {
       <section className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
         <Metric label={t('Risques critiques', 'Critical risks')} value={data.criticalRiskCount} color={ERR} accent={ERR} icon={<AlertOctagon size={14} />} />
         <Metric label={t('Risques élevés', 'High risks')} value={data.highRiskCount} color={HIGH} accent={HIGH} icon={<AlertTriangle size={14} />} />
-        <Metric label={t('Actifs critiques', 'Critical assets')} value={data.criticalAssetCount} color="var(--nx-text)" accent="rgba(0,229,255,0.5)" icon={<Package size={14} />} />
+        <Metric label={t('Actifs critiques', 'Critical assets')} value={data.criticalAssetCount} color="var(--nx-text)" accent="color-mix(in srgb, var(--nx-cyan) 50%, transparent)" icon={<Package size={14} />} />
         <Metric label={t('Dépendances non confirmées', 'Unconfirmed dependencies')} value={data.unknownDependencyCount} color="var(--nx-text)" accent="var(--nx-outline)" icon={<HelpCircle size={14} />} />
         <Metric label={t('Points uniques de défaillance', 'Single points of failure')} value={data.spofCount} color={ERR} accent={ERR} icon={<Network size={14} />} />
         <Metric label={t('Concentration fournisseurs', 'Supplier concentration')} value={`${data.supplierConcentrationPercent}%`} color={CYAN_T} accent={CYAN} icon={<PieChart size={14} />} />
@@ -97,7 +101,7 @@ export function Dashboard() {
 
       {/* Grille principale */}
       <div className="grid min-h-[460px] grid-cols-1 gap-4 lg:grid-cols-4">
-        <Topology graph={graph.data} risks={risks.data} company={companyName()} health={data.organizationHealthScore} onNode={(id, name) => navigate(`/simulations?asset=${id}&name=${encodeURIComponent(name)}`)} />
+        <Topology graph={graph.data} risks={risks.data} company={companyName(org.data?.profile?.name)} health={data.organizationHealthScore} onNode={(id, name) => navigate(`/simulations?asset=${id}&name=${encodeURIComponent(name)}`)} />
         <PriorityIntelligence items={data.priorityIntelligence} onInvestigate={() => navigate('/risks')} />
       </div>
 
@@ -111,7 +115,7 @@ export function Dashboard() {
 
 function ResiliencePanel({ score }: { score: number }) {
   const { t } = useLang()
-  const color = score >= 75 ? '#3fb27f' : score >= 50 ? '#c8b040' : ERR
+  const color = score >= 75 ? 'var(--nx-success)' : score >= 50 ? 'var(--nx-warning)' : ERR
   return (
     <div className="flex items-center gap-4 rounded-sm border px-5 py-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div>
@@ -179,14 +183,14 @@ function PriorityIntelligence({ items, onInvestigate }: { items: PriorityItem[];
         {items.map((it, i) => {
           const c = it.severity === 'SEV_CRIT' ? ERR : it.severity === 'SEV_HIGH' ? HIGH : 'var(--nx-outline)'
           return (
-            <div key={i} className="relative overflow-hidden rounded-sm border p-3" style={{ background: 'var(--nx-panel)', borderColor: it.severity === 'SEV_CRIT' ? 'rgba(255,180,171,0.3)' : 'var(--nx-border)' }}>
+            <div key={i} className="relative overflow-hidden rounded-sm border p-3" style={{ background: 'var(--nx-panel)', borderColor: it.severity === 'SEV_CRIT' ? 'color-mix(in srgb, var(--nx-danger) 30%, transparent)' : 'var(--nx-border)' }}>
               <div className="absolute bottom-0 left-0 top-0 w-1" style={{ background: c }} />
               <div className="mb-2 flex items-start justify-between">
                 <span className="rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, background: `color-mix(in srgb, ${c} 20%, transparent)`, color: c }}>{it.severity === 'SEV_CRIT' ? t('CRITIQUE', 'CRITICAL') : it.severity === 'SEV_HIGH' ? t('ÉLEVÉ', 'HIGH') : t('MODÉRÉ', 'MODERATE')}</span>
                 <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{t('confiance', 'confidence')} {it.confidence}%</span>
               </div>
               <p className="mb-3" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{priorityText(it, t)}</p>
-              <button onClick={onInvestigate} className="flex w-full items-center justify-center gap-1 rounded py-1" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T, border: `1px solid ${it.severity === 'SEV_CRIT' ? 'rgba(0,229,255,0.4)' : 'var(--nx-border)'}` }}>
+              <button onClick={onInvestigate} className="flex w-full items-center justify-center gap-1 rounded py-1" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T, border: `1px solid ${it.severity === 'SEV_CRIT' ? 'color-mix(in srgb, var(--nx-cyan) 40%, transparent)' : 'var(--nx-border)'}` }}>
                 {t('Investiguer', 'Investigate')} <ArrowRight size={13} />
               </button>
             </div>
@@ -231,7 +235,7 @@ function Telemetry({ data }: { data: Overview }) {
 function ErrorBox({ message }: { message: string }) {
   const { t } = useLang()
   return (
-    <div className="flex items-start gap-2 rounded-sm border p-3" style={{ borderColor: ERR, color: ERR, background: 'color-mix(in srgb, #ffb4ab 10%, transparent)', fontSize: 14 }}>
+    <div className="flex items-start gap-2 rounded-sm border p-3" style={{ borderColor: ERR, color: ERR, background: 'color-mix(in srgb, var(--nx-danger) 10%, transparent)', fontSize: 14 }}>
       <AlertTriangle size={16} className="mt-0.5 shrink-0" />
       <div><div className="font-medium">{t('Erreur API', 'API error')}</div><div style={{ color: 'var(--nx-text-muted)' }}>{message}</div></div>
     </div>
@@ -240,7 +244,8 @@ function ErrorBox({ message }: { message: string }) {
 
 /** Nom d'affichage du tenant. Les deux jeux de démonstration sont nommés ; à
  *  défaut, on reste neutre plutôt que d'inventer une raison sociale. */
-function companyName(): string {
+function companyName(profileName?: string): string {
+  if (profileName) return profileName
   const id = getTenantId()
   if (id.startsWith('be11')) return 'Bell Telecom'
   if (id.startsWith('c610')) return 'CGI Inc.'

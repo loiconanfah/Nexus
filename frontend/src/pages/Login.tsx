@@ -110,24 +110,24 @@ export function Login() {
           <svg className="absolute inset-0 h-full w-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#00e5ff" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#3b494c" stopOpacity="0.1" />
+                <stop offset="0%" stopColor="var(--nx-cyan)" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="var(--nx-border)" stopOpacity="0.1" />
               </linearGradient>
             </defs>
-            <line x1="20%" y1="30%" x2="40%" y2="50%" stroke="#3b494c" strokeWidth="1" />
-            <line x1="40%" y1="50%" x2="70%" y2="40%" stroke="#3b494c" strokeWidth="1" />
-            <line x1="70%" y1="40%" x2="85%" y2="70%" stroke="#3b494c" strokeWidth="1" />
-            <line x1="40%" y1="50%" x2="30%" y2="80%" stroke="#3b494c" strokeWidth="1" />
+            <line x1="20%" y1="30%" x2="40%" y2="50%" stroke="var(--nx-border)" strokeWidth="1" />
+            <line x1="40%" y1="50%" x2="70%" y2="40%" stroke="var(--nx-border)" strokeWidth="1" />
+            <line x1="70%" y1="40%" x2="85%" y2="70%" stroke="var(--nx-border)" strokeWidth="1" />
+            <line x1="40%" y1="50%" x2="30%" y2="80%" stroke="var(--nx-border)" strokeWidth="1" />
             <line x1="70%" y1="40%" x2="60%" y2="85%" stroke="url(#cyan-glow)" strokeWidth="1.5" />
-            <line x1="30%" y1="80%" x2="60%" y2="85%" stroke="#3b494c" strokeWidth="1" />
-            <circle className="nx-node-pulse" cx="20%" cy="30%" r="3" fill="#849396" style={{ animationDelay: '0s' }} />
-            <circle className="nx-node-pulse" cx="40%" cy="50%" r="4" fill="#00e5ff" style={{ animationDelay: '1s' }} />
-            <circle className="nx-node-pulse" cx="70%" cy="40%" r="3" fill="#849396" style={{ animationDelay: '.5s' }} />
-            <circle cx="85%" cy="70%" r="2" fill="#3b494c" />
-            <circle cx="30%" cy="80%" r="3" fill="#849396" />
-            <circle className="nx-node-pulse" cx="60%" cy="85%" r="5" fill="#00e5ff" style={{ animationDelay: '1.5s' }} />
-            <text x="42%" y="49%" fill="#00e5ff" fontFamily="JetBrains Mono" fontSize="10" opacity="0.7">ROOT_NODE_A</text>
-            <text x="62%" y="84%" fill="#00e5ff" fontFamily="JetBrains Mono" fontSize="10" opacity="0.7">SEC_CLUSTER_7</text>
+            <line x1="30%" y1="80%" x2="60%" y2="85%" stroke="var(--nx-border)" strokeWidth="1" />
+            <circle className="nx-node-pulse" cx="20%" cy="30%" r="3" fill="var(--nx-text-muted)" style={{ animationDelay: '0s' }} />
+            <circle className="nx-node-pulse" cx="40%" cy="50%" r="4" fill="var(--nx-cyan)" style={{ animationDelay: '1s' }} />
+            <circle className="nx-node-pulse" cx="70%" cy="40%" r="3" fill="var(--nx-text-muted)" style={{ animationDelay: '.5s' }} />
+            <circle cx="85%" cy="70%" r="2" fill="var(--nx-border)" />
+            <circle cx="30%" cy="80%" r="3" fill="var(--nx-text-muted)" />
+            <circle className="nx-node-pulse" cx="60%" cy="85%" r="5" fill="var(--nx-cyan)" style={{ animationDelay: '1.5s' }} />
+            <text x="42%" y="49%" fill="var(--nx-cyan)" fontFamily="JetBrains Mono" fontSize="10" opacity="0.7">ROOT_NODE_A</text>
+            <text x="62%" y="84%" fill="var(--nx-cyan)" fontFamily="JetBrains Mono" fontSize="10" opacity="0.7">SEC_CLUSTER_7</text>
           </svg>
         </div>
 
@@ -184,7 +184,7 @@ export function Login() {
           {error && (
             <div
               className="rounded border px-3 py-2 text-sm"
-              style={{ borderColor: 'var(--nx-danger, #ef4444)', color: 'var(--nx-danger, #ef4444)', background: 'rgba(239,68,68,0.08)' }}
+              style={{ borderColor: 'var(--nx-danger, var(--nx-danger))', color: 'var(--nx-danger, var(--nx-danger))', background: 'rgba(239,68,68,0.08)' }}
             >
               {error}
             </div>
@@ -228,7 +228,7 @@ export function Login() {
               style={{
                 background: 'var(--nx-cyan)', color: 'var(--nx-on-cyan)',
                 fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
-                boxShadow: '0 0 10px rgba(0,229,255,0.15)',
+                boxShadow: '0 0 10px color-mix(in srgb, var(--nx-cyan) 15%, transparent)',
               }}
             >
               <span>
@@ -271,7 +271,7 @@ export function Login() {
               style={{
                 background: 'var(--nx-cyan)', color: 'var(--nx-on-cyan)',
                 fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase',
-                boxShadow: '0 0 10px rgba(0,229,255,0.15)',
+                boxShadow: '0 0 10px color-mix(in srgb, var(--nx-cyan) 15%, transparent)',
               }}
             >
               <svg className="h-5 w-5 fill-current" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
@@ -300,7 +300,7 @@ export function Login() {
           </button>
 
           {/* Pied */}
-          <div className="mt-4 flex flex-col items-center gap-4 border-t pt-6" style={{ borderColor: 'rgba(59,73,76,0.5)' }}>
+          <div className="mt-4 flex flex-col items-center gap-4 border-t pt-6" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 50%, transparent)' }}>
             <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-1 transition-colors" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
               <Building2 size={14} />
               {t('Identifiant d’organisation', 'Organization Identifier')}

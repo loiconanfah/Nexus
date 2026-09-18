@@ -12,7 +12,7 @@ const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
 
-const PRIO: Record<string, string> = { High: '#ffb4ab', Medium: '#facc15', Low: '#849396' }
+const PRIO: Record<string, string> = { High: 'var(--nx-danger)', Medium: 'var(--nx-warning)', Low: 'var(--nx-text-muted)' }
 const STATUS_ORDER: ActionStatus[] = ['Open', 'InProgress', 'Done']
 
 export function ActionPlan() {
@@ -43,15 +43,15 @@ export function ActionPlan() {
       </div>
 
       {isLoading && <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('Chargement…', 'Loading…')}</div>}
-      {error && <div style={{ color: '#ffb4ab' }}>{(error as Error).message}</div>}
+      {error && <div style={{ color: 'var(--nx-danger)' }}>{(error as Error).message}</div>}
 
       {data && (
         <>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             <Tile label={t('TOTAL', 'TOTAL')} value={data.summary.total} color="var(--nx-text)" />
-            <Tile label={t('À FAIRE', 'OPEN')} value={data.summary.open} color="#ffb4ab" />
-            <Tile label={t('EN COURS', 'IN PROGRESS')} value={data.summary.inProgress} color="#facc15" />
-            <Tile label={t('TERMINÉ', 'DONE')} value={data.summary.done} color="#4ade80" />
+            <Tile label={t('À FAIRE', 'OPEN')} value={data.summary.open} color="var(--nx-danger)" />
+            <Tile label={t('EN COURS', 'IN PROGRESS')} value={data.summary.inProgress} color="var(--nx-warning)" />
+            <Tile label={t('TERMINÉ', 'DONE')} value={data.summary.done} color="var(--nx-success)" />
           </div>
 
           {data.actions.length === 0 && (
@@ -79,7 +79,7 @@ function ActionRow({ a, statusLabel, onStatus }: { a: RemediationAction; statusL
     <div className="flex flex-col gap-2 rounded-sm border p-4 md:flex-row md:items-center md:justify-between" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', borderLeft: `3px solid ${PRIO[a.priority]}` }}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: PRIO[a.priority], background: `${PRIO[a.priority]}18` }}>{priorityLabel(a.priority, t)}</span>
+          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: PRIO[a.priority], background: `color-mix(in srgb, ${PRIO[a.priority]} 9%, transparent)` }}>{priorityLabel(a.priority, t)}</span>
           {a.targetName !== '—' && <span style={{ fontFamily: mono, fontSize: 10, color: CYAN_T }}>→ {a.targetName}</span>}
           <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{actionKindLabel(a.kind, t)}</span>
         </div>

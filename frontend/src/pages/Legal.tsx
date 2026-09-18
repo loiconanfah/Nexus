@@ -42,7 +42,7 @@ export function Legal() {
     <div className="mx-auto min-h-screen max-w-5xl px-6 py-10" style={{ background: 'var(--nx-bg)' }}>
       <button onClick={() => nav('/welcome')} className="mb-6 flex items-center gap-3" aria-label="Retour à Lenexux"><span style={{ fontFamily: mono, fontSize: 12, color: CYAN }}>←</span><Logo size={26} wordSize={16} /></button>
 
-      <div className="mb-4 rounded-md border p-3" style={{ borderColor: '#e0a45855', background: 'color-mix(in srgb, #e0a458 8%, transparent)' }}>
+      <div className="mb-4 rounded-md border p-3" style={{ borderColor: '#e0a45855', background: 'color-mix(in srgb, var(--nx-orange) 8%, transparent)' }}>
         <p style={{ fontSize: 12, color: 'var(--nx-text)' }}>
           <b>Modèle non finalisé.</b> Ces documents sont des gabarits de départ (contexte Québec — Loi 25 — et RGPD).
           Ils doivent être <b>revus et complétés par un conseiller juridique</b> (raison sociale, coordonnées, liste

@@ -79,8 +79,8 @@ export function HubSpoke({
           <stop offset="100%" stopColor={accent} stopOpacity="0.16" />
         </linearGradient>
         <linearGradient id="hs-link-crit" x1="0" x2="1">
-          <stop offset="0%" stopColor="#ffb4ab" stopOpacity="0.7" />
-          <stop offset="100%" stopColor="#ffb4ab" stopOpacity="0.2" />
+          <stop offset="0%" stopColor="var(--nx-danger)" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="var(--nx-danger)" stopOpacity="0.2" />
         </linearGradient>
       </defs>
 
@@ -125,13 +125,13 @@ export function HubSpoke({
 
       {/* Ce qui en dépend */}
       {laid.map((s) => {
-        const col = s.critical ? '#ffb4ab' : 'var(--nx-border)'
+        const col = s.critical ? 'var(--nx-danger)' : 'var(--nx-border)'
         return (
           <g key={s.name} onClick={() => onSpoke?.(s.name)} style={{ cursor: onSpoke ? 'pointer' : 'default' }}>
             <rect x={SPOKE_X} y={s.y - ROW_H / 2} width={SPOKE_W} height={ROW_H} rx={3}
               fill="var(--nx-surface)" stroke={col} strokeWidth={s.critical ? 1.2 : 1} />
             <rect x={SPOKE_X} y={s.y - ROW_H / 2} width={3} height={ROW_H}
-              fill={s.critical ? '#ffb4ab' : accent} opacity={s.critical ? 1 : 0.5} />
+              fill={s.critical ? 'var(--nx-danger)' : accent} opacity={s.critical ? 1 : 0.5} />
             <text x={SPOKE_X + 16} y={s.note ? s.y - 2 : s.y + 4.5} fill="var(--nx-text)" fontSize={13}>
               {fit(s.name, SPOKE_W - 110, 7.1)}
             </text>
@@ -142,7 +142,7 @@ export function HubSpoke({
             )}
             {s.critical && (
               <text x={SPOKE_X + SPOKE_W - 14} y={s.y + 4} textAnchor="end"
-                fill="#ffb4ab" fontFamily={mono} fontSize={9.5} letterSpacing="1">
+                fill="var(--nx-danger)" fontFamily={mono} fontSize={9.5} letterSpacing="1">
                 {t('CRITIQUE', 'CRITICAL')}
               </text>
             )}
@@ -203,7 +203,7 @@ export function PickerList<T extends { id: string; name: string }>({
             <button key={it.id} onClick={() => onPick(it.id)}
               className="flex items-center gap-2 px-4 py-2.5 text-left transition-colors"
               style={{
-                background: sel ? 'rgba(0,229,255,0.09)' : 'transparent',
+                background: sel ? 'color-mix(in srgb, var(--nx-cyan) 9%, transparent)' : 'transparent',
                 borderLeft: `2px solid ${sel ? CYAN : 'transparent'}`,
               }}>
               <span className="min-w-0 flex-1 truncate" style={{ fontSize: 13, color: sel ? CYAN_T : 'var(--nx-text)' }}>

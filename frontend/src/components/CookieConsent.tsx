@@ -108,8 +108,8 @@ export function CookieConsent() {
       }}
     >
       <div className="flex items-center gap-2">
-        <Cookie size={15} style={{ color: '#22d3ee' }} />
-        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>
+        <Cookie size={15} style={{ color: 'var(--nx-cyan)' }} />
+        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-cyan-text)' }}>
           {t('Témoins de mesure d’audience', 'Analytics cookies')}
         </span>
       </div>
@@ -118,7 +118,7 @@ export function CookieConsent() {
         {t('Nous aimerions mesurer la fréquentation de ce site avec Google Analytics, pour savoir ce qui est lu. Rien n’est déposé tant que vous n’avez pas accepté, et refuser ne change rien à votre navigation.',
            'We would like to measure traffic on this site with Google Analytics, to learn what gets read. Nothing is stored until you accept, and declining changes nothing about your browsing.')}
       </p>
-      <p className="mt-2" style={{ fontSize: 12.5, lineHeight: 1.55, color: '#8a8a98' }}>
+      <p className="mt-2" style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>
         {t('Les témoins strictement nécessaires au fonctionnement — votre session, votre langue — ne sont pas concernés : ils ne servent pas à vous suivre.',
            'Strictly necessary storage — your session, your language — is not covered: it is not used to track you.')}
       </p>
@@ -129,7 +129,7 @@ export function CookieConsent() {
         <button onClick={() => decide('denied')} style={btn(false)}>{t('Refuser', 'Decline')}</button>
         <button onClick={() => decide('granted')} style={btn(true)}>{t('Accepter', 'Accept')}</button>
         <a href="/legal?doc=privacy"
-          style={{ alignSelf: 'center', marginLeft: 4, fontFamily: mono, fontSize: 11, color: '#8a8a98' }}>
+          style={{ alignSelf: 'center', marginLeft: 4, fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
           {t('Politique de confidentialité', 'Privacy policy')}
         </a>
       </div>
@@ -148,9 +148,9 @@ function btn(_accept: boolean): React.CSSProperties {
     flex: '1 1 140px',
     padding: '10px 18px',
     fontFamily: mono, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase',
-    border: '1px solid #22d3ee',
-    background: 'rgba(34,211,238,0.10)',
-    color: '#7fe8f7',
+    border: '1px solid var(--nx-cyan)',
+    background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)',
+    color: 'var(--nx-cyan-text)',
     borderRadius: 3,
   }
 }

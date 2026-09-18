@@ -14,8 +14,8 @@ import { useMoney } from '../lib/money'
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const POS = '#3fb27f'
-const NEG = '#d15b54'
+const POS = 'var(--nx-success)'
+const NEG = 'var(--nx-danger)'
 
 const KPI_LABEL: Record<string, [string, string]> = {
   revenue: ['Revenu annuel', 'Annual revenue'],
@@ -145,14 +145,14 @@ export function EnterpriseModel() {
       {/* En-tête entreprise */}
       <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.3)' }}>
+          <div className="flex h-12 w-12 items-center justify-center rounded" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
             <Building2 size={24} style={{ color: CYAN }} />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>{company.name}</h2>
               {data.isDemo && (
-                <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', color: '#e0b23c', border: '1px solid rgba(224,178,60,0.4)', background: 'rgba(224,178,60,0.08)' }}>DEMO DATA</span>
+                <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.1em', color: 'var(--nx-warning)', border: '1px solid rgba(224,178,60,0.4)', background: 'rgba(224,178,60,0.08)' }}>DEMO DATA</span>
               )}
             </div>
             <div style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{company.industry}</div>
@@ -213,16 +213,16 @@ export function EnterpriseModel() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="gr-rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#00e5ff" stopOpacity={0.35} /><stop offset="100%" stopColor="#00e5ff" stopOpacity={0} /></linearGradient>
-                  <linearGradient id="gr-eb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#3fb27f" stopOpacity={0.3} /><stop offset="100%" stopColor="#3fb27f" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gr-rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-cyan)" stopOpacity={0.35} /><stop offset="100%" stopColor="var(--nx-cyan)" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gr-eb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-success)" stopOpacity={0.3} /><stop offset="100%" stopColor="var(--nx-success)" stopOpacity={0} /></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" />
                 <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={false} tickLine={false} width={44} />
                 <Tooltip contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(value, name) => { const n = String(name); return [`${Number(value).toFixed(1)} ${m.millions}`, n === 'revenue' ? t('Revenu', 'Revenue') : n === 'ebitda' ? 'EBITDA' : t('Net', 'Net')] }} />
-                <Area type="monotone" dataKey="revenue" stroke="#00e5ff" strokeWidth={2} fill="url(#gr-rev)" />
-                <Area type="monotone" dataKey="ebitda" stroke="#3fb27f" strokeWidth={2} fill="url(#gr-eb)" />
-                <Area type="monotone" dataKey="net" stroke="#c69a4e" strokeWidth={1.5} fillOpacity={0} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--nx-cyan)" strokeWidth={2} fill="url(#gr-rev)" />
+                <Area type="monotone" dataKey="ebitda" stroke="var(--nx-success)" strokeWidth={2} fill="url(#gr-eb)" />
+                <Area type="monotone" dataKey="net" stroke="var(--nx-warning)" strokeWidth={1.5} fillOpacity={0} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -260,7 +260,7 @@ export function EnterpriseModel() {
                   <span style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{money(s.revenue, currency)} · {(s.share * 100).toFixed(0)}% · {nf.format(s.customers)} {t('clients', 'clients')}</span>
                 </div>
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
-                  <div className="h-full rounded-full" style={{ width: `${s.share * 100}%`, background: '#8b7fc0' }} />
+                  <div className="h-full rounded-full" style={{ width: `${s.share * 100}%`, background: 'var(--nx-violet)' }} />
                 </div>
               </div>
             ))}
@@ -277,7 +277,7 @@ export function EnterpriseModel() {
                   <span style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{money(c.amount, currency)} · {(c.percent * 100).toFixed(1)}%</span>
                 </div>
                 <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
-                  <div className="h-full rounded-full" style={{ width: `${c.percent * 100}%`, background: '#c69a4e' }} />
+                  <div className="h-full rounded-full" style={{ width: `${c.percent * 100}%`, background: 'var(--nx-warning)' }} />
                 </div>
               </div>
             ))}
@@ -288,7 +288,7 @@ export function EnterpriseModel() {
         <Panel title={t('Ratios & santé financière', 'Ratios & financial health')}>
           <div className="flex flex-col gap-2.5">
             {ratios(data, currency, money).map((r, i) => {
-              const col = r.tone === 'good' ? POS : r.tone === 'warn' ? '#c69a4e' : r.tone === 'bad' ? NEG : 'var(--nx-text-muted)'
+              const col = r.tone === 'good' ? POS : r.tone === 'warn' ? 'var(--nx-warning)' : r.tone === 'bad' ? NEG : 'var(--nx-text-muted)'
               return (
                 <div key={i}>
                   <div className="flex items-baseline justify-between" style={{ fontSize: 13 }}>
@@ -297,7 +297,7 @@ export function EnterpriseModel() {
                   </div>
                   {r.pct !== undefined && (
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, r.pct))}%`, background: r.tone ? col : '#4bb3c9' }} />
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, r.pct))}%`, background: r.tone ? col : 'var(--nx-cyan)' }} />
                     </div>
                   )}
                 </div>
@@ -367,7 +367,7 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
       </div>
       <div className="flex items-center justify-end gap-2 border-t px-5 py-4" style={{ borderColor: 'var(--nx-border)' }}>
         <button onClick={onClose} className="rounded-md border px-4 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
-        <button onClick={submit} disabled={save.isPending || !revenueOk} className="flex items-center gap-1.5 rounded-md px-5 py-2 text-sm font-medium" style={{ background: CYAN, color: '#04121a', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}>
+        <button onClick={submit} disabled={save.isPending || !revenueOk} className="flex items-center gap-1.5 rounded-md px-5 py-2 text-sm font-medium" style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}>
           <Save size={15} /> {save.isPending ? t('Sauvegarde…', 'Saving…') : t('Sauvegarder', 'Save')}
         </button>
       </div>
@@ -402,7 +402,7 @@ function HistoryModal({ onClose, onRestored }: { onClose: () => void; onRestored
               <div key={v.id} className="flex items-center justify-between rounded-md border px-4 py-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN, border: '1px solid rgba(0,229,255,0.3)' }}>v{v.version}</span>
+                    <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN, border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>v{v.version}</span>
                     <span style={{ fontSize: 13, color: 'var(--nx-text)' }}>{v.companyName}</span>
                     <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>· {v.industry}</span>
                   </div>
@@ -629,7 +629,7 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
             onClick={() => canNext && setStep((s) => s + 1)}
             disabled={!canNext}
             className="flex items-center gap-1.5 rounded-md px-5 py-2 text-sm font-medium"
-            style={{ background: canNext ? CYAN : 'var(--nx-border)', color: canNext ? '#04121a' : 'var(--nx-text-muted)' }}
+            style={{ background: canNext ? CYAN : 'var(--nx-border)', color: canNext ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)' }}
           >
             {t('Suivant', 'Next')} <ArrowRight size={15} />
           </button>
@@ -638,7 +638,7 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
             onClick={submit}
             disabled={save.isPending || !revenueOk}
             className="rounded-md px-5 py-2 text-sm font-medium"
-            style={{ background: CYAN, color: '#04121a', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}
+            style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}
           >
             {save.isPending ? t('Création…', 'Creating…') : t('Créer le modèle', 'Create model')}
           </button>

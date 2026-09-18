@@ -14,9 +14,9 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
-const RISK_COLOR: Record<string, string> = { CRITICAL: '#ffb4ab', HIGH: '#fb923c', MODERATE: '#facc15' }
+const RISK_COLOR: Record<string, string> = { CRITICAL: 'var(--nx-danger)', HIGH: 'var(--nx-orange)', MODERATE: 'var(--nx-warning)' }
 
 function exportHuman(data: HumanDependencies) {
   const rows = [['person', 'role', 'risk', 'known_systems', 'sole_knowledge', 'backup_experts', 'doc_percent']]
@@ -68,8 +68,8 @@ export function HumanDependency() {
       {/* Tuiles */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Tile label={t('DOMAINES DE SAVOIR CRITIQUES', 'CRITICAL KNOWLEDGE AREAS')} value={data.summary.criticalKnowledgeAreas} color={ERR} />
-        <Tile label={t('DÉTENTEURS UNIQUES', 'SINGLE-KNOWLEDGE OWNERS')} value={data.summary.singleKnowledgeOwners} color="#fb923c" />
-        <Tile label={t('PROCESSUS NON DOCUMENTÉS', 'UNDOCUMENTED PROCESSES')} value={data.summary.undocumentedProcesses} color="#facc15" />
+        <Tile label={t('DÉTENTEURS UNIQUES', 'SINGLE-KNOWLEDGE OWNERS')} value={data.summary.singleKnowledgeOwners} color="var(--nx-orange)" />
+        <Tile label={t('PROCESSUS NON DOCUMENTÉS', 'UNDOCUMENTED PROCESSES')} value={data.summary.undocumentedProcesses} color="var(--nx-warning)" />
         <Tile label={t('EMPLOYÉS CLÉS', 'KEY DEPENDENCY EMPLOYEES')} value={data.summary.keyDependencyEmployees} color={CYAN_T} />
       </div>
 
@@ -189,7 +189,7 @@ function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () =
           <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{personRoleLabel(person.role, t)}</div>
         </div>
       </div>
-      {person.soleKnowledgeSystems > 0 && <span className="w-fit rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>⚠ {t('SAVOIR DÉTENU PAR UNE SEULE PERSONNE', 'KNOWLEDGE HELD BY ONE PERSON ONLY')}</span>}
+      {person.soleKnowledgeSystems > 0 && <span className="w-fit rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'color-mix(in srgb, var(--nx-danger) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-danger) 30%, transparent)' }}>⚠ {t('SAVOIR DÉTENU PAR UNE SEULE PERSONNE', 'KNOWLEDGE HELD BY ONE PERSON ONLY')}</span>}
 
       <div>
         <h4 className="mb-2 border-b pb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Domaines de savoir clés', 'Core Knowledge Areas')}</h4>

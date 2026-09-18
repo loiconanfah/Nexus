@@ -74,7 +74,7 @@ export function ActionModal({ open, onClose, defaultTitle = '', defaultTargetId 
                 )}
             </Field>
           </div>
-          {mut.isError && <div style={{ color: '#ffb4ab', fontFamily: mono, fontSize: 11 }}>{(mut.error as Error).message}</div>}
+          {mut.isError && <div style={{ color: 'var(--nx-danger)', fontFamily: mono, fontSize: 11 }}>{(mut.error as Error).message}</div>}
           <button onClick={() => mut.mutate()} disabled={!title.trim() || mut.isPending} className="mt-1 flex items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: title.trim() ? CYAN : 'var(--nx-surface-high)', color: title.trim() ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', fontSize: 13, fontWeight: 600, cursor: title.trim() ? 'pointer' : 'not-allowed' }}>
             {mut.isPending && <Loader2 size={15} className="animate-spin" />} {t('Créer l’action', 'Create action')}
           </button>

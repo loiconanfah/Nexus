@@ -11,13 +11,13 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
 function bandColor(v: number): string {
   if (v >= 80) return ERR
-  if (v >= 60) return '#fb923c'
-  if (v >= 40) return '#facc15'
-  return '#849396'
+  if (v >= 60) return 'var(--nx-orange)'
+  if (v >= 40) return 'var(--nx-warning)'
+  return 'var(--nx-text-muted)'
 }
 
 export function SupplierIntelligence() {
@@ -43,7 +43,7 @@ export function SupplierIntelligence() {
         </div>
         <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 lg:w-auto">
           <Tile label={t('FOURNISSEURS CRITIQUES', 'CRITICAL SUPPLIERS')} value={data.summary.criticalSuppliers} color={ERR} />
-          <Tile label={t('DÉPENDANCES UNIQUES', 'SINGLE DEPENDENCIES')} value={data.summary.singleDependencies} color="#fb923c" />
+          <Tile label={t('DÉPENDANCES UNIQUES', 'SINGLE DEPENDENCIES')} value={data.summary.singleDependencies} color="var(--nx-orange)" />
           <Tile label={t('CONCENTRATION', 'SUPPLIER CONCENTRATION')} value={`${data.summary.concentrationPercent}%`} color={CYAN_T} />
           <Tile label={t('CONTRATS EXPIRANT', 'CONTRACTS EXPIRING')} value={data.summary.contractsExpiring} color="var(--nx-text)" />
         </div>
@@ -150,7 +150,7 @@ function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimula
           <h3 style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{supplier.name}</h3>
           <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>ID · {supplier.id.slice(0, 8).toUpperCase()}</div>
         </div>
-        {supplier.criticalServices > 0 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>{t('CRITIQUE', 'CRITICAL')}</span>}
+        {supplier.criticalServices > 0 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'color-mix(in srgb, var(--nx-danger) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-danger) 30%, transparent)' }}>{t('CRITIQUE', 'CRITICAL')}</span>}
       </div>
 
       <div className="rounded-sm border p-4 text-center" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)' }}>
@@ -165,7 +165,7 @@ function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimula
         <Row label={t('Concentration', 'Concentration')} value={`${supplier.concentrationPercent}%`} />
       </div>
 
-      <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px rgba(0,229,255,0.2)' }}><Play size={16} /> {t('Simuler la défaillance', 'Simulate Supplier Failure')}</button>
+      <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px color-mix(in srgb, var(--nx-cyan) 20%, transparent)' }}><Play size={16} /> {t('Simuler la défaillance', 'Simulate Supplier Failure')}</button>
     </aside>
   )
 }

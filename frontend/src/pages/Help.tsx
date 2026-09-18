@@ -432,7 +432,7 @@ function BlockView({ block, i }: { block: Block; i: 0 | 1 }) {
         <li key={k} className="flex gap-3" style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>
           <span
             className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-            style={{ background: 'rgba(0,229,255,0.12)', color: CYAN, fontFamily: mono, fontSize: 11 }}
+            style={{ background: 'color-mix(in srgb, var(--nx-cyan) 12%, transparent)', color: CYAN, fontFamily: mono, fontSize: 11 }}
           >
             {k + 1}
           </span>

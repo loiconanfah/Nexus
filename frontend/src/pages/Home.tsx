@@ -379,7 +379,7 @@ function VideoSection({ t }: { t: (fr: string, en: string) => string }) {
                   style={{
                     fontFamily: mono, fontSize: 11, letterSpacing: '0.04em',
                     border: `1px solid ${k === active ? CYAN : 'var(--nx-border)'}`,
-                    background: k === active ? 'rgba(0,229,255,0.10)' : 'transparent',
+                    background: k === active ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent',
                     color: k === active ? CYAN_T : 'var(--nx-text-muted)',
                   }}>
                   {t(...d.title)}{d.duration ? ` · ${d.duration}` : ''}
@@ -428,7 +428,7 @@ function FeatureBlock({ f, t, open, onToggle, onGo }:
   { f: Feature; t: (fr: string, en: string) => string; open: boolean; onToggle: () => void; onGo: (to: string) => void }) {
   const Icon = f.icon
   return (
-    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: open ? 'rgba(0,229,255,0.35)' : 'var(--nx-border)' }}>
+    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: open ? 'color-mix(in srgb, var(--nx-cyan) 35%, transparent)' : 'var(--nx-border)' }}>
       <button onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-4 px-5 py-4 text-left">
         <span style={{ fontFamily: geist, fontSize: 20, fontWeight: 300, color: 'var(--nx-outline)', minWidth: 32 }}>{f.n}</span>
         <Icon size={18} className="shrink-0" style={{ color: CYAN }} />
@@ -447,7 +447,7 @@ function FeatureBlock({ f, t, open, onToggle, onGo }:
             {f.steps.map((s, k) => (
               <li key={s[1]} className="flex gap-3">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                  style={{ fontFamily: mono, fontSize: 10, background: 'rgba(0,229,255,0.12)', color: CYAN_T, border: '1px solid rgba(0,229,255,0.3)' }}>{k + 1}</span>
+                  style={{ fontFamily: mono, fontSize: 10, background: 'color-mix(in srgb, var(--nx-cyan) 12%, transparent)', color: CYAN_T, border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>{k + 1}</span>
                 <span style={{ fontSize: 13.5, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...s)}</span>
               </li>
             ))}
@@ -468,7 +468,7 @@ function FeatureBlock({ f, t, open, onToggle, onGo }:
               <p className="mt-1.5" style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...f.example)}</p>
             </div>
             <div className="rounded-sm border p-4" style={{ borderColor: 'rgba(200,176,64,0.3)', background: 'rgba(200,176,64,0.06)' }}>
-              <p className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c8b040' }}>
+              <p className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-warning)' }}>
                 <Lightbulb size={12} /> {t('Le piège à éviter', 'The trap to avoid')}
               </p>
               <p className="mt-1.5" style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...f.tip)}</p>

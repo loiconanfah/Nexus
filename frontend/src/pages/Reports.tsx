@@ -10,9 +10,9 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
-const BAND_COLOR: Record<string, string> = { Critical: '#ffb4ab', High: '#fb923c', Elevated: '#facc15', Moderate: '#eab308', Low: '#00e5ff' }
+const BAND_COLOR: Record<string, string> = { Critical: 'var(--nx-danger)', High: 'var(--nx-orange)', Elevated: 'var(--nx-warning)', Moderate: 'var(--nx-warning)', Low: 'var(--nx-cyan)' }
 
 const REPORT_TYPES = [
   { id: 'executive', fr: 'Risque exécutif', en: 'Executive Risk', icon: ShieldAlert },
@@ -45,7 +45,7 @@ export function Reports() {
                 const active = type === rt.id
                 return (
                   <button key={rt.id} onClick={() => setType(rt.id)} className="flex items-center gap-3 rounded-sm border p-3 transition-colors"
-                    style={{ background: active ? 'rgba(0,229,255,0.08)' : 'var(--nx-surface-container)', borderColor: active ? CYAN : 'var(--nx-border)' }}>
+                    style={{ background: active ? 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)' : 'var(--nx-surface-container)', borderColor: active ? CYAN : 'var(--nx-border)' }}>
                     <span className="flex h-4 w-4 items-center justify-center rounded-full border" style={{ borderColor: active ? CYAN : 'var(--nx-outline)' }}>{active && <span className="h-2 w-2 rounded-full" style={{ background: CYAN }} />}</span>
                     <rt.icon size={16} style={{ color: active ? CYAN_T : 'var(--nx-text-muted)' }} />
                     <span style={{ fontSize: 14, fontWeight: 500, color: active ? 'var(--nx-text)' : 'var(--nx-text-muted)' }}>{lang === 'fr' ? rt.fr : rt.en}</span>
@@ -61,7 +61,7 @@ export function Reports() {
               <div className="mt-1 flex overflow-hidden rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
                 {['LOW', 'MED', 'HIGH'].map((th) => (
                   <button key={th} onClick={() => setThreshold(th)} className="flex-1 py-1.5 transition-colors"
-                    style={{ fontFamily: mono, fontSize: 11, background: threshold === th ? (th === 'HIGH' ? ERR : th === 'MED' ? '#fb923c' : CYAN) : 'var(--nx-surface-container)', color: threshold === th ? '#000' : 'var(--nx-text-muted)' }}>{th === 'LOW' ? t('BAS', 'LOW') : th === 'MED' ? t('MOY', 'MED') : t('HAUT', 'HIGH')}</button>
+                    style={{ fontFamily: mono, fontSize: 11, background: threshold === th ? (th === 'HIGH' ? ERR : th === 'MED' ? 'var(--nx-orange)' : CYAN) : 'var(--nx-surface-container)', color: threshold === th ? '#000' : 'var(--nx-text-muted)' }}>{th === 'LOW' ? t('BAS', 'LOW') : th === 'MED' ? t('MOY', 'MED') : t('HAUT', 'HIGH')}</button>
                 ))}
               </div>
             </div>
@@ -152,7 +152,7 @@ function ReportPreview({ report, type, threshold }: { report: ExecutiveReport; t
                 <ul className="space-y-4">
                   {recos.map((r, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: r.priority === 'Élevée' ? ERR : r.priority === 'Moyenne' ? '#fb923c' : '#facc15' }} />
+                      <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: r.priority === 'Élevée' ? ERR : r.priority === 'Moyenne' ? 'var(--nx-orange)' : 'var(--nx-warning)' }} />
                       <div>
                         <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--nx-text)' }}>{r.title}</p>
                         <p className="mt-1" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{r.detail}</p>
@@ -220,8 +220,8 @@ function CriticalPath({ spofs }: { spofs: ReportRiskItem[] }) {
           const y = 100 + (i % 2 === 0 ? -35 : 35)
           return (
             <g key={s.name}>
-              {i > 0 && <line x1={60 + ((i - 1) * 280) / Math.max(1, n - 1)} y1={100 + ((i - 1) % 2 === 0 ? -35 : 35)} x2={x} y2={y} stroke="#93000a" strokeWidth={1.5} strokeDasharray="4" />}
-              <circle cx={x} cy={y} r={s.score >= 80 ? 6 : 4} fill={s.score >= 80 ? '#93000a' : s.score >= 50 ? '#ffb4ab' : '#00e5ff'} />
+              {i > 0 && <line x1={60 + ((i - 1) * 280) / Math.max(1, n - 1)} y1={100 + ((i - 1) % 2 === 0 ? -35 : 35)} x2={x} y2={y} stroke="var(--nx-critical-strong)" strokeWidth={1.5} strokeDasharray="4" />}
+              <circle cx={x} cy={y} r={s.score >= 80 ? 6 : 4} fill={s.score >= 80 ? 'var(--nx-critical-strong)' : s.score >= 50 ? 'var(--nx-danger)' : 'var(--nx-cyan)'} />
               <text x={x} y={y + 16} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="7">{s.name}</text>
             </g>
           )
@@ -238,10 +238,10 @@ function RiskTable({ rows }: { rows: ReportRiskItem[] }) {
       <thead><tr className="border-b" style={{ borderColor: 'var(--nx-border)' }}>{[t('Actif', 'Asset'), t('Type', 'Type'), t('Bande', 'Band'), t('Dépendants', 'Dependents'), t('Portée', 'Blast'), t('Score', 'Score')].map((h, i) => <th key={h} className={`pb-2 ${i >= 3 ? 'text-right' : ''}`} style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{h}</th>)}</tr></thead>
       <tbody>
         {rows.map((r) => {
-          const c = BAND_COLOR[r.band] ?? '#849396'
+          const c = BAND_COLOR[r.band] ?? 'var(--nx-text-muted)'
           return (
             <tr key={r.name} className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
-              <td className="py-2" style={{ fontWeight: 600, color: 'var(--nx-text)' }}>{r.name}{!r.hasRedundancy && r.dependents > 0 && <span style={{ color: '#fb923c', fontSize: 10 }}> SPOF</span>}</td>
+              <td className="py-2" style={{ fontWeight: 600, color: 'var(--nx-text)' }}>{r.name}{!r.hasRedundancy && r.dependents > 0 && <span style={{ color: 'var(--nx-orange)', fontSize: 10 }}> SPOF</span>}</td>
               <td className="py-2" style={{ color: 'var(--nx-text-muted)' }}>{entityTypeLabel(r.entityType, t)}</td>
               <td className="py-2"><span style={{ color: c, fontFamily: mono, fontSize: 11 }}>{bandLabel(r.band, t)}</span></td>
               <td className="py-2 text-right" style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{r.dependents}</td>

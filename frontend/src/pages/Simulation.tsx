@@ -93,8 +93,8 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
-const ORANGE = '#fb923c'
+const ERR = 'var(--nx-danger)'
+const ORANGE = 'var(--nx-orange)'
 
 const SCENARIOS: { value: ScenarioType; fr: string; en: string }[] = [
   { value: 'ServerFailure', fr: 'Défaillance infrastructure', en: 'Infrastructure Failure' },
@@ -111,21 +111,21 @@ const SCENARIOS: { value: ScenarioType; fr: string; en: string }[] = [
 
 // 10 actions de simulation : chacune anime la cascade différemment et fixe le scénario.
 const ACTIONS: { key: SimAction; fr: string; en: string; icon: typeof Bolt; color: string; scenario: ScenarioType }[] = [
-  { key: 'fail', fr: 'Faire tomber', en: 'Fail', icon: Bolt, color: '#ff5a3c', scenario: 'ServerFailure' },
-  { key: 'error', fr: 'Injecter une erreur', en: 'Inject error', icon: Bug, color: '#f5c542', scenario: 'ApplicationFailure' },
-  { key: 'remove', fr: 'Supprimer', en: 'Remove', icon: Trash2, color: '#9aa7b0', scenario: 'ServerFailure' },
-  { key: 'cyber', fr: 'Cyberattaque', en: 'Cyber attack', icon: ShieldAlert, color: '#ff4d8d', scenario: 'CyberIncident' },
-  { key: 'power', fr: 'Panne électrique', en: 'Power outage', icon: Power, color: '#ffb03c', scenario: 'PowerOutage' },
-  { key: 'network', fr: 'Coupure réseau', en: 'Network loss', icon: WifiOff, color: '#4ab8ff', scenario: 'NetworkFailure' },
-  { key: 'data', fr: 'Perte de données', en: 'Data loss', icon: Database, color: '#b98aff', scenario: 'DataLoss' },
-  { key: 'supplier', fr: 'Défaillance fournisseur', en: 'Supplier failure', icon: Truck, color: '#e0a44e', scenario: 'SupplierFailure' },
-  { key: 'cloud', fr: 'Panne région cloud', en: 'Cloud region down', icon: CloudOff, color: '#4ae0d0', scenario: 'CloudRegionFailure' },
-  { key: 'employee', fr: 'Perte employé clé', en: 'Key employee loss', icon: UserMinus, color: '#ff8ac6', scenario: 'EmployeeLoss' },
+  { key: 'fail', fr: 'Faire tomber', en: 'Fail', icon: Bolt, color: 'var(--nx-high)', scenario: 'ServerFailure' },
+  { key: 'error', fr: 'Injecter une erreur', en: 'Inject error', icon: Bug, color: 'var(--nx-warning)', scenario: 'ApplicationFailure' },
+  { key: 'remove', fr: 'Supprimer', en: 'Remove', icon: Trash2, color: 'var(--nx-outline)', scenario: 'ServerFailure' },
+  { key: 'cyber', fr: 'Cyberattaque', en: 'Cyber attack', icon: ShieldAlert, color: 'var(--nx-pink)', scenario: 'CyberIncident' },
+  { key: 'power', fr: 'Panne électrique', en: 'Power outage', icon: Power, color: 'var(--nx-orange)', scenario: 'PowerOutage' },
+  { key: 'network', fr: 'Coupure réseau', en: 'Network loss', icon: WifiOff, color: 'var(--nx-info)', scenario: 'NetworkFailure' },
+  { key: 'data', fr: 'Perte de données', en: 'Data loss', icon: Database, color: 'var(--nx-violet)', scenario: 'DataLoss' },
+  { key: 'supplier', fr: 'Défaillance fournisseur', en: 'Supplier failure', icon: Truck, color: 'var(--nx-orange)', scenario: 'SupplierFailure' },
+  { key: 'cloud', fr: 'Panne région cloud', en: 'Cloud region down', icon: CloudOff, color: 'var(--nx-teal)', scenario: 'CloudRegionFailure' },
+  { key: 'employee', fr: 'Perte employé clé', en: 'Key employee loss', icon: UserMinus, color: 'var(--nx-pink)', scenario: 'EmployeeLoss' },
   // Couche IA (AI Dependency Intelligence)
-  { key: 'model-down', fr: 'Modèle IA indisponible', en: 'AI model down', icon: BrainCircuit, color: '#b98aff', scenario: 'ApplicationFailure' },
-  { key: 'model-wrong', fr: 'Sortie erronée du modèle', en: 'Bad model output', icon: AlertTriangle, color: '#ffb84a', scenario: 'DataLoss' },
-  { key: 'ai-provider', fr: 'Fournisseur IA compromis', en: 'AI provider compromised', icon: Unplug, color: '#ff4d8d', scenario: 'CyberIncident' },
-  { key: 'agent-rogue', fr: 'Agent IA hors de contrôle', en: 'Rogue AI agent', icon: Bot, color: '#e05ae0', scenario: 'CyberIncident' },
+  { key: 'model-down', fr: 'Modèle IA indisponible', en: 'AI model down', icon: BrainCircuit, color: 'var(--nx-violet)', scenario: 'ApplicationFailure' },
+  { key: 'model-wrong', fr: 'Sortie erronée du modèle', en: 'Bad model output', icon: AlertTriangle, color: 'var(--nx-orange)', scenario: 'DataLoss' },
+  { key: 'ai-provider', fr: 'Fournisseur IA compromis', en: 'AI provider compromised', icon: Unplug, color: 'var(--nx-pink)', scenario: 'CyberIncident' },
+  { key: 'agent-rogue', fr: 'Agent IA hors de contrôle', en: 'Rogue AI agent', icon: Bot, color: 'var(--nx-magenta)', scenario: 'CyberIncident' },
 ]
 
 /**
@@ -521,7 +521,7 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
       </div>
 
       {/* Financier */}
-      <div className="rounded-sm border p-4" style={{ background: 'rgba(255,180,171,0.06)', borderColor: 'rgba(255,180,171,0.35)' }}>
+      <div className="rounded-sm border p-4" style={{ background: 'color-mix(in srgb, var(--nx-danger) 6%, transparent)', borderColor: 'color-mix(in srgb, var(--nx-danger) 35%, transparent)' }}>
         <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Impact attendu (pondéré)', 'Expected impact (weighted)')}</div>
         <div className="mt-0.5 flex items-baseline gap-1">
           <span style={{ fontFamily: geist, fontSize: 30, lineHeight: 1, color: ERR }}>{fmtMoney(r.expectedImpact)}</span>
@@ -541,7 +541,7 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
       <div className="grid grid-cols-3 gap-2">
         <Metric label={t('DIRECTS', 'DIRECT')} value={modeled.direct} color={actColor} />
         <Metric label={t('INDIRECTS', 'INDIRECT')} value={modeled.indirect} color="var(--nx-text)" />
-        <Metric label={t('ÉPARGNÉS', 'SPARED')} value={modeled.spared} color="#5a97a3" />
+        <Metric label={t('ÉPARGNÉS', 'SPARED')} value={modeled.spared} color="var(--nx-cyan-text)" />
       </div>
 
       {/* Légende des liens de propagation */}
@@ -600,7 +600,7 @@ function ImpactCardRow({ c, i }: { c: ImpactCard; i: number; fmtMoney?: (n: numb
   const { t } = useLang()
   const money = useMoney()
   const [open, setOpen] = useState(false)
-  const accent = c.depth === 0 ? '#ff3b30' : c.direct ? '#ff7a5c' : '#c69a4e'
+  const accent = c.depth === 0 ? 'var(--nx-danger)' : c.direct ? 'var(--nx-high)' : 'var(--nx-warning)'
   const tag = c.depth === 0 ? t('cible', 'target') : c.direct ? t('direct', 'direct') : t('indirect', 'indirect')
   const costPerH = c.rto > 0 ? Math.round(c.euro / c.rto) : c.euro
   const why = c.depth === 0
@@ -612,11 +612,11 @@ function ImpactCardRow({ c, i }: { c: ImpactCard; i: number; fmtMoney?: (n: numb
   return (
     <div className="overflow-hidden rounded-md border transition-colors" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)', borderLeft: `3px solid ${accent}`, animation: 'simCardIn 0.34s ease both', animationDelay: `${Math.min(i * 35, 700)}ms` }}>
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-2 p-2.5 text-left hover:brightness-110">
-        <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: '#04121a', background: critColorSim(c.criticality) }}>{c.criticality}</span>
+        <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-on-cyan)', background: critColorSim(c.criticality) }}>{c.criticality}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
-            <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: accent, border: `1px solid ${accent}55` }}>{tag}</span>
+            <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: accent, border: `1px solid color-mix(in srgb, ${accent} 33%, transparent)` }}>{tag}</span>
           </div>
           <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(c.type, t)} · T+{c.depth}h · <span style={{ color: 'var(--nx-text)' }}>{money.full(c.euro)}</span></div>
         </div>
@@ -652,10 +652,10 @@ function Detail({ label, value }: { label: string; value: string }) {
   )
 }
 function critColorSim(c: number): string {
-  if (c >= 85) return '#d15b54'
-  if (c >= 65) return '#e0a458'
-  if (c >= 40) return '#4bb3c9'
-  return '#8aa0ad'
+  if (c >= 85) return 'var(--nx-danger)'
+  if (c >= 65) return 'var(--nx-orange)'
+  if (c >= 40) return 'var(--nx-cyan)'
+  return 'var(--nx-text-muted)'
 }
 
 /* ---------- primitives ---------- */
@@ -666,7 +666,7 @@ function Select({ label, value, onChange, options, danger }: { label: string; va
       <div className="relative">
         <select value={value} onChange={(e) => onChange(e.target.value)}
           className="h-9 w-full appearance-none rounded-sm border pl-3 pr-8 outline-none"
-          style={{ background: danger ? '#2B1B1C' : 'var(--nx-surface-container)', border: `1px solid ${danger ? '#690005' : 'var(--nx-border)'}`, color: danger ? ERR : 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
+          style={{ background: danger ? 'color-mix(in srgb, var(--nx-danger) 10%, var(--nx-panel))' : 'var(--nx-surface-container)', border: `1px solid ${danger ? 'color-mix(in srgb, var(--nx-danger) 45%, transparent)' : 'var(--nx-border)'}`, color: danger ? ERR : 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
           {options.map((o) => <option key={o.value} value={o.value} style={{ background: 'var(--nx-surface)' }}>{o.label}</option>)}
         </select>
         <ChevronDown size={16} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" style={{ color: danger ? ERR : 'var(--nx-text-muted)' }} />

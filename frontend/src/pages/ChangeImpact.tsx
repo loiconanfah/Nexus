@@ -12,10 +12,10 @@ const CYAN_T = 'var(--nx-cyan-text)'
 
 type T = (fr: string, en: string) => string
 function band(score: number, t: T) {
-  if (score >= 80) return { label: t('RISQUE ÉLEVÉ', 'HIGH RISK'), color: '#ffb4ab' }
-  if (score >= 60) return { label: t('ÉLEVÉ', 'ELEVATED'), color: '#fb923c' }
-  if (score >= 40) return { label: t('MODÉRÉ', 'MODERATE'), color: '#facc15' }
-  return { label: t('FAIBLE', 'LOW RISK'), color: '#4ade80' }
+  if (score >= 80) return { label: t('RISQUE ÉLEVÉ', 'HIGH RISK'), color: 'var(--nx-danger)' }
+  if (score >= 60) return { label: t('ÉLEVÉ', 'ELEVATED'), color: 'var(--nx-orange)' }
+  if (score >= 40) return { label: t('MODÉRÉ', 'MODERATE'), color: 'var(--nx-warning)' }
+  return { label: t('FAIBLE', 'LOW RISK'), color: 'var(--nx-success)' }
 }
 
 export function ChangeImpact() {
@@ -59,7 +59,7 @@ export function ChangeImpact() {
                     <span style={{ fontSize: 13, color: sel ? CYAN_T : 'var(--nx-text)' }}>{n.name}</span>
                     <span className="block" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(n.entityType, t)}</span>
                   </span>
-                  <span style={{ fontFamily: mono, fontSize: 11, color: n.criticality >= 80 ? '#ffb4ab' : 'var(--nx-text-muted)' }}>c{n.criticality}</span>
+                  <span style={{ fontFamily: mono, fontSize: 11, color: n.criticality >= 80 ? 'var(--nx-danger)' : 'var(--nx-text-muted)' }}>c{n.criticality}</span>
                 </button>
               )
             })}
@@ -87,11 +87,11 @@ export function ChangeImpact() {
                 <Metric label={t('DÉPENDANTS DIRECTS', 'DIRECT DEPENDENTS')} value={risk?.directDependents ?? 0} />
                 <Metric label={t('PORTÉE', 'BLAST RADIUS')} value={risk?.blastRadius ?? 0} color={CYAN_T} />
                 <Metric label={t('CRITICITÉ EFF.', 'EFFECTIVE CRIT.')} value={risk?.effectiveCriticality ?? 0} />
-                <Metric label={t('REDONDANCE', 'REDUNDANCY')} text={risk?.hasRedundancy ? t('OUI', 'YES') : t('AUCUNE', 'NONE')} color={risk?.hasRedundancy ? '#4ade80' : '#ffb4ab'} />
+                <Metric label={t('REDONDANCE', 'REDUNDANCY')} text={risk?.hasRedundancy ? t('OUI', 'YES') : t('AUCUNE', 'NONE')} color={risk?.hasRedundancy ? 'var(--nx-success)' : 'var(--nx-danger)'} />
               </div>
 
-              <div className={`flex items-start gap-3 rounded-sm p-4`} style={{ background: risk?.hasRedundancy ? 'rgba(74,222,128,0.08)' : 'rgba(255,180,171,0.08)', border: `1px solid ${risk?.hasRedundancy ? '#4ade8040' : '#ffb4ab40'}` }}>
-                {risk?.hasRedundancy ? <ShieldCheck size={18} style={{ color: '#4ade80', flexShrink: 0 }} /> : <ShieldAlert size={18} style={{ color: '#ffb4ab', flexShrink: 0 }} />}
+              <div className={`flex items-start gap-3 rounded-sm p-4`} style={{ background: risk?.hasRedundancy ? 'color-mix(in srgb, var(--nx-success) 8%, transparent)' : 'color-mix(in srgb, var(--nx-danger) 8%, transparent)', border: `1px solid ${risk?.hasRedundancy ? '#4ade8040' : '#ffb4ab40'}` }}>
+                {risk?.hasRedundancy ? <ShieldCheck size={18} style={{ color: 'var(--nx-success)', flexShrink: 0 }} /> : <ShieldAlert size={18} style={{ color: 'var(--nx-danger)', flexShrink: 0 }} />}
                 <p style={{ fontSize: 13, color: 'var(--nx-text)', lineHeight: 1.5 }}>
                   {risk?.hasRedundancy
                     ? t(`${target.name} dispose d’une redondance — un changement contrôlé présente un risque opérationnel plus faible, mais validez la bascule avant de procéder.`, `${target.name} has redundancy — a controlled change carries lower operational risk, but validate failover before proceeding.`)
@@ -108,10 +108,10 @@ export function ChangeImpact() {
                   {dependents?.map((d) => (
                     <div key={d.id} className="flex items-center justify-between px-4 py-2.5" style={{ borderColor: 'var(--nx-border)' }}>
                       <span style={{ fontSize: 13, color: CYAN_T }}>{d.name} <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(d.entityType, t)}</span></span>
-                      <span style={{ fontFamily: mono, fontSize: 11, color: d.criticality >= 80 ? '#ffb4ab' : 'var(--nx-text-muted)' }}>{t('criticité', 'criticality')} {d.criticality}</span>
+                      <span style={{ fontFamily: mono, fontSize: 11, color: d.criticality >= 80 ? 'var(--nx-danger)' : 'var(--nx-text-muted)' }}>{t('criticité', 'criticality')} {d.criticality}</span>
                     </div>
                   ))}
-                  {dependents?.length === 0 && <div className="p-4" style={{ fontFamily: mono, fontSize: 12, color: '#4ade80' }}>{t('Aucun dépendant direct — modification sûre en isolation.', 'No direct dependents — safe to change in isolation.')}</div>}
+                  {dependents?.length === 0 && <div className="p-4" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-success)' }}>{t('Aucun dépendant direct — modification sûre en isolation.', 'No direct dependents — safe to change in isolation.')}</div>}
                 </div>
               </div>
             </>

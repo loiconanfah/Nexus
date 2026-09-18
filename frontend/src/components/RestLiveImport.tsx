@@ -8,7 +8,7 @@ import type { ImportResult, RestSource } from '../lib/types'
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const NEG = '#d15b54'
+const NEG = 'var(--nx-danger)'
 
 const ENTITY_TYPES = ['Application', 'Service', 'System', 'Database', 'Server', 'Supplier', 'Person', 'Organization', 'BusinessProcess', 'BusinessService', 'Network', 'CloudResource', 'Location', 'Contract']
 
@@ -67,7 +67,7 @@ export function RestLiveImport({ onImported }: { onImported?: () => void }) {
           onClick={() => url.trim() && preview.mutate()}
           disabled={preview.isPending || !url.trim()}
           className="rounded-md px-4 py-2 text-sm font-medium"
-          style={{ background: CYAN, color: '#04121a', opacity: preview.isPending || !url.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}
+          style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: preview.isPending || !url.trim() ? 0.6 : 1, whiteSpace: 'nowrap' }}
         >
           {preview.isPending ? t('Test…', 'Testing…') : t('Prévisualiser', 'Preview')}
         </button>
@@ -103,7 +103,7 @@ export function RestLiveImport({ onImported }: { onImported?: () => void }) {
             onClick={() => nameCol && doImport.mutate()}
             disabled={doImport.isPending || !nameCol}
             className="mt-3 rounded-md px-5 py-2 text-sm font-medium"
-            style={{ background: CYAN, color: '#04121a', opacity: doImport.isPending || !nameCol ? 0.6 : 1 }}
+            style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: doImport.isPending || !nameCol ? 0.6 : 1 }}
           >
             {doImport.isPending ? t('Import en cours…', 'Importing…') : t('Importer depuis l’API', 'Import from API')}
           </button>
@@ -113,7 +113,7 @@ export function RestLiveImport({ onImported }: { onImported?: () => void }) {
       {doImport.isError && <p className="mt-2" style={{ color: NEG, fontSize: 12 }}>{(doImport.error as Error).message}</p>}
       {res && (
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-md border px-4 py-2" style={{ borderColor: '#3fb27f66', fontSize: 13, color: 'var(--nx-text)' }}>
-          <CheckCircle2 size={16} style={{ color: '#3fb27f' }} />
+          <CheckCircle2 size={16} style={{ color: 'var(--nx-success)' }} />
           <span><b>{res.entitiesCreated}</b> {t('créées', 'created')}</span>
           <span><b>{res.entitiesMatched}</b> {t('fusionnées', 'matched')}</span>
           <span><b>{res.relationsCreated}</b> {t('relations', 'relations')}</span>

@@ -14,13 +14,13 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
 function bandColor(v: number): string {
   if (v >= 80) return ERR
-  if (v >= 60) return '#fb923c'
-  if (v >= 40) return '#facc15'
-  return '#00daf3'
+  if (v >= 60) return 'var(--nx-orange)'
+  if (v >= 40) return 'var(--nx-warning)'
+  return 'var(--nx-cyan)'
 }
 function typeIcon(t: string, size = 16) {
   const s = t.toLowerCase()
@@ -114,7 +114,7 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
             <div className="flex items-center gap-3">
               <span className="h-2 w-2 rounded-full" style={{ background: bandColor(asset.criticality) }} />
               <h1 style={{ fontFamily: geist, fontSize: 24, color: 'var(--nx-text)' }}>{asset.name}</h1>
-              {asset.criticality >= 80 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'rgba(255,180,171,0.15)', border: '1px solid rgba(255,180,171,0.3)' }}>{t('CRITIQUE', 'CRITICAL')}</span>}
+              {asset.criticality >= 80 && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: ERR, background: 'color-mix(in srgb, var(--nx-danger) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-danger) 30%, transparent)' }}>{t('CRITIQUE', 'CRITICAL')}</span>}
             </div>
             <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(asset.entityType, t)} · {asset.sourceSystem ?? t('source inconnue', 'unknown source')}</p>
           </div>
@@ -162,10 +162,10 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
                     {!hasRedundancy && <Finding icon={<ShieldAlert size={15} />} color={ERR} title={t('Aucun secours vérifié', 'No verified secondary')} sub={t('SEV-2 REDONDANCE', 'SEV-2 REDUNDANCY')} />}
                     <Finding icon={<Layers size={15} />} color={CYAN} title={t(`Soutient ${dependentCount} actif(s) en aval`, `Supports ${dependentCount} downstream asset(s)`)} sub={t('ANALYSE D’IMPACT', 'IMPACT ANALYSIS')} />
                     {band && (band === 'High' || band === 'Critical') && <Finding icon={<AlertTriangle size={15} />} color={ERR} title={t(`Risque opérationnel élevé (${band})`, `Elevated operational risk (${band})`)} sub={t('MOTEUR DE RISQUE', 'RISK ENGINE')} />}
-                    {hasRedundancy && dependentCount === 0 && <Finding icon={<Layers size={15} />} color="#3fb27f" title={t('Aucun risque structurel détecté', 'No structural risks detected')} sub="NOMINAL" />}
+                    {hasRedundancy && dependentCount === 0 && <Finding icon={<Layers size={15} />} color="var(--nx-success)" title={t('Aucun risque structurel détecté', 'No structural risks detected')} sub="NOMINAL" />}
                   </div>
                   <button onClick={() => navigate(`/simulations?asset=${asset.id}&name=${encodeURIComponent(asset.name)}`)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-sm py-2.5"
-                    style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px rgba(0,229,255,0.2)' }}>
+                    style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px color-mix(in srgb, var(--nx-cyan) 20%, transparent)' }}>
                     <Play size={16} /> {t('Simuler une défaillance', 'Simulate Failure')}
                   </button>
                 </Panel>
@@ -224,10 +224,10 @@ function LocalTopography({ name, deps, dependents }: { name: string; deps: { nam
     <div className="relative h-full min-h-[260px] w-full">
       <div className="nx-grid absolute inset-0" />
       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-        {up.map((_, i) => { const x = 20 + (i * 60) / Math.max(1, up.length - 1 || 1); return <line key={`u${i}`} x1={x} y1={18} x2={50} y2={50} stroke="#00daf3" strokeWidth={0.4} strokeDasharray="2 1" opacity={0.5} /> })}
-        {down.map((d, i) => { const x = 20 + (i * 60) / Math.max(1, down.length - 1 || 1); return <line key={`d${i}`} x1={50} y1={50} x2={x} y2={82} stroke={d.crit >= 80 ? ERR : '#00daf3'} strokeWidth={0.5} opacity={0.6} /> })}
-        {up.map((u, i) => { const x = 20 + (i * 60) / Math.max(1, up.length - 1 || 1); return <g key={`nu${i}`}><circle cx={x} cy={18} r={1.6} fill="#849396" /><text x={x} y={14} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="3">{u.name}</text></g> })}
-        {down.map((d, i) => { const x = 20 + (i * 60) / Math.max(1, down.length - 1 || 1); return <g key={`nd${i}`}><circle cx={x} cy={82} r={1.6} fill={d.crit >= 80 ? ERR : '#849396'} /><text x={x} y={88} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="3">{d.name}</text></g> })}
+        {up.map((_, i) => { const x = 20 + (i * 60) / Math.max(1, up.length - 1 || 1); return <line key={`u${i}`} x1={x} y1={18} x2={50} y2={50} stroke="var(--nx-cyan)" strokeWidth={0.4} strokeDasharray="2 1" opacity={0.5} /> })}
+        {down.map((d, i) => { const x = 20 + (i * 60) / Math.max(1, down.length - 1 || 1); return <line key={`d${i}`} x1={50} y1={50} x2={x} y2={82} stroke={d.crit >= 80 ? ERR : 'var(--nx-cyan)'} strokeWidth={0.5} opacity={0.6} /> })}
+        {up.map((u, i) => { const x = 20 + (i * 60) / Math.max(1, up.length - 1 || 1); return <g key={`nu${i}`}><circle cx={x} cy={18} r={1.6} fill="var(--nx-text-muted)" /><text x={x} y={14} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="3">{u.name}</text></g> })}
+        {down.map((d, i) => { const x = 20 + (i * 60) / Math.max(1, down.length - 1 || 1); return <g key={`nd${i}`}><circle cx={x} cy={82} r={1.6} fill={d.crit >= 80 ? ERR : 'var(--nx-text-muted)'} /><text x={x} y={88} textAnchor="middle" fill="var(--nx-text-muted)" fontFamily="JetBrains Mono" fontSize="3">{d.name}</text></g> })}
         <circle cx={50} cy={50} r={4} fill="var(--nx-surface-bright)" stroke={CYAN} strokeWidth={0.7} />
         <text x={50} y={57} textAnchor="middle" fill="var(--nx-text)" fontFamily="JetBrains Mono" fontSize="3.4" fontWeight="700">{name}</text>
       </svg>

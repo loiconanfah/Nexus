@@ -15,10 +15,10 @@ const CYAN_T = 'var(--nx-cyan-text)'
 type T = (fr: string, en: string) => string
 function statusOf(crit: number, deg: number, t: T) {
   const eff = crit + deg
-  if (eff >= 85) return { label: t('CRITIQUE', 'CRITICAL'), color: '#ffb4ab' }
-  if (eff >= 65) return { label: t('ÉLEVÉ', 'ELEVATED'), color: '#fb923c' }
-  if (eff >= 45) return { label: t('SURVEILLÉ', 'WATCH'), color: '#facc15' }
-  return { label: t('NOMINAL', 'NOMINAL'), color: '#4ade80' }
+  if (eff >= 85) return { label: t('CRITIQUE', 'CRITICAL'), color: 'var(--nx-danger)' }
+  if (eff >= 65) return { label: t('ÉLEVÉ', 'ELEVATED'), color: 'var(--nx-orange)' }
+  if (eff >= 45) return { label: t('SURVEILLÉ', 'WATCH'), color: 'var(--nx-warning)' }
+  return { label: t('NOMINAL', 'NOMINAL'), color: 'var(--nx-success)' }
 }
 
 export function DigitalTwin() {
@@ -55,7 +55,7 @@ export function DigitalTwin() {
   if (!graph) return null
 
   const health = overview?.organizationHealthScore ?? 0
-  const healthColor = health >= 75 ? '#4ade80' : health >= 50 ? '#facc15' : '#ffb4ab'
+  const healthColor = health >= 75 ? 'var(--nx-success)' : health >= 50 ? 'var(--nx-warning)' : 'var(--nx-danger)'
 
   return (
     <div className="flex flex-col gap-4">
@@ -74,7 +74,7 @@ export function DigitalTwin() {
           <div className="h-8 w-px" style={{ background: 'var(--nx-border)' }} />
           <Stat icon={Boxes} label={t('NŒUDS', 'NODES')} value={graph.nodes.length} />
           <Stat icon={Activity} label={t('LIENS', 'LINKS')} value={graph.edges.length} />
-          <Stat icon={Cpu} label="SPOF" value={overview?.spofCount ?? 0} color="#ffb4ab" />
+          <Stat icon={Cpu} label="SPOF" value={overview?.spofCount ?? 0} color="var(--nx-danger)" />
         </div>
       </div>
 
@@ -169,7 +169,7 @@ function NodePanel({ node, onClose, onChanged, onGraph }: { node: GraphEntityRec
             <div className="flex items-center gap-2">
               <input type="number" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} placeholder={t('estimé par criticité', 'estimated by criticality')}
                 className="w-full rounded-md border bg-transparent px-3 py-2 outline-none" style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 14, color: 'var(--nx-text)' }} />
-              <button onClick={() => saveCost.mutate()} disabled={saveCost.isPending} className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium" style={{ background: CYAN, color: '#04121a', opacity: saveCost.isPending ? 0.6 : 1 }}>
+              <button onClick={() => saveCost.mutate()} disabled={saveCost.isPending} className="flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium" style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: saveCost.isPending ? 0.6 : 1 }}>
                 <Save size={14} /> {saveCost.isSuccess ? t('Enregistré', 'Saved') : t('Enregistrer', 'Save')}
               </button>
             </div>
@@ -180,22 +180,22 @@ function NodePanel({ node, onClose, onChanged, onGraph }: { node: GraphEntityRec
             <button onClick={() => onGraph(node.id)} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)' }}>
               <ExternalLink size={14} /> {t('Voir dans le graphe', 'View in graph')}
             </button>
-            <button onClick={() => decommission.mutate()} disabled={decommission.isPending} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'rgba(224,178,60,0.4)', color: '#e0b23c' }}>
+            <button onClick={() => decommission.mutate()} disabled={decommission.isPending} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'rgba(224,178,60,0.4)', color: 'var(--nx-warning)' }}>
               <PowerOff size={14} /> {t('Mettre de côté', 'Set aside')}
             </button>
           </div>
 
           {/* Suppression définitive */}
           {confirmDelete ? (
-            <div className="rounded-md border p-3" style={{ borderColor: 'rgba(209,91,84,0.5)', background: 'rgba(209,91,84,0.06)' }}>
-              <p style={{ fontSize: 12, color: '#ffb4ab' }}>{t('Supprimer définitivement cet actif et ses relations ? Irréversible.', 'Permanently delete this asset and its relations? Irreversible.')}</p>
+            <div className="rounded-md border p-3" style={{ borderColor: 'color-mix(in srgb, var(--nx-danger) 50%, transparent)', background: 'color-mix(in srgb, var(--nx-danger) 6%, transparent)' }}>
+              <p style={{ fontSize: 12, color: 'var(--nx-danger)' }}>{t('Supprimer définitivement cet actif et ses relations ? Irréversible.', 'Permanently delete this asset and its relations? Irreversible.')}</p>
               <div className="mt-2 flex justify-end gap-2">
                 <button onClick={() => setConfirmDelete(false)} className="rounded-md border px-3 py-1.5 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
-                <button onClick={() => remove.mutate()} disabled={remove.isPending} className="rounded-md px-3 py-1.5 text-sm font-medium" style={{ background: '#d15b54', color: '#fff', opacity: remove.isPending ? 0.6 : 1 }}>{t('Supprimer', 'Delete')}</button>
+                <button onClick={() => remove.mutate()} disabled={remove.isPending} className="rounded-md px-3 py-1.5 text-sm font-medium" style={{ background: 'var(--nx-danger)', color: '#fff', opacity: remove.isPending ? 0.6 : 1 }}>{t('Supprimer', 'Delete')}</button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setConfirmDelete(true)} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: '#d15b54' }}>
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-danger)' }}>
               <Trash2 size={14} /> {t('Supprimer définitivement', 'Delete permanently')}
             </button>
           )}

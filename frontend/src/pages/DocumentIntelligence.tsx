@@ -77,14 +77,14 @@ export function DocumentIntelligence() {
         <div className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}><FileText size={14} /> {t('Document source', 'Source document')}</span>
-            <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'rgba(0,229,255,0.3)', color: CYAN_T }}><Upload size={12} /> {t('Importer un fichier', 'Upload a file')}</button>
+            <button onClick={() => inputRef.current?.click()} className="flex items-center gap-1.5 rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T }}><Upload size={12} /> {t('Importer un fichier', 'Upload a file')}</button>
             <input ref={inputRef} type="file" accept=".txt,.md,.markdown,.log,.csv,.tsv,.json,.yaml,.yml,.html,.htm,.xml,.conf,.ini,text/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }} />
           </div>
           <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) onFile(f) }}>
             <textarea value={text} onChange={(e) => { setText(e.target.value); setFileName(null) }} rows={10} placeholder={t('Collez du texte, ou déposez / importez un fichier (.txt, .md, .log, .csv, .json, .html…)', 'Paste text, or drop / upload a file (.txt, .md, .log, .csv, .json, .html…)')} className="w-full resize-y rounded-sm p-3 outline-none" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontSize: 13, lineHeight: 1.5 }} />
           </div>
-          {fileName && <div className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, color: '#4ade80' }}><FileUp size={12} /> {fileName} · {text.length.toLocaleString()} {t('caractères', 'chars')}</div>}
-          {fileErr && <div style={{ fontFamily: mono, fontSize: 11, color: '#facc15' }}>{fileErr}</div>}
+          {fileName && <div className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-success)' }}><FileUp size={12} /> {fileName} · {text.length.toLocaleString()} {t('caractères', 'chars')}</div>}
+          {fileErr && <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-warning)' }}>{fileErr}</div>}
           <div className="flex flex-wrap gap-2">
             {SAMPLES.map((s, i) => (
               <button key={i} onClick={() => { setText(s); setFileName(null) }} className="rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)' }}>{t('Exemple', 'Sample')} {i + 1}</button>
@@ -94,7 +94,7 @@ export function DocumentIntelligence() {
             <button onClick={() => mut.mutate(text)} disabled={!text.trim() || mut.isPending} className="flex flex-1 items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: text.trim() ? CYAN : 'var(--nx-surface-high)', color: text.trim() ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
               {mut.isPending ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} {t('Analyser', 'Analyze')}
             </button>
-            <button onClick={() => extract.mutate(text)} disabled={!text.trim() || extract.isPending} className="flex flex-1 items-center justify-center gap-2 rounded-sm border py-2.5" style={{ borderColor: 'rgba(0,229,255,0.35)', color: CYAN_T, fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed', opacity: text.trim() ? 1 : 0.5 }}>
+            <button onClick={() => extract.mutate(text)} disabled={!text.trim() || extract.isPending} className="flex flex-1 items-center justify-center gap-2 rounded-sm border py-2.5" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 35%, transparent)', color: CYAN_T, fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed', opacity: text.trim() ? 1 : 0.5 }}>
               {extract.isPending ? <Loader2 size={16} className="animate-spin" /> : <GitMerge size={16} />} {t('Extraire → graphe', 'Extract → graph')}
             </button>
           </div>
@@ -104,7 +104,7 @@ export function DocumentIntelligence() {
         <div className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
           <div className="flex items-center justify-between">
             <span style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Intelligence extraite', 'Extracted intelligence')}</span>
-            {answer && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN_T, background: 'rgba(0,229,255,0.1)' }}>{t('confiance', 'confidence')} {Math.round(answer.confidence * 100)}%</span>}
+            {answer && <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN_T, background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' }}>{t('confiance', 'confidence')} {Math.round(answer.confidence * 100)}%</span>}
           </div>
 
           {!answer && !mut.isPending && <div className="flex flex-1 items-center justify-center" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('En attente d’un document à analyser.', 'Awaiting a document to analyze.')}</div>}
@@ -118,7 +118,7 @@ export function DocumentIntelligence() {
                 <div>
                   <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Systèmes référencés', 'Referenced systems')}</div>
                   <div className="mt-1 flex flex-wrap gap-1.5">
-                    {answer.affectedAssets.map((a) => <span key={a} className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, color: CYAN_T, background: 'rgba(0,229,255,0.08)', border: '1px solid var(--nx-border)' }}>{a}</span>)}
+                    {answer.affectedAssets.map((a) => <span key={a} className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, color: CYAN_T, background: 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)', border: '1px solid var(--nx-border)' }}>{a}</span>)}
                   </div>
                 </div>
               )}
@@ -150,7 +150,7 @@ export function DocumentIntelligence() {
 
       {/* Extraction → graphe */}
       {(extract.isPending || candidates || ingestRes) && (
-        <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'rgba(0,229,255,0.3)' }}>
+        <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
           <div className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: CYAN_T }}>
             <GitMerge size={14} /> {t('Dépendances extraites', 'Extracted dependencies')}
           </div>
@@ -158,9 +158,9 @@ export function DocumentIntelligence() {
           {extract.isPending && <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}><Loader2 size={14} className="animate-spin" /> {t('Extraction par l’IA…', 'AI extraction…')}</div>}
 
           {ingestRes && (
-            <div className="flex items-center gap-2 rounded-sm p-3" style={{ background: 'rgba(74,222,128,0.08)', border: '1px solid #4ade8040' }}>
-              <CheckCircle2 size={16} style={{ color: '#4ade80' }} />
-              <span style={{ fontSize: 13, color: '#4ade80' }}>{t(`${ingestRes.entitiesCreated} entité(s) et ${ingestRes.relationsCreated} relation(s) ajoutées au graphe (statut « Suggéré par IA »). ${ingestRes.unresolved} non résolue(s).`, `${ingestRes.entitiesCreated} entity(ies) and ${ingestRes.relationsCreated} relation(s) added to the graph ('AI Suggested'). ${ingestRes.unresolved} unresolved.`)}</span>
+            <div className="flex items-center gap-2 rounded-sm p-3" style={{ background: 'color-mix(in srgb, var(--nx-success) 8%, transparent)', border: '1px solid #4ade8040' }}>
+              <CheckCircle2 size={16} style={{ color: 'var(--nx-success)' }} />
+              <span style={{ fontSize: 13, color: 'var(--nx-success)' }}>{t(`${ingestRes.entitiesCreated} entité(s) et ${ingestRes.relationsCreated} relation(s) ajoutées au graphe (statut « Suggéré par IA »). ${ingestRes.unresolved} non résolue(s).`, `${ingestRes.entitiesCreated} entity(ies) and ${ingestRes.relationsCreated} relation(s) added to the graph ('AI Suggested'). ${ingestRes.unresolved} unresolved.`)}</span>
             </div>
           )}
 
@@ -188,7 +188,7 @@ export function DocumentIntelligence() {
                         <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{relationTypeLabel(r.relationType, t)}</span>
                         <ArrowRight size={12} style={{ color: 'var(--nx-text-muted)' }} />
                         <span style={{ color: CYAN_T, fontFamily: mono }}>{r.target}</span>
-                        <span className="ml-auto" style={{ fontFamily: mono, fontSize: 10, color: '#facc15' }}>{Math.round(r.confidence * 100)}%</span>
+                        <span className="ml-auto" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-warning)' }}>{Math.round(r.confidence * 100)}%</span>
                       </div>
                     ))}
                   </div>

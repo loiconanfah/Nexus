@@ -120,7 +120,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
           {NAV.map((group) => (
             <div key={group.en}>
               {collapsed
-                ? <div className="mx-3 mb-1 border-t" style={{ borderColor: 'rgba(59,73,76,0.35)' }} />
+                ? <div className="mx-3 mb-1 border-t" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 35%, transparent)' }} />
                 : <div className="px-3 pb-1" style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', opacity: 0.6 }}>{lang === 'fr' ? group.fr : group.en}</div>}
               <div className="space-y-0.5">
                 {group.items.map(({ to, fr, en, icon: Icon }) => (
@@ -131,7 +131,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
                     title={collapsed ? (lang === 'fr' ? fr : en) : undefined}
                     className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`}
                     style={({ isActive }) => ({
-                      background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent',
+                      background: isActive ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent',
                       color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)',
                       borderLeft: collapsed ? '2px solid transparent' : `2px solid ${isActive ? 'var(--nx-cyan)' : 'transparent'}`,
                       fontWeight: isActive ? 600 : 400,
@@ -147,20 +147,20 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
         </div>
 
         {/* Pied */}
-        <div className="mt-auto space-y-4 border-t pt-4" style={{ borderColor: 'rgba(59,73,76,0.3)' }}>
+        <div className="mt-auto space-y-4 border-t pt-4" style={{ borderColor: 'color-mix(in srgb, var(--nx-border) 30%, transparent)' }}>
           <button
             onClick={() => { if (collapsed) toggleNav(); setTimeout(() => searchRef.current?.focus(), 0) }}
             className={`flex w-full items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center' : 'justify-center gap-2'}`}
-            style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: 'var(--nx-cyan-text)', fontFamily: mono, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase' }}
+            style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-cyan-text)', fontFamily: mono, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase' }}
             title={t('Rechercher', 'Execute Command')}
           >
             <Terminal size={14} /> {!collapsed && t('Rechercher', 'Execute Command')}
           </button>
           <div className="space-y-1">
-            <NavLink to="/admin" title={collapsed ? t('Admin & système', 'Admin & System') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent' })}>
+            <NavLink to="/admin" title={collapsed ? t('Admin & système', 'Admin & System') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent' })}>
               <Settings size={18} className="shrink-0" /> {!collapsed && t('Admin & système', 'Admin & System')}
             </NavLink>
-            <NavLink to="/help" data-tour="nav-help" title={collapsed ? t('Assistance', 'Support') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'rgba(0,229,255,0.10)' : 'transparent' })}>
+            <NavLink to="/help" data-tour="nav-help" title={collapsed ? t('Assistance', 'Support') : undefined} className={`flex items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'}`} style={({ isActive }) => ({ color: isActive ? 'var(--nx-cyan-text)' : 'var(--nx-text-muted)', fontSize: 14, background: isActive ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent' })}>
               <HelpCircle size={18} className="shrink-0" /> {!collapsed && t('Assistance', 'Support')}
             </NavLink>
           </div>
@@ -180,7 +180,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
             >
               {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </button>
-            <span className="hidden font-bold tracking-tight md:block" style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>Lenexux COMMAND</span>
+            <span className="hidden whitespace-nowrap font-bold tracking-tight 2xl:block" style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>Lenexux COMMAND</span>
             <CommandSearch inputRef={searchRef} />
           </div>
           <div className="flex items-center gap-3">

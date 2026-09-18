@@ -6,22 +6,23 @@
   pour rester lisibles sur fond clair.
 */
 @theme {
-  --color-bg: #eef1f3;
+  --color-bg: #eef2f5;
   --color-surface: #ffffff;
-  --color-surface-2: #e3e8ea;
-  --color-border: #d3dadd;
-  --color-text: #14181a;
-  --color-text-muted: #55626a;
-  --color-text-strong: #0a0d0f;
+  --color-surface-2: #f1f4f7;
+  --color-border: #cfd7de;
+  --color-text: #0f1720;
+  --color-text-muted: #4a5763;
+  --color-text-strong: #070b10;
 
-  --color-brand: #0aa5bd;
-  --color-brand-soft: rgba(10, 165, 189, 0.12);
+  --color-brand: #0891b2;
+  --color-brand-soft: rgba(8, 145, 178, 0.12);
 
-  --color-low: #2e9e6b;
-  --color-moderate: #b08a1e;
-  --color-elevated: #d9772e;
-  --color-high: #e0554b;
-  --color-critical: #cf4a44;
+  /* Couleurs de risque SATURÉES : sur fond clair, un pastel paraît délavé. */
+  --color-low: #15803d;
+  --color-moderate: #a16207;
+  --color-elevated: #c2410c;
+  --color-high: #dc2626;
+  --color-critical: #b91c1c;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
@@ -77,22 +78,39 @@ body {
    Palette « deep space » + accent cyan électrique, fonts Geist/Inter/Mono.
    ===================================================================== */
 :root {
-  --nx-bg: #eef1f3;
+  /* Trois niveaux nettement distincts : fond gris-bleu, cartes blanches,
+     champs légèrement teintés. Avant, fond, cartes et surfaces étaient trois
+     gris quasi identiques : tout se fondait, et le blanc « cassait ». */
+  --nx-bg: #eef2f5;
   --nx-panel: #ffffff;
-  --nx-surface: #f5f7f8;
-  --nx-surface-container: #eceff1;
-  --nx-surface-high: #e3e8ea;
-  --nx-surface-highest: #d8dee0;
-  --nx-border: #d3dadd;
-  --nx-outline: #7b878b;
-  --nx-text: #14181a;
-  --nx-text-muted: #55626a;
-  --nx-cyan: #0aa5bd;
+  --nx-surface: #ffffff;
+  --nx-surface-container: #ffffff;
+  --nx-surface-high: #f3f6f8;
+  --nx-surface-highest: #e5eaee;
+  --nx-border: #cfd7de;
+  --nx-outline: #66737e;
+  --nx-text: #0f1720;
+  --nx-text-muted: #4a5763;
+  --nx-cyan: #0891b2;
+  --nx-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+
+  /* Couleurs sémantiques (à utiliser au lieu de codes hexadécimaux) */
+  --nx-danger: #c62828;
+  --nx-high: #dc2626;
+  --nx-success: #15803d;
+  --nx-warning: #a16207;
+  --nx-orange: #c2410c;
+  --nx-violet: #7c3aed;
+  --nx-pink: #be185d;
+  --nx-info: #1d4ed8;
+  --nx-teal: #0f766e;
+  --nx-magenta: #a21caf;
+  --nx-critical-strong: #7f1d1d;
   /* Couleurs exactes du logo (charte graphique) — version principale. */
   --nx-logo-ink: #0d0d0d;
   --nx-logo-accent: #16b3ce;
-  --nx-cyan-text: #0a7385;
-  --nx-cyan-hover: #086070;
+  --nx-cyan-text: #0e7490;
+  --nx-cyan-hover: #0e7490;
   --nx-on-cyan: #ffffff;
 
   --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -136,6 +154,19 @@ body {
   --nx-cyan-text: #7fe8f7;
   --nx-cyan-hover: #a5eefb;
   --nx-on-cyan: #04252b;
+  --nx-shadow: none;
+
+  --nx-danger: #ff8a80;
+  --nx-high: #ff897d;
+  --nx-success: #4ade80;
+  --nx-warning: #facc15;
+  --nx-orange: #fb923c;
+  --nx-violet: #c084fc;
+  --nx-pink: #ff4d8d;
+  --nx-info: #4ab8ff;
+  --nx-teal: #4ae0d0;
+  --nx-magenta: #e05ae0;
+  --nx-critical-strong: #ff5449;
 }
 
 /* Trame de fond technique */

@@ -23,7 +23,7 @@ export function History() {
   const fmt = (iso: string) => new Date(iso).toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'short', timeStyle: 'short' })
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DE L’HISTORIQUE…', 'LOADING HISTORY…')}</div>
-  if (error) return <div style={{ color: '#ffb4ab' }}>{(error as Error).message}</div>
+  if (error) return <div style={{ color: 'var(--nx-danger)' }}>{(error as Error).message}</div>
 
   return (
     <div className="flex flex-col gap-4">
@@ -55,8 +55,8 @@ export function History() {
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          <Chart title={t('Score de santé', 'Health score')} snaps={snaps} pick={(s) => s.healthScore} color="#4ade80" max={100} fmt={fmt} />
-          <Chart title={t('Entités & SPOF', 'Entities & SPOF')} snaps={snaps} pick={(s) => s.entityCount} color={CYAN} secondPick={(s) => s.spofCount} secondColor="#ffb4ab" fmt={fmt} />
+          <Chart title={t('Score de santé', 'Health score')} snaps={snaps} pick={(s) => s.healthScore} color="var(--nx-success)" max={100} fmt={fmt} />
+          <Chart title={t('Entités & SPOF', 'Entities & SPOF')} snaps={snaps} pick={(s) => s.entityCount} color={CYAN} secondPick={(s) => s.spofCount} secondColor="var(--nx-danger)" fmt={fmt} />
         </div>
       )}
 
@@ -79,10 +79,10 @@ export function History() {
               return (
                 <tr key={s.id} className="border-b" style={{ borderColor: 'var(--nx-border)' }}>
                   <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{fmt(s.capturedAt)}</td>
-                  <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: s.healthScore >= 75 ? '#4ade80' : s.healthScore >= 50 ? '#facc15' : '#ffb4ab' }}>{s.healthScore}</td>
+                  <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: s.healthScore >= 75 ? 'var(--nx-success)' : s.healthScore >= 50 ? 'var(--nx-warning)' : 'var(--nx-danger)' }}>{s.healthScore}</td>
                   <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text)' }}>{s.entityCount}</td>
                   <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{s.relationCount}</td>
-                  <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: s.spofCount > 0 ? '#ffb4ab' : 'var(--nx-text-muted)' }}>{s.spofCount}</td>
+                  <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, color: s.spofCount > 0 ? 'var(--nx-danger)' : 'var(--nx-text-muted)' }}>{s.spofCount}</td>
                   <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{before ? changeSummary(s, before, t) : '—'}</td>
                 </tr>
               )
@@ -107,7 +107,7 @@ function changeSummary(now: Snapshot, before: Snapshot, t: (fr: string, en: stri
 
 function Delta({ icon: Icon, label, value, prev, goodUp }: { icon: typeof Activity; label: string; value: number; prev?: number; goodUp?: boolean }) {
   const d = prev == null ? 0 : value - prev
-  const color = d === 0 ? 'var(--nx-text-muted)' : goodUp === undefined ? CYAN_T : (d > 0) === goodUp ? '#4ade80' : '#ffb4ab'
+  const color = d === 0 ? 'var(--nx-text-muted)' : goodUp === undefined ? CYAN_T : (d > 0) === goodUp ? 'var(--nx-success)' : 'var(--nx-danger)'
   const Arrow = d > 0 ? ArrowUp : d < 0 ? ArrowDown : Minus
   return (
     <div className="rounded-sm border p-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>

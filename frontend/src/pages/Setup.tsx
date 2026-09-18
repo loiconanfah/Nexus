@@ -401,9 +401,9 @@ export function Setup() {
             </StepBody>
           )}
 
-          {error && <div className="mt-4 rounded border px-3 py-2 text-sm" style={{ borderColor: '#ef4444', color: '#ef4444', background: 'rgba(239,68,68,0.08)' }}>{error}</div>}
+          {error && <div className="mt-4 rounded border px-3 py-2 text-sm" style={{ borderColor: 'var(--nx-danger)', color: 'var(--nx-danger)', background: 'rgba(239,68,68,0.08)' }}>{error}</div>}
           {touched && (missing[step] ?? []).length > 0 && (
-            <div className="mt-4 text-sm" style={{ color: '#ef4444' }}>{t('Les champs marqués d’un astérisque sont obligatoires.', 'Fields marked with an asterisk are required.')}</div>
+            <div className="mt-4 text-sm" style={{ color: 'var(--nx-danger)' }}>{t('Les champs marqués d’un astérisque sont obligatoires.', 'Fields marked with an asterisk are required.')}</div>
           )}
 
           <div className="mt-6 flex items-center justify-between border-t pt-5" style={{ borderColor: 'var(--nx-border)' }}>
@@ -448,8 +448,8 @@ function StepBody({ title, intro, children }: { title: string; intro: string; ch
 function Field({ label, hint, required, invalid, children }: { label: string; hint?: string; required?: boolean; invalid?: boolean; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5" data-invalid={invalid || undefined}>
-      <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: invalid ? '#ef4444' : 'var(--nx-text-muted)' }}>
-        {label}{required && <span style={{ color: invalid ? '#ef4444' : CYAN_T }}> *</span>}
+      <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: invalid ? 'var(--nx-danger)' : 'var(--nx-text-muted)' }}>
+        {label}{required && <span style={{ color: invalid ? 'var(--nx-danger)' : CYAN_T }}> *</span>}
       </span>
       {children}
       {hint && <span className="text-xs" style={{ color: 'var(--nx-text-muted)' }}>{hint}</span>}

@@ -11,6 +11,7 @@ import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
 import { useMoney } from '../lib/money'
+import { useTheme } from '../lib/theme'
 
 const CYAN = '#00e5ff'
 const ERR = '#d15b54'
@@ -191,6 +192,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const { t } = useLang()
   const mountRef = useRef<HTMLDivElement>(null)
   const simRef = useRef<SimState | null>(null)
+  const light = useTheme().theme !== 'dark'
   const impactRef = useRef<Record<string, number>>({}); impactRef.current = impactById ?? {}
   const money = useMoney()
   const moneyRef = useRef(money); moneyRef.current = money
@@ -396,8 +398,11 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       if (!a || !b) continue
       const suggested = e.status === 'AiSuggested'
       const lgeo = new THREE.BufferGeometry().setFromPoints([a.position.clone(), b.position.clone()])
-      const baseOpacity = (e.confidence ?? 1) < 0.5 ? 0.22 : 0.4
-      const baseColor = new THREE.Color(suggested ? '#e08a3c' : CYAN)
+      // Sur fond clair, le cyan néon et une faible opacité rendaient les liens
+      // presque invisibles : teinte plus profonde et trait plus marqué.
+      const weak = (e.confidence ?? 1) < 0.5
+      const baseOpacity = light ? (weak ? 0.4 : 0.75) : (weak ? 0.22 : 0.4)
+      const baseColor = new THREE.Color(suggested ? (light ? '#c2410c' : '#e08a3c') : (light ? '#0e7490' : CYAN))
       const line = new THREE.Line(lgeo, new THREE.LineBasicMaterial({
         color: baseColor.clone(), transparent: true, opacity: baseOpacity,
       }))
@@ -432,7 +437,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       dragRef.current = dc
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges])
+  }, [nodes, edges, light])
 
   // ── Déclenchement de la cascade de simulation ──
   useEffect(() => {

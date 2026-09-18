@@ -7,9 +7,9 @@ import { confidenceStatusLabel, relationTypeLabel } from '../lib/labels'
 const mono = 'var(--font-mono)'
 
 const TONE: Record<EvidenceQuality, { color: string; bg: string; border: string }> = {
-  Solid: { color: '#3fb27f', bg: 'rgba(63,178,127,0.10)', border: 'rgba(63,178,127,0.35)' },
-  Moderate: { color: '#e0b23c', bg: 'rgba(224,178,60,0.10)', border: 'rgba(224,178,60,0.35)' },
-  Fragile: { color: '#d15b54', bg: 'rgba(209,91,84,0.10)', border: 'rgba(209,91,84,0.35)' },
+  Solid: { color: 'var(--nx-success)', bg: 'color-mix(in srgb, var(--nx-success) 10%, transparent)', border: 'color-mix(in srgb, var(--nx-success) 35%, transparent)' },
+  Moderate: { color: 'var(--nx-warning)', bg: 'rgba(224,178,60,0.10)', border: 'rgba(224,178,60,0.35)' },
+  Fragile: { color: 'var(--nx-danger)', bg: 'color-mix(in srgb, var(--nx-danger) 10%, transparent)', border: 'color-mix(in srgb, var(--nx-danger) 35%, transparent)' },
 }
 
 /**
@@ -55,10 +55,10 @@ export function EvidenceBanner({ evidence, summary }: { evidence: CascadeEvidenc
       {/* Décompte */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 border-t px-4 py-2" style={{ borderColor: tone.border, fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
         <Stat label={t('dépendances', 'dependencies')} value={evidence.relationsTotal} />
-        <Stat label={t('validées', 'verified')} value={evidence.verified} color="#3fb27f" />
+        <Stat label={t('validées', 'verified')} value={evidence.verified} color="var(--nx-success)" />
         <Stat label={t('étayées', 'supported')} value={evidence.solid} />
-        <Stat label={t('faibles', 'weak')} value={evidence.weak} color={evidence.weak > 0 ? '#e0b23c' : undefined} />
-        <Stat label={t('non validées', 'unvalidated')} value={evidence.unvalidated} color={evidence.unvalidated > 0 ? '#d15b54' : undefined} />
+        <Stat label={t('faibles', 'weak')} value={evidence.weak} color={evidence.weak > 0 ? 'var(--nx-warning)' : undefined} />
+        <Stat label={t('non validées', 'unvalidated')} value={evidence.unvalidated} color={evidence.unvalidated > 0 ? 'var(--nx-danger)' : undefined} />
         <span>· {t('confiance moy.', 'avg confidence')} <b style={{ color: 'var(--nx-text)' }}>{pct(evidence.averageConfidence)}</b></span>
       </div>
 
@@ -75,7 +75,7 @@ export function EvidenceBanner({ evidence, summary }: { evidence: CascadeEvidenc
                 <span style={{ color: 'var(--nx-outline)' }}>→</span>
                 <span>{w.target}</span>
                 <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{relationTypeLabel(w.type, t)}</span>
-                <span className="ml-auto" style={{ fontFamily: mono, fontSize: 11, color: w.confidence < 0.5 ? '#d15b54' : '#e0b23c' }}>
+                <span className="ml-auto" style={{ fontFamily: mono, fontSize: 11, color: w.confidence < 0.5 ? 'var(--nx-danger)' : 'var(--nx-warning)' }}>
                   {pct(w.confidence)} · {confidenceStatusLabel(w.status, t)}
                 </span>
               </div>

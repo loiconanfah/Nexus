@@ -155,7 +155,7 @@ export function Onboarding() {
       </div>
 
       {connector && (
-        <div className="rounded-sm border px-4 py-3" style={{ background: 'rgba(0,229,255,0.06)', borderColor: 'rgba(0,229,255,0.3)' }}>
+        <div className="rounded-sm border px-4 py-3" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
           <span style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>{connector.name}</span>
           <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t(`Exportez depuis ${connector.name} (${connector.bringsFr}) en CSV, puis déposez-le ci-dessous. Utilisez le mode Auto/IA si vos colonnes diffèrent.`, `Export from ${connector.name} (${connector.bringsEn}) as CSV, then drop it below. Use Auto/AI mode if your columns differ.`)}</p>
         </div>
@@ -189,16 +189,16 @@ export function Onboarding() {
 
       {/* Mode auto : mapping détecté à valider */}
       {mode === 'auto' && pending && map && (
-        <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'rgba(0,229,255,0.3)' }}>
+        <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
           <div className="mb-3 flex flex-wrap items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>
             <Sparkles size={14} /> {t('Mapping détecté', 'Detected mapping')} · {pending.file.name} · {pending.headers.length} {t('colonnes', 'columns')}
             {analyzing
               ? <span className="flex items-center gap-1 rounded px-2 py-0.5" style={{ fontSize: 10, color: 'var(--nx-text-muted)', background: 'var(--nx-surface)' }}><Loader2 size={10} className="animate-spin" /> {t('analyse IA…', 'AI analysis…')}</span>
-              : <span className="rounded px-2 py-0.5" style={{ fontSize: 10, color: aiUsed ? '#4ade80' : 'var(--nx-text-muted)', background: aiUsed ? 'rgba(74,222,128,0.12)' : 'var(--nx-surface)' }}>{aiUsed ? t('classé par IA', 'AI-classified') : t('heuristique', 'heuristic')}</span>}
+              : <span className="rounded px-2 py-0.5" style={{ fontSize: 10, color: aiUsed ? 'var(--nx-success)' : 'var(--nx-text-muted)', background: aiUsed ? 'color-mix(in srgb, var(--nx-success) 12%, transparent)' : 'var(--nx-surface)' }}>{aiUsed ? t('classé par IA', 'AI-classified') : t('heuristique', 'heuristic')}</span>}
           </div>
           <div className="mb-3 flex gap-2">
             {(['entities', 'relations'] as const).map((k) => (
-              <button key={k} onClick={() => setMap({ ...map, kind: k })} className="rounded-sm border px-3 py-1" style={{ fontFamily: mono, fontSize: 11, borderColor: map.kind === k ? CYAN : 'var(--nx-border)', color: map.kind === k ? CYAN_T : 'var(--nx-text-muted)', background: map.kind === k ? 'rgba(0,229,255,0.08)' : 'transparent' }}>
+              <button key={k} onClick={() => setMap({ ...map, kind: k })} className="rounded-sm border px-3 py-1" style={{ fontFamily: mono, fontSize: 11, borderColor: map.kind === k ? CYAN : 'var(--nx-border)', color: map.kind === k ? CYAN_T : 'var(--nx-text-muted)', background: map.kind === k ? 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)' : 'transparent' }}>
                 {k === 'entities' ? t('Entités', 'Entities') : t('Relations', 'Relations')}
               </button>
             ))}
@@ -228,21 +228,21 @@ export function Onboarding() {
         </div>
       )}
 
-      {err && <div className="rounded-sm p-3" style={{ background: 'rgba(255,180,171,0.1)', border: '1px solid #ffb4ab40', color: '#ffb4ab', fontFamily: mono, fontSize: 12 }}>{err}</div>}
+      {err && <div className="rounded-sm p-3" style={{ background: 'color-mix(in srgb, var(--nx-danger) 10%, transparent)', border: '1px solid #ffb4ab40', color: 'var(--nx-danger)', fontFamily: mono, fontSize: 12 }}>{err}</div>}
 
       {result && (
         <div className="rounded-sm border" style={{ borderColor: '#4ade8055' }}>
-          <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)', background: 'rgba(74,222,128,0.06)' }}>
-            <CheckCircle2 size={16} style={{ color: '#4ade80' }} />
-            <span style={{ fontFamily: mono, fontSize: 12, color: '#4ade80', textTransform: 'uppercase' }}>{t('Ingéré', 'Ingested')} {fileName}</span>
+          <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)', background: 'color-mix(in srgb, var(--nx-success) 6%, transparent)' }}>
+            <CheckCircle2 size={16} style={{ color: 'var(--nx-success)' }} />
+            <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-success)', textTransform: 'uppercase' }}>{t('Ingéré', 'Ingested')} {fileName}</span>
           </div>
           <div className="grid grid-cols-2 gap-px sm:grid-cols-4" style={{ background: 'var(--nx-border)' }}>
             <Metric label={t('LIGNES LUES', 'RECORDS READ')} value={result.recordsRead} />
             <Metric label={t('ENTITÉS CRÉÉES', 'ENTITIES CREATED')} value={result.entitiesCreated} color={CYAN_T} />
             <Metric label={t('ENTITÉS APPARIÉES', 'ENTITIES MATCHED')} value={result.entitiesMatched} />
             <Metric label={t('RELATIONS CRÉÉES', 'RELATIONS CREATED')} value={result.relationsCreated} color={CYAN_T} />
-            <Metric label={t('RELATIONS NON RÉSOLUES', 'RELATIONS UNRESOLVED')} value={result.relationsUnresolved} color={result.relationsUnresolved > 0 ? '#facc15' : undefined} />
-            <Metric label={t('IGNORÉES', 'SKIPPED')} value={result.skipped} color={result.skipped > 0 ? '#facc15' : undefined} />
+            <Metric label={t('RELATIONS NON RÉSOLUES', 'RELATIONS UNRESOLVED')} value={result.relationsUnresolved} color={result.relationsUnresolved > 0 ? 'var(--nx-warning)' : undefined} />
+            <Metric label={t('IGNORÉES', 'SKIPPED')} value={result.skipped} color={result.skipped > 0 ? 'var(--nx-warning)' : undefined} />
             <MetricText label={t('DURÉE', 'DURATION')} value={result.duration} />
             <MetricText label={t('DÉLAI 1ER GRAPHE', 'TIME TO FIRST GRAPH')} value={result.timeToFirstGraph ?? '—'} />
           </div>
@@ -257,7 +257,7 @@ export function Onboarding() {
 
 function ModeTile({ icon: Icon, active, title, sub, onClick, highlight }: { icon: typeof Database; active: boolean; title: string; sub: string; onClick: () => void; highlight?: boolean }) {
   return (
-    <button onClick={onClick} className="flex flex-col gap-1 rounded-sm border p-4 text-left" style={{ background: active ? 'rgba(0,229,255,0.06)' : 'var(--nx-surface-container)', borderColor: active ? CYAN : highlight ? 'rgba(0,229,255,0.3)' : 'var(--nx-border)' }}>
+    <button onClick={onClick} className="flex flex-col gap-1 rounded-sm border p-4 text-left" style={{ background: active ? 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)' : 'var(--nx-surface-container)', borderColor: active ? CYAN : highlight ? 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' : 'var(--nx-border)' }}>
       <div className="flex items-center gap-2" style={{ color: active ? CYAN_T : 'var(--nx-text)' }}><Icon size={18} /> <span style={{ fontFamily: geist, fontSize: 15 }}>{title}</span></div>
       <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{sub}</span>
     </button>
@@ -267,7 +267,7 @@ function ModeTile({ icon: Icon, active, title, sub, onClick, highlight }: { icon
 function MapField({ label, value, headers, onChange, required }: { label: string; value: string; headers: string[]; onChange: (v: string) => void; required?: boolean }) {
   return (
     <label className="flex flex-col gap-1">
-      <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: required && !value ? '#ffb4ab' : 'var(--nx-text-muted)' }}>{label}{required ? ' *' : ''}</span>
+      <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: required && !value ? 'var(--nx-danger)' : 'var(--nx-text-muted)' }}>{label}{required ? ' *' : ''}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)} className="rounded-sm px-2 py-1.5 outline-none" style={{ background: 'var(--nx-panel)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontSize: 12 }}>
         <option value="">—</option>
         {headers.map((h) => <option key={h} value={h}>{h}</option>)}

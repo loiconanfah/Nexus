@@ -12,7 +12,7 @@ import { useMoney } from '../lib/money'
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const NEG = '#d15b54'
+const NEG = 'var(--nx-danger)'
 
 type Dir = 'fwd' | 'bwd' | 'both'
 type Scenario = { key: string; fr: string; en: string; desc: [string, string]; icon: typeof ShieldAlert; palette: SimAction; entryTypes: string[]; reach: number; active: Record<string, Dir> }
@@ -261,7 +261,7 @@ export function AttackSim() {
             <p className="mt-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{t('Ou cliquez un nœud dans l’hologramme.', 'Or click a node in the hologram.')}</p>
           </div>
 
-          <button onClick={run} disabled={!entryId} className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-sm" style={{ background: NEG, color: '#0a0a0a', fontFamily: mono, fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: entryId ? 1 : 0.5 }}>
+          <button onClick={run} disabled={!entryId} className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-sm" style={{ background: NEG, color: '#ffffff', fontFamily: mono, fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', opacity: entryId ? 1 : 0.5 }}>
             <Crosshair size={16} /> {t('Lancer l’attaque', 'Launch attack')}
           </button>
         </div>
@@ -278,19 +278,19 @@ export function AttackSim() {
           <div className="flex flex-col gap-4 overflow-y-auto p-4">
             <div className="grid grid-cols-3 gap-2">
               <Kpi label={t('Compromis', 'Compromised')} value={String(result.items.length)} color={NEG} />
-              <Kpi label={t('Services exposés', 'Services hit')} value={String(result.services.length)} color="#e0a458" />
+              <Kpi label={t('Services exposés', 'Services hit')} value={String(result.services.length)} color="var(--nx-orange)" />
               <Kpi label={t('Données exposées', 'Data exposed')} value={String(result.data.length)} color={CYAN} />
             </div>
-            <div className="rounded-sm border p-3" style={{ background: 'rgba(209,91,84,0.06)', borderColor: 'rgba(209,91,84,0.35)' }}>
+            <div className="rounded-sm border p-3" style={{ background: 'color-mix(in srgb, var(--nx-danger) 6%, transparent)', borderColor: 'color-mix(in srgb, var(--nx-danger) 35%, transparent)' }}>
               <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Impact attendu', 'Expected impact')}</div>
               <div className="flex items-baseline gap-1"><span style={{ fontFamily: geist, fontSize: 26, color: NEG }}>{fmt(result.expected)}</span><span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{money.code} · {t('pire cas', 'worst')} {fmt(result.worst)}</span></div>
             </div>
 
             {/* Contre-mesures */}
             {isolated.size > 0 && (
-              <div className="rounded-sm border p-3" style={{ borderColor: '#3fb27f66', background: 'color-mix(in srgb, #3fb27f 8%, transparent)' }}>
+              <div className="rounded-sm border p-3" style={{ borderColor: '#3fb27f66', background: 'color-mix(in srgb, var(--nx-success) 8%, transparent)' }}>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: '#3fb27f' }}><ShieldCheck size={12} /> {t('Contre-mesures', 'Countermeasures')}</span>
+                  <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-success)' }}><ShieldCheck size={12} /> {t('Contre-mesures', 'Countermeasures')}</span>
                   <button onClick={resetCountermeasures} className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}><RotateCcw size={11} /> {t('réinit.', 'reset')}</button>
                 </div>
                 <p style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{t(`${isolated.size} élément(s) isolé(s) → ${money.full(avoided)} évités, impact ramené à ${money.full(result.expected)}.`, `${isolated.size} element(s) isolated → ${money.full(avoided)} avoided, impact down to ${money.full(result.expected)}.`)}</p>
@@ -303,7 +303,7 @@ export function AttackSim() {
               <div className="flex flex-col gap-2">
                 {result.chain.map((s, i) => (
                   <div key={i} className="flex items-start gap-2">
-                    <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full" style={{ background: i === 0 ? NEG : 'var(--nx-surface-container)', color: i === 0 ? '#0a0a0a' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 10 }}>{i + 1}</span>
+                    <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full" style={{ background: i === 0 ? NEG : 'var(--nx-surface-container)', color: i === 0 ? '#ffffff' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 10 }}>{i + 1}</span>
                     <div style={{ fontSize: 12.5 }}>
                       {s.via && <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-outline)' }}>{relationTypeLabel(s.via, t)} → </span>}
                       <span style={{ color: 'var(--nx-text)' }}>{s.name}</span>
@@ -323,7 +323,7 @@ export function AttackSim() {
                   {explain.data.countermeasures.length > 0 && (
                     <div className="mt-2">
                       <div style={{ fontFamily: mono, fontSize: 9.5, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Contre-mesures', 'Countermeasures')}</div>
-                      <ol className="mt-0.5 flex flex-col gap-0.5">{explain.data.countermeasures.map((m, i) => <li key={i} style={{ fontSize: 12, color: 'var(--nx-text)' }}><span style={{ color: '#3fb27f' }}>{i + 1}.</span> {m}</li>)}</ol>
+                      <ol className="mt-0.5 flex flex-col gap-0.5">{explain.data.countermeasures.map((m, i) => <li key={i} style={{ fontSize: 12, color: 'var(--nx-text)' }}><span style={{ color: 'var(--nx-success)' }}>{i + 1}.</span> {m}</li>)}</ol>
                     </div>
                   )}
                 </>
@@ -338,7 +338,7 @@ export function AttackSim() {
                   const iso = isolated.has(c.node.id)
                   const pivot = c.cut > 2
                   return (
-                    <div key={c.node.id} className="rounded-sm border p-2" style={{ borderColor: iso ? '#3fb27f' : pivot ? `color-mix(in srgb, ${NEG} 45%, var(--nx-border))` : 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+                    <div key={c.node.id} className="rounded-sm border p-2" style={{ borderColor: iso ? 'var(--nx-success)' : pivot ? `color-mix(in srgb, ${NEG} 45%, var(--nx-border))` : 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
                       <div className="flex items-center justify-between gap-2">
                         <span className="min-w-0 truncate" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{c.node.name} <span style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-outline)' }}>· {entityTypeLabel(c.node.entityType, t)} · S{c.hop} · {Math.round(c.prob * 100)}%</span></span>
                         <span className="flex-none" style={{ fontFamily: mono, fontSize: 11, color: NEG }}>{money.full(c.euro)}</span>
@@ -348,7 +348,7 @@ export function AttackSim() {
                           {pivot && <span style={{ color: NEG, fontFamily: mono, fontSize: 10 }}>{t('Point de bascule', 'Choke point')} · {t('couperait', 'would cut')} {c.cut} (~{money.full(c.cutEuro)}) · </span>}
                           {t(reco(c.node.entityType)[0], reco(c.node.entityType)[1])}
                         </span>
-                        <button onClick={() => toggleIsolate(c.node.id)} className="flex-none rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, border: `1px solid ${iso ? '#3fb27f' : 'var(--nx-border)'}`, color: iso ? '#3fb27f' : 'var(--nx-text-muted)' }}>{iso ? t('isolé', 'isolated') : t('isoler', 'isolate')}</button>
+                        <button onClick={() => toggleIsolate(c.node.id)} className="flex-none rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, border: `1px solid ${iso ? 'var(--nx-success)' : 'var(--nx-border)'}`, color: iso ? 'var(--nx-success)' : 'var(--nx-text-muted)' }}>{iso ? t('isolé', 'isolated') : t('isoler', 'isolate')}</button>
                       </div>
                     </div>
                   )

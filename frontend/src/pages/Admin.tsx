@@ -39,9 +39,9 @@ export function Admin() {
         {/* Sante plateforme */}
         <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
           <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-            <ShieldCheck size={15} style={{ color: ready ? '#4ade80' : '#facc15' }} />
+            <ShieldCheck size={15} style={{ color: ready ? 'var(--nx-success)' : 'var(--nx-warning)' }} />
             <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Santé de la plateforme', 'Platform Health')}</h3>
-            <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: ready ? '#4ade80' : '#facc15', background: ready ? 'rgba(74,222,128,0.12)' : 'rgba(250,204,21,0.12)' }}>{isLoading ? '…' : (health?.status === 'ready' ? t('prêt', 'ready') : health?.status)}</span>
+            <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: ready ? 'var(--nx-success)' : 'var(--nx-warning)', background: ready ? 'color-mix(in srgb, var(--nx-success) 12%, transparent)' : 'color-mix(in srgb, var(--nx-warning) 12%, transparent)' }}>{isLoading ? '…' : (health?.status === 'ready' ? t('prêt', 'ready') : health?.status)}</span>
           </div>
           <div className="flex flex-col divide-y" style={{ borderColor: 'var(--nx-border)' }}>
             <HealthRow icon={Database} label={t('PostgreSQL (plan de contrôle)', 'PostgreSQL (control plane)')} ok={health?.dependencies.postgres} />
@@ -85,13 +85,13 @@ export function Admin() {
           <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>Actions</h3>
         </div>
         <div className="flex flex-wrap gap-3 p-4">
-          <button onClick={() => navigate('/onboarding')} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 12 }}>
+          <button onClick={() => navigate('/onboarding')} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12 }}>
             <Database size={14} /> {t('Ingérer des données', 'Ingest data')}
           </button>
           <button onClick={() => { if (confirm(t('Démarrer un espace de travail vierge ? Le tenant de démo actuel sera remplacé localement.', 'Start a fresh, empty workspace? The current demo tenant will be replaced locally.'))) { resetTenant(); window.location.href = '/' } }} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
             <RotateCcw size={14} /> {t('Nouvel espace vierge', 'New empty workspace')}
           </button>
-          <button onClick={() => { logout(); navigate('/login') }} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: '#ffb4ab', fontFamily: mono, fontSize: 12 }}>
+          <button onClick={() => { logout(); navigate('/login') }} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-danger)', fontFamily: mono, fontSize: 12 }}>
             <LogOut size={14} /> {t('Se déconnecter', 'Sign out')}
           </button>
         </div>
@@ -147,7 +147,7 @@ function ImpactTuningPanel() {
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
         <Settings size={15} style={{ color: CYAN }} />
         <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Modèle d’impact financier', 'Financial impact model')}</h3>
-        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: data?.customized ? '#e0b23c' : 'var(--nx-text-muted)', background: data?.customized ? 'rgba(224,178,60,0.12)' : 'var(--nx-surface)' }}>
+        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: data?.customized ? 'var(--nx-warning)' : 'var(--nx-text-muted)', background: data?.customized ? 'rgba(224,178,60,0.12)' : 'var(--nx-surface)' }}>
           {data?.customized ? t('personnalisé', 'customized') : t('valeurs par défaut', 'defaults')}
         </span>
       </div>
@@ -169,7 +169,7 @@ function ImpactTuningPanel() {
           ))}
         </div>
         <div className="mt-4 flex items-center gap-2">
-          <button onClick={() => save.mutate()} disabled={save.isPending || !dirty} className="flex items-center gap-1.5 rounded-sm px-3 py-2" style={{ background: dirty ? CYAN : 'var(--nx-surface)', color: dirty ? '#04121a' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
+          <button onClick={() => save.mutate()} disabled={save.isPending || !dirty} className="flex items-center gap-1.5 rounded-sm px-3 py-2" style={{ background: dirty ? CYAN : 'var(--nx-surface)', color: dirty ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
             <Check size={14} /> {save.isPending ? t('Enregistrement…', 'Saving…') : t('Enregistrer', 'Save')}
           </button>
           <button onClick={() => reset.mutate()} disabled={reset.isPending} className="flex items-center gap-1.5 rounded-sm border px-3 py-2" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12 }}>
@@ -231,11 +231,11 @@ function AiIntegration() {
   }, [configured])
 
   return (
-    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: configured ? 'rgba(192,132,252,0.35)' : 'var(--nx-border)' }}>
+    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: configured ? 'color-mix(in srgb, var(--nx-violet) 35%, transparent)' : 'var(--nx-border)' }}>
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-        <KeyRound size={15} style={{ color: '#c084fc' }} />
+        <KeyRound size={15} style={{ color: 'var(--nx-violet)' }} />
         <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Intégrations IA', 'AI Integrations')}</h3>
-        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: configured ? '#4ade80' : 'var(--nx-text-muted)', background: configured ? 'rgba(74,222,128,0.12)' : 'var(--nx-surface)' }}>
+        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: configured ? 'var(--nx-success)' : 'var(--nx-text-muted)', background: configured ? 'color-mix(in srgb, var(--nx-success) 12%, transparent)' : 'var(--nx-surface)' }}>
           {configured ? `${t('Configuré', 'Configured')} · ${providerLabel(cfg!.provider)}` : t('Non configuré', 'Not configured')}
         </span>
       </div>
@@ -258,7 +258,7 @@ function AiIntegration() {
           <label className="flex flex-col gap-1">
             <span className="flex items-center justify-between" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
               {t('Clé API', 'API key')}
-              {configured && <span className="flex items-center gap-1" style={{ color: '#4ade80', textTransform: 'none' }}><Check size={11} /> {t('enregistrée · laissez vide pour la conserver', 'saved · leave blank to keep')}</span>}
+              {configured && <span className="flex items-center gap-1" style={{ color: 'var(--nx-success)', textTransform: 'none' }}><Check size={11} /> {t('enregistrée · laissez vide pour la conserver', 'saved · leave blank to keep')}</span>}
             </span>
             <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : provider === 'gemini' ? 'AIza…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
           </label>
@@ -290,20 +290,20 @@ function AiIntegration() {
         </div>
 
         {testMsg && (
-          <div className="flex items-center gap-2 rounded-sm p-2.5" style={{ background: testMsg.ok ? 'rgba(74,222,128,0.08)' : 'rgba(255,180,171,0.08)', border: `1px solid ${testMsg.ok ? '#4ade8040' : '#ffb4ab40'}` }}>
-            {testMsg.ok ? <Check size={15} style={{ color: '#4ade80' }} /> : <X size={15} style={{ color: '#ffb4ab' }} />}
-            <span style={{ fontSize: 12.5, color: testMsg.ok ? '#4ade80' : '#ffb4ab' }}>{testMsg.message}</span>
+          <div className="flex items-center gap-2 rounded-sm p-2.5" style={{ background: testMsg.ok ? 'color-mix(in srgb, var(--nx-success) 8%, transparent)' : 'color-mix(in srgb, var(--nx-danger) 8%, transparent)', border: `1px solid ${testMsg.ok ? '#4ade8040' : '#ffb4ab40'}` }}>
+            {testMsg.ok ? <Check size={15} style={{ color: 'var(--nx-success)' }} /> : <X size={15} style={{ color: 'var(--nx-danger)' }} />}
+            <span style={{ fontSize: 12.5, color: testMsg.ok ? 'var(--nx-success)' : 'var(--nx-danger)' }}>{testMsg.message}</span>
           </div>
         )}
 
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => save.mutate()} disabled={!apiKey.trim() || save.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: apiKey.trim() ? '#c084fc' : 'var(--nx-surface-high)', color: apiKey.trim() ? '#1a0a2e' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12, fontWeight: 600, cursor: apiKey.trim() ? 'pointer' : 'not-allowed' }}>
+          <button onClick={() => save.mutate()} disabled={!apiKey.trim() || save.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: apiKey.trim() ? 'var(--nx-violet)' : 'var(--nx-surface-high)', color: apiKey.trim() ? '#1a0a2e' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12, fontWeight: 600, cursor: apiKey.trim() ? 'pointer' : 'not-allowed' }}>
             {save.isPending ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} {t('Enregistrer la clé', 'Save key')}
           </button>
-          <button onClick={() => test.mutate()} disabled={!configured || test.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
+          <button onClick={() => test.mutate()} disabled={!configured || test.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
             {test.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} {t('Tester la connexion', 'Test connection')}
           </button>
-          <button onClick={() => clear.mutate()} disabled={!configured || clear.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: '#ffb4ab', fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
+          <button onClick={() => clear.mutate()} disabled={!configured || clear.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-danger)', fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
             <X size={14} /> {t('Effacer', 'Clear')}
           </button>
         </div>
@@ -317,7 +317,7 @@ const inputStyle = { background: 'var(--nx-panel)', border: '1px solid var(--nx-
 
 function HealthRow({ icon: Icon, label, ok }: { icon: typeof Database; label: string; ok?: boolean }) {
   const { t } = useLang()
-  const color = ok == null ? '#849396' : ok ? '#4ade80' : '#ffb4ab'
+  const color = ok == null ? 'var(--nx-text-muted)' : ok ? 'var(--nx-success)' : 'var(--nx-danger)'
   return (
     <div className="flex items-center justify-between px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
       <span className="flex items-center gap-2" style={{ fontSize: 13, color: 'var(--nx-text)' }}><Icon size={15} style={{ color: 'var(--nx-text-muted)' }} /> {label}</span>

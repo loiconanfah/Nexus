@@ -14,13 +14,13 @@ const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
 
 const BAND_COLOR: Record<RiskBand, string> = {
-  Critical: '#ffb4ab', High: '#fb923c', Elevated: '#facc15', Moderate: '#eab308', Low: '#00e5ff',
+  Critical: 'var(--nx-danger)', High: 'var(--nx-orange)', Elevated: 'var(--nx-warning)', Moderate: 'var(--nx-warning)', Low: 'var(--nx-cyan)',
 }
 const TILES: { label: string; bands: RiskBand[]; color: string }[] = [
-  { label: 'CRITICAL', bands: ['Critical'], color: '#ffb4ab' },
-  { label: 'HIGH', bands: ['High'], color: '#fb923c' },
-  { label: 'ELEVATED', bands: ['Elevated'], color: '#facc15' },
-  { label: 'LOW', bands: ['Moderate', 'Low'], color: '#00e5ff' },
+  { label: 'CRITICAL', bands: ['Critical'], color: 'var(--nx-danger)' },
+  { label: 'HIGH', bands: ['High'], color: 'var(--nx-orange)' },
+  { label: 'ELEVATED', bands: ['Elevated'], color: 'var(--nx-warning)' },
+  { label: 'LOW', bands: ['Moderate', 'Low'], color: 'var(--nx-cyan)' },
 ]
 
 export function RiskCenter() {
@@ -35,7 +35,7 @@ export function RiskCenter() {
   const filtered = useMemo(() => (bandFilter ? rows.filter((r) => bandFilter.includes(r.band)) : rows), [rows, bandFilter])
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('ÉVALUATION DU RISQUE…', 'ASSESSING RISK…')}</div>
-  if (error) return <div style={{ color: '#ffb4ab' }}>{(error as Error).message}</div>
+  if (error) return <div style={{ color: 'var(--nx-danger)' }}>{(error as Error).message}</div>
 
   const tileLabel = (l: string) => l === 'CRITICAL' ? t('CRITIQUE', 'CRITICAL') : l === 'HIGH' ? t('ÉLEVÉ', 'HIGH') : l === 'ELEVATED' ? t('SURÉLEVÉ', 'ELEVATED') : t('FAIBLE', 'LOW')
 
@@ -119,7 +119,7 @@ function RiskMatrix({ rows, selectedId, onSelect }: { rows: RiskRow[]; selectedI
                           top: `${30 + (i % 3) * 20}%`, left: `${30 + (Math.floor(i / 3) % 3) * 20}%`,
                           width: sel ? 14 : 8, height: sel ? 14 : 8,
                           background: sel ? CYAN : 'var(--nx-text)', opacity: sel ? 1 : 0.55,
-                          boxShadow: sel ? '0 0 12px rgba(0,229,255,0.8)' : 'none',
+                          boxShadow: sel ? '0 0 12px color-mix(in srgb, var(--nx-cyan) 80%, transparent)' : 'none',
                         }} />
                     )
                   })}
@@ -154,7 +154,7 @@ function RiskTable({ rows, selectedId, onSelect }: { rows: RiskRow[]; selectedId
             return (
               <tr key={r.id} onClick={() => onSelect(r.id)} className="cursor-pointer border-b transition-colors"
                 style={{ borderColor: 'var(--nx-border)', background: sel ? 'var(--nx-surface-high)' : 'transparent', borderLeft: `2px solid ${sel ? CYAN : 'transparent'}` }}>
-                <td className="px-3 py-3" style={{ fontSize: 13, fontWeight: 500, color: 'var(--nx-text)' }}>{r.name}{!r.hasRedundancy && r.directDependents > 0 && <span style={{ color: '#fb923c', fontSize: 10 }}> · SPOF</span>}</td>
+                <td className="px-3 py-3" style={{ fontSize: 13, fontWeight: 500, color: 'var(--nx-text)' }}>{r.name}{!r.hasRedundancy && r.directDependents > 0 && <span style={{ color: 'var(--nx-orange)', fontSize: 10 }}> · SPOF</span>}</td>
                 <td className="px-3 py-3" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(r.entityType, t)}</td>
                 <td className="px-3 py-3"><span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, color: c, background: `color-mix(in srgb, ${c} 20%, transparent)`, border: `1px solid color-mix(in srgb, ${c} 30%, transparent)` }}>{bandLabel(r.band, t).toUpperCase()}</span></td>
                 <td className="px-3 py-3 text-right" style={{ fontFamily: mono, fontSize: 12, color: c }}>{r.blastRadius}</td>
@@ -209,7 +209,7 @@ function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onCl
         <h4 className="border-b pb-1" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Décomposition détaillée', 'Detail Breakdown')}</h4>
         {bars.map((b) => {
           const pct = Math.round(b.v * 100)
-          const bc = pct >= 70 ? '#ffb4ab' : pct >= 40 ? '#fb923c' : '#facc15'
+          const bc = pct >= 70 ? 'var(--nx-danger)' : pct >= 40 ? 'var(--nx-orange)' : 'var(--nx-warning)'
           return (
             <div key={b.label} className="flex items-center justify-between">
               <span style={{ fontSize: 13, color: 'var(--nx-text)' }}>{b.label}</span>

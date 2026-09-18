@@ -12,7 +12,7 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ERR = '#ffb4ab'
+const ERR = 'var(--nx-danger)'
 
 type T = (fr: string, en: string) => string
 
@@ -20,9 +20,9 @@ function intentMeta(intent: string, t: T): { title: string; color: string } {
   switch (intent) {
     case 'SinglePointsOfFailure': return { title: t('POINTS UNIQUES DE DÉFAILLANCE', 'SINGLE POINTS OF FAILURE'), color: ERR }
     case 'TopRisks': return { title: t('VULNÉRABILITÉS STRUCTURELLES', 'STRUCTURAL VULNERABILITIES'), color: ERR }
-    case 'ExplainCriticality': return { title: t('ANALYSE DE CRITICITÉ', 'CRITICALITY ANALYSIS'), color: '#fb923c' }
-    case 'SimulateFailure': return { title: t('PROJECTION D’IMPACT', 'IMPACT PROJECTION'), color: '#fb923c' }
-    case 'UndocumentedDependencies': return { title: t('DÉPENDANCES NON VÉRIFIÉES', 'UNVERIFIED DEPENDENCIES'), color: '#facc15' }
+    case 'ExplainCriticality': return { title: t('ANALYSE DE CRITICITÉ', 'CRITICALITY ANALYSIS'), color: 'var(--nx-orange)' }
+    case 'SimulateFailure': return { title: t('PROJECTION D’IMPACT', 'IMPACT PROJECTION'), color: 'var(--nx-orange)' }
+    case 'UndocumentedDependencies': return { title: t('DÉPENDANCES NON VÉRIFIÉES', 'UNVERIFIED DEPENDENCIES'), color: 'var(--nx-warning)' }
     default: return { title: t('BRIEF OPÉRATIONNEL', 'OPERATIONAL BRIEF'), color: CYAN }
   }
 }
@@ -63,7 +63,7 @@ export function AiAnalyst() {
       <section className="flex flex-1 flex-col overflow-hidden border-r" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
         <header className="flex h-16 shrink-0 flex-col justify-center border-b px-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
           <h2 className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 13, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--nx-text)' }}>
-            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN, boxShadow: '0 0 8px #00e5ff' }} /> {t('Analyste Lenexux', 'Lenexux Analyst')}
+            <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN, boxShadow: '0 0 8px var(--nx-cyan)' }} /> {t('Analyste Lenexux', 'Lenexux Analyst')}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Posez des questions sur les dépendances opérationnelles de votre organisation.', "Ask questions about your organization's operational dependencies.")}</p>
         </header>
@@ -72,7 +72,7 @@ export function AiAnalyst() {
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6">
           {turns.length === 0 && (
             <div className="m-auto max-w-md text-center">
-              <div className="mx-auto mb-3 w-fit rounded-sm p-3" style={{ background: 'rgba(0,229,255,0.1)', border: '1px solid rgba(0,229,255,0.3)' }}><Sparkles size={24} style={{ color: CYAN }} /></div>
+              <div className="mx-auto mb-3 w-fit rounded-sm p-3" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}><Sparkles size={24} style={{ color: CYAN }} /></div>
               <div style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{t('Analyste Lenexux', 'Lenexux Analyst')}</div>
               <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Chaque réponse s’appuie sur les moteurs déterministes, avec ses preuves et son niveau de confiance.', 'Every answer is grounded in the deterministic engines, with its evidence and confidence.')}</p>
             </div>
@@ -92,7 +92,7 @@ export function AiAnalyst() {
               {/* Typing */}
               {!turn.answer && !turn.error && (
                 <div className="flex w-full max-w-3xl items-center gap-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'rgba(0,229,255,0.1)', borderColor: 'rgba(0,229,255,0.3)' }}><RefreshCw size={15} className="animate-spin" style={{ color: CYAN }} /></div>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}><RefreshCw size={15} className="animate-spin" style={{ color: CYAN }} /></div>
                   <span className="animate-pulse" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>{t('Interrogation du graphe de dépendances…', 'Querying dependency graph…')}</span>
                 </div>
               )}
@@ -117,7 +117,7 @@ export function AiAnalyst() {
             <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('Demandez n’importe quoi à Lenexux…', 'Ask Lenexux anything… (e.g. ⌘+K)')}
               className="w-full rounded-sm border py-3 pl-12 pr-14 outline-none" style={{ background: 'var(--nx-surface)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 13 }} />
             <button type="submit" disabled={ask.isPending || !input.trim()} className="absolute right-3 flex h-8 w-8 items-center justify-center rounded-sm disabled:opacity-40"
-              style={{ background: 'rgba(0,229,255,0.2)', border: '1px solid rgba(0,229,255,0.5)', color: CYAN }}><Send size={15} /></button>
+              style={{ background: 'color-mix(in srgb, var(--nx-cyan) 20%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 50%, transparent)', color: CYAN }}><Send size={15} /></button>
           </form>
         </div>
       </section>
@@ -143,12 +143,12 @@ function AnswerCard({ a, t, onView, onSimulate }: { a: AiAnswer; t: T; onView: (
 
   return (
     <div className="flex w-full max-w-3xl items-start gap-4">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface)', borderColor: CYAN, boxShadow: '0 0 10px rgba(0,229,255,0.15)' }}><Zap size={15} style={{ color: CYAN }} /></div>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border" style={{ background: 'var(--nx-surface)', borderColor: CYAN, boxShadow: '0 0 10px color-mix(in srgb, var(--nx-cyan) 15%, transparent)' }}><Zap size={15} style={{ color: CYAN }} /></div>
       <div className="relative w-full overflow-hidden rounded-lg rounded-tl-none border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-        <div className="absolute left-0 top-0 h-full w-1" style={{ background: CYAN, boxShadow: '0 0 12px #00e5ff' }} />
+        <div className="absolute left-0 top-0 h-full w-1" style={{ background: CYAN, boxShadow: '0 0 12px var(--nx-cyan)' }} />
         <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
           <p className="whitespace-pre-line" style={{ fontSize: 14, color: 'var(--nx-text)' }}>{a.answer}</p>
-          {a.llmNaturalized && <span className="mt-1 inline-block rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN_T, background: 'rgba(0,229,255,0.1)' }}>LLM</span>}
+          {a.llmNaturalized && <span className="mt-1 inline-block rounded px-1.5" style={{ fontFamily: mono, fontSize: 10, color: CYAN_T, background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' }}>LLM</span>}
         </div>
 
         <div className="p-4">
@@ -192,7 +192,7 @@ function AnswerCard({ a, t, onView, onSimulate }: { a: AiAnswer; t: T; onView: (
                 </div>
                 {a.recommendedAction && <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>▸ {a.recommendedAction}</div>}
                 <div className="flex gap-2">
-                  <button onClick={onView} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5 transition-colors" style={{ borderColor: 'rgba(0,229,255,0.3)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Eye size={13} /> {t('Sous-graphe', 'Subgraph')}</button>
+                  <button onClick={onView} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5 transition-colors" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Eye size={13} /> {t('Sous-graphe', 'Subgraph')}</button>
                   {a.affectedAssets.length > 0 && <button onClick={() => onSimulate(a.affectedAssets[0])} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Zap size={13} /> {t('Simuler', 'Simulate')}</button>}
                 </div>
               </div>
@@ -235,7 +235,7 @@ function ContextViewer({ affected, t, onView }: { affected: string[]; t: T; onVi
           <div className="nx-grid absolute inset-0" />
           {nodes.length > 0 && (
             <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
-              {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke="#3b494c" strokeWidth={0.4} />)}
+              {pos.map((p) => <line key={`l${p.name}`} x1={50} y1={50} x2={p.x} y2={p.y} stroke="var(--nx-border)" strokeWidth={0.4} />)}
               {pos.map((p) => <circle key={p.name} cx={p.x} cy={p.y} r={2} fill={ERR} />)}
               <circle cx={50} cy={50} r={3.5} fill="none" stroke={CYAN} strokeWidth={0.8} />
               <circle cx={50} cy={50} r={1.6} fill={CYAN} />

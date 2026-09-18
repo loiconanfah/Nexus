@@ -72,7 +72,7 @@ export function CollectorsPanel() {
           {t('Collectors (sondes internes)', 'Collectors (internal probes)')}
         </h3>
         <button onClick={() => setCreating((v) => !v)} className="ml-auto flex items-center gap-1 rounded-sm px-2 py-1"
-          style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', fontFamily: mono, fontSize: 11, color: CYAN_T }}>
+          style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', fontFamily: mono, fontSize: 11, color: CYAN_T }}>
           <Plus size={12} /> {t('Déclarer une sonde', 'Declare a probe')}
         </button>
       </div>
@@ -114,7 +114,7 @@ export function CollectorsPanel() {
               <div key={c.id} className="rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
                 <div className="flex flex-wrap items-center gap-2 px-3 py-2">
                   <span className="inline-block h-2 w-2 rounded-full"
-                    style={{ background: c.online ? '#4ade80' : '#849396', boxShadow: c.online ? '0 0 6px #4ade80' : undefined }} />
+                    style={{ background: c.online ? 'var(--nx-success)' : 'var(--nx-text-muted)', boxShadow: c.online ? '0 0 6px var(--nx-success)' : undefined }} />
                   <span style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
                   <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>
                     {c.online ? t('en ligne', 'online') : c.lastSeenAt ? `${t('vue', 'seen')} ${new Date(c.lastSeenAt).toLocaleString()}` : t('jamais vue', 'never seen')}
@@ -127,7 +127,7 @@ export function CollectorsPanel() {
                   </button>
                   <button onClick={() => { if (confirm(t('Révoquer cette sonde ? Sa clé cessera immédiatement de fonctionner.', 'Revoke this probe? Its key will stop working immediately.'))) revoke.mutate(c.id) }}
                     className="flex items-center gap-1 rounded-sm border px-2 py-1"
-                    style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: '#ffb4ab' }}>
+                    style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: 'var(--nx-danger)' }}>
                     <Trash2 size={11} /> {t('Révoquer', 'Revoke')}
                   </button>
                 </div>
@@ -147,7 +147,7 @@ export function CollectorsPanel() {
               {jobs.slice(0, 20).map((j) => (
                 <div key={j.id} className="flex flex-wrap items-center gap-2 rounded-sm border px-3 py-1.5"
                   style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11 }}>
-                  <span style={{ color: j.status === 'done' ? '#4ade80' : j.status === 'failed' ? '#ffb4ab' : j.status === 'running' ? CYAN_T : '#facc15' }}>
+                  <span style={{ color: j.status === 'done' ? 'var(--nx-success)' : j.status === 'failed' ? 'var(--nx-danger)' : j.status === 'running' ? CYAN_T : 'var(--nx-warning)' }}>
                     {jobStatusLabel(j.status, t)}
                   </span>
                   <span className="truncate" style={{ color: 'var(--nx-text-muted)', maxWidth: 320 }}>{j.url}</span>
@@ -180,7 +180,7 @@ function KeyReveal({ created, onDismiss }: { created: CollectorCreated; onDismis
 
   return (
     <div className="mb-3 rounded-sm border p-3" style={{ borderColor: 'rgba(224,178,60,0.45)', background: 'rgba(224,178,60,0.08)' }}>
-      <p style={{ fontSize: 12, color: '#e0b23c' }}>
+      <p style={{ fontSize: 12, color: 'var(--nx-warning)' }}>
         <b>{t('Clé de la sonde « ', 'Probe key for “')}{created.name}{t(' » — affichée une seule fois.', '” — shown only once.')}</b>{' '}
         {t('Reportez-la maintenant dans la configuration de la sonde : elle n’est pas récupérable ensuite.',
            'Copy it into the probe configuration now: it cannot be retrieved later.')}
@@ -253,7 +253,7 @@ function JobForm({ collector, onDone }: { collector: Collector; onDone: () => vo
         <Field label={t('Répéter toutes les (minutes, 0 = une seule fois)', 'Repeat every (minutes, 0 = once)')} value={interval} onChange={setInterval} placeholder="1440" />
       </div>
 
-      {enqueue.isError && <p style={{ fontSize: 12, color: '#ffb4ab' }}>{(enqueue.error as Error).message}</p>}
+      {enqueue.isError && <p style={{ fontSize: 12, color: 'var(--nx-danger)' }}>{(enqueue.error as Error).message}</p>}
 
       <button onClick={() => enqueue.mutate()} disabled={!url.trim() || enqueue.isPending}
         className="self-start flex items-center gap-1 rounded-sm px-3 py-2"

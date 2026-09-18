@@ -11,20 +11,20 @@ const geist = 'var(--font-geist)'
 const CYAN_T = 'var(--nx-cyan-text)'
 
 const STATUS_COLOR: Record<string, string> = {
-  Verified: '#4ade80',
-  Imported: '#00e5ff',
-  Inferred: '#facc15',
-  AiSuggested: '#c084fc',
-  Unknown: '#849396',
+  Verified: 'var(--nx-success)',
+  Imported: 'var(--nx-cyan)',
+  Inferred: 'var(--nx-warning)',
+  AiSuggested: 'var(--nx-violet)',
+  Unknown: 'var(--nx-text-muted)',
 }
-function sc(status: string) { return STATUS_COLOR[status] ?? '#849396' }
+function sc(status: string) { return STATUS_COLOR[status] ?? 'var(--nx-text-muted)' }
 
 export function Audit() {
   const { t } = useLang()
   const { data, isLoading, error } = useQuery({ queryKey: ['audit'], queryFn: api.audit })
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('AUDIT DE LA PROVENANCE DES DÉPENDANCES…', 'AUDITING DEPENDENCY PROVENANCE…')}</div>
-  if (error) return <div style={{ color: '#ffb4ab' }}>{(error as Error).message}</div>
+  if (error) return <div style={{ color: 'var(--nx-danger)' }}>{(error as Error).message}</div>
   if (!data) return null
 
   const maxStatus = Math.max(1, ...data.byStatus.map((s) => s.count))
@@ -40,9 +40,9 @@ export function Audit() {
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         <Tile label={t('TOTAL DÉPENDANCES', 'TOTAL DEPENDENCIES')} value={String(data.summary.totalDependencies)} color="var(--nx-text)" />
-        <Tile label={t('VÉRIFIÉES', 'VERIFIED')} value={`${data.summary.verifiedPercent}%`} sub={`${data.summary.verified} ${t('arêtes', 'edges')}`} color="#4ade80" />
+        <Tile label={t('VÉRIFIÉES', 'VERIFIED')} value={`${data.summary.verifiedPercent}%`} sub={`${data.summary.verified} ${t('arêtes', 'edges')}`} color="var(--nx-success)" />
         <Tile label={t('CONFIANCE MOY.', 'AVG CONFIDENCE')} value={`${data.summary.avgConfidence}%`} color={CYAN_T} />
-        <Tile label={t('À REVOIR', 'NEEDS REVIEW')} value={String(data.summary.undocumented)} color="#facc15" />
+        <Tile label={t('À REVOIR', 'NEEDS REVIEW')} value={String(data.summary.undocumented)} color="var(--nx-warning)" />
       </div>
 
       {/* Distribution + low confidence */}
@@ -66,12 +66,12 @@ export function Audit() {
 
         <div className="rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
           <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
-            <ShieldQuestion size={14} style={{ color: '#facc15' }} />
+            <ShieldQuestion size={14} style={{ color: 'var(--nx-warning)' }} />
             <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Dépendances à revoir', 'Dependencies Needing Review')}</h3>
           </div>
           <div className="flex flex-col divide-y" style={{ maxHeight: 320, overflowY: 'auto' }}>
             {data.lowConfidence.map((e) => <ReviewRow key={e.id} row={e} />)}
-            {data.lowConfidence.length === 0 && <div className="p-4" style={{ fontFamily: mono, fontSize: 12, color: '#4ade80' }}>{t('Toutes les dépendances sont vérifiées. Aucune revue requise.', 'All dependencies verified. No review required.')}</div>}
+            {data.lowConfidence.length === 0 && <div className="p-4" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-success)' }}>{t('Toutes les dépendances sont vérifiées. Aucune revue requise.', 'All dependencies verified. No review required.')}</div>}
           </div>
         </div>
       </div>
@@ -96,7 +96,7 @@ export function Audit() {
                 <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{relationTypeLabel(e.type, t)}</td>
                 <td className="px-4 py-2.5" style={{ fontSize: 13, color: CYAN_T }}>{e.target}</td>
                 <td className="px-4 py-2.5 text-right" style={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: sc(e.status) }}>{e.confidence}%</td>
-                <td className="px-4 py-2.5"><span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: sc(e.status), background: `${sc(e.status)}18` }}>{confidenceStatusLabel(e.status, t)}</span></td>
+                <td className="px-4 py-2.5"><span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: sc(e.status), background: `color-mix(in srgb, ${sc(e.status)} 9%, transparent)` }}>{confidenceStatusLabel(e.status, t)}</span></td>
                 <td className="px-4 py-2.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{e.sourceSystem}</td>
               </tr>
             ))}
@@ -146,7 +146,7 @@ function ReviewRow({ row }: { row: AuditLowConf }) {
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-2" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>
-        <span className="rounded px-1.5 py-0.5" style={{ color: sc(row.status), background: `${sc(row.status)}18` }}>{confidenceStatusLabel(row.status, t)}</span>
+        <span className="rounded px-1.5 py-0.5" style={{ color: sc(row.status), background: `color-mix(in srgb, ${sc(row.status)} 9%, transparent)` }}>{confidenceStatusLabel(row.status, t)}</span>
         <span>src: {row.sourceSystem}</span>
         {row.evidenceCount > 0 && <span>· {row.evidenceCount} {t('preuve(s)', 'evidence')}</span>}
       </div>
@@ -162,15 +162,15 @@ function ReviewRow({ row }: { row: AuditLowConf }) {
         <button onClick={() => verify.mutate()} disabled={verify.isPending || verify.isSuccess}
           className="flex items-center gap-1 rounded-sm border px-2 py-1"
           style={{
-            borderColor: verify.isSuccess ? 'rgba(74,222,128,0.4)' : 'var(--nx-border)',
+            borderColor: verify.isSuccess ? 'color-mix(in srgb, var(--nx-success) 40%, transparent)' : 'var(--nx-border)',
             fontFamily: mono, fontSize: 11,
-            color: verify.isSuccess ? '#4ade80' : CYAN_T,
+            color: verify.isSuccess ? 'var(--nx-success)' : CYAN_T,
           }}>
           {verify.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
           {verify.isSuccess ? t('Validée', 'Verified') : t('Valider', 'Verify')}
         </button>
         {verify.isSuccess && (
-          <span style={{ fontFamily: mono, fontSize: 11, color: '#4ade80' }}>
+          <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-success)' }}>
             → {pct(verify.data.confidence)}
           </span>
         )}

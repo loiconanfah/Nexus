@@ -44,7 +44,7 @@ export function UsersPanel() {
         </h3>
         {canManage && (
           <button onClick={() => setAdding((v) => !v)} className="ml-auto flex items-center gap-1 rounded-sm px-2 py-1"
-            style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', fontFamily: mono, fontSize: 11, color: CYAN_T }}>
+            style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', fontFamily: mono, fontSize: 11, color: CYAN_T }}>
             <UserPlus size={12} /> {t('Ajouter une personne', 'Add a person')}
           </button>
         )}
@@ -85,7 +85,7 @@ export function UsersPanel() {
               {invite.isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {t('Ajouter', 'Add')}
             </button>
             {invite.isError && (
-              <p className="w-full" style={{ fontSize: 12, color: '#ffb4ab' }}>
+              <p className="w-full" style={{ fontSize: 12, color: 'var(--nx-danger)' }}>
                 {errorOf(invite.error).includes('409')
                   ? t('Ce courriel est déjà utilisé sur la plateforme.', 'This email is already used on the platform.')
                   : errorOf(invite.error)}
@@ -107,7 +107,7 @@ export function UsersPanel() {
         </div>
 
         {(changeRole.isError || remove.isError) && (
-          <p className="mt-2" style={{ fontSize: 12, color: '#ffb4ab' }}>
+          <p className="mt-2" style={{ fontSize: 12, color: 'var(--nx-danger)' }}>
             {t('Opération refusée — l’espace doit conserver au moins un administrateur, et vous ne pouvez pas retirer votre propre compte.',
                'Operation refused — the workspace must keep at least one admin, and you cannot remove your own account.')}
           </p>
@@ -148,7 +148,7 @@ function UserRow({ user, canManage, onRole, onRemove }: {
             <option value="admin" style={{ background: 'var(--nx-bg)' }}>{t('Administrateur', 'Admin')}</option>
           </select>
         ) : (
-          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: user.role === 'admin' ? CYAN_T : 'var(--nx-text-muted)', background: user.role === 'admin' ? 'rgba(0,229,255,0.10)' : 'transparent' }}>
+          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: user.role === 'admin' ? CYAN_T : 'var(--nx-text-muted)', background: user.role === 'admin' ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'transparent' }}>
             {user.role === 'admin' ? t('Administrateur', 'Admin') : t('Membre', 'Member')}
           </span>
         )}
@@ -161,7 +161,7 @@ function UserRow({ user, canManage, onRole, onRemove }: {
             </button>
             {!user.isSelf && (
               <button onClick={onRemove} className="flex items-center gap-1 rounded-sm border px-2 py-1"
-                style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: '#ffb4ab' }}>
+                style={{ borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: 'var(--nx-danger)' }}>
                 <Trash2 size={11} /> {t('Retirer', 'Remove')}
               </button>
             )}

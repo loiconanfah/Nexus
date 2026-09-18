@@ -44,9 +44,9 @@ const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
 
 const SEV: Record<Incident['severity'], { color: string; bg: string }> = {
-  CRITICAL: { color: '#ffb4ab', bg: 'rgba(255,180,171,0.12)' },
-  HIGH: { color: '#fb923c', bg: 'rgba(251,146,60,0.12)' },
-  MODERATE: { color: '#facc15', bg: 'rgba(250,204,21,0.10)' },
+  CRITICAL: { color: 'var(--nx-danger)', bg: 'color-mix(in srgb, var(--nx-danger) 12%, transparent)' },
+  HIGH: { color: 'var(--nx-orange)', bg: 'color-mix(in srgb, var(--nx-orange) 12%, transparent)' },
+  MODERATE: { color: 'var(--nx-warning)', bg: 'color-mix(in srgb, var(--nx-warning) 10%, transparent)' },
 }
 
 export function Incidents() {
@@ -56,7 +56,7 @@ export function Incidents() {
   const [filter, setFilter] = useState<'ALL' | Incident['severity']>('ALL')
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('PRÉVISION DES SCÉNARIOS DE DÉFAILLANCE…', 'FORECASTING FAILURE SCENARIOS…')}</div>
-  if (error) return <div style={{ color: '#ffb4ab' }}>{(error as Error).message}</div>
+  if (error) return <div style={{ color: 'var(--nx-danger)' }}>{(error as Error).message}</div>
   if (!data) return null
 
   const list = filter === 'ALL' ? data.incidents : data.incidents.filter((i) => i.severity === filter)
@@ -72,8 +72,8 @@ export function Incidents() {
         </div>
         <div className="grid w-full grid-cols-2 gap-2 md:grid-cols-4 lg:w-auto">
           <Tile icon={AlertOctagon} label={t('SCÉNARIOS PRÉDITS', 'PREDICTED SCENARIOS')} value={data.summary.total} color="var(--nx-text)" />
-          <Tile icon={ShieldAlert} label={t('CRITIQUES', 'CRITICAL')} value={data.summary.critical} color="#ffb4ab" />
-          <Tile icon={Activity} label={t('ÉLEVÉS', 'HIGH')} value={data.summary.high} color="#fb923c" />
+          <Tile icon={ShieldAlert} label={t('CRITIQUES', 'CRITICAL')} value={data.summary.critical} color="var(--nx-danger)" />
+          <Tile icon={Activity} label={t('ÉLEVÉS', 'HIGH')} value={data.summary.high} color="var(--nx-orange)" />
           <Tile icon={Radar} label={t('PORTÉE MAX', 'MAX BLAST RADIUS')} value={data.summary.topBlastRadius} color={CYAN_T} />
         </div>
       </div>
@@ -81,7 +81,7 @@ export function Incidents() {
       {/* Filtres */}
       <div className="flex gap-2">
         {(['ALL', 'CRITICAL', 'HIGH', 'MODERATE'] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className="rounded-sm border px-3 py-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.05em', borderColor: filter === f ? CYAN : 'var(--nx-border)', color: filter === f ? CYAN_T : 'var(--nx-text-muted)', background: filter === f ? 'rgba(0,229,255,0.08)' : 'transparent' }}>{f === 'ALL' ? t('TOUS', 'ALL') : f === 'CRITICAL' ? t('CRITIQUE', 'CRITICAL') : f === 'HIGH' ? t('ÉLEVÉ', 'HIGH') : t('MODÉRÉ', 'MODERATE')}</button>
+          <button key={f} onClick={() => setFilter(f)} className="rounded-sm border px-3 py-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.05em', borderColor: filter === f ? CYAN : 'var(--nx-border)', color: filter === f ? CYAN_T : 'var(--nx-text-muted)', background: filter === f ? 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)' : 'transparent' }}>{f === 'ALL' ? t('TOUS', 'ALL') : f === 'CRITICAL' ? t('CRITIQUE', 'CRITICAL') : f === 'HIGH' ? t('ÉLEVÉ', 'HIGH') : t('MODÉRÉ', 'MODERATE')}</button>
         ))}
       </div>
 
@@ -94,7 +94,7 @@ export function Incidents() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: s.color, background: s.bg, border: `1px solid ${s.color}40` }}>{severityLabel(i.severity, t)}</span>
+                    <span className="rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, color: s.color, background: s.bg, border: `1px solid color-mix(in srgb, ${s.color} 25%, transparent)` }}>{severityLabel(i.severity, t)}</span>
                     <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{categoryLabel(i, t)}</span>
                   </div>
                   <h3 className="mt-1.5" style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{incidentTitle(i, t)}</h3>
@@ -116,7 +116,7 @@ export function Incidents() {
                 <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{incidentReco(i, t)}</p>
               </div>
 
-              <button onClick={() => navigate(`/simulations?asset=${entityId}&name=${encodeURIComponent(i.entityName)}`)} className="mt-auto flex items-center justify-center gap-2 self-start rounded-sm px-3 py-1.5" style={{ background: 'rgba(0,229,255,0.10)', border: '1px solid rgba(0,229,255,0.30)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+              <button onClick={() => navigate(`/simulations?asset=${entityId}&name=${encodeURIComponent(i.entityName)}`)} className="mt-auto flex items-center justify-center gap-2 self-start rounded-sm px-3 py-1.5" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 <Play size={13} /> {t('Simuler le scénario', 'Simulate scenario')}
               </button>
             </div>

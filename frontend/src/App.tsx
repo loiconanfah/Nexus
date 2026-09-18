@@ -119,7 +119,7 @@ function AuthedApp() {
     <Layout
       header={
         <>
-          <h1 className="text-sm font-semibold" style={{ color: 'var(--color-text-strong)' }}>
+          <h1 className="whitespace-nowrap text-sm font-semibold" style={{ color: 'var(--color-text-strong)' }}>
             {TITLES[pathname] ? t(...TITLES[pathname]) : 'Lenexux'}
           </h1>
           <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--color-text-muted)' }}>
