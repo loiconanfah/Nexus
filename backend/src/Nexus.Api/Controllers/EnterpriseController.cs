@@ -14,15 +14,31 @@ public sealed class EnterpriseController(
     DecisionInterpreter interpreter,
     DecisionAnalyzer analyzer,
     ScenarioStore scenarios,
-    BusinessStore business) : NexusController(tenantProvider)
+    BusinessStore business,
+    Nexus.Api.Organization.OrganizationStore organization) : NexusController(tenantProvider)
 {
     // Modèle personnalisé (saisi via le formulaire) prioritaire ; sinon jeux de démo (CGI/Bell).
     private async Task<EnterpriseModel> ResolveModelAsync(Guid tenant, CancellationToken ct)
     {
         var stored = await business.GetAsync(tenant, ct);
-        return stored is not null
+        var model = stored is not null
             ? EnterpriseModelProvider.BuildCustom(stored.CompanyName, stored.Industry, stored.Drivers)
             : EnterpriseModelProvider.ForTenant(tenant);
+        return WithCurrency(model, await organization.CurrencyAsync(tenant, ct));
+    }
+
+    /// <summary>
+    /// Exprime le modèle dans la devise de l'organisation. Les montants sont saisis
+    /// par le client dans SA devise : seule l'unité affichée change, jamais la valeur.
+    /// Les jeux de démonstration, sans profil, restent en dollars canadiens.
+    /// </summary>
+    private static EnterpriseModel WithCurrency(EnterpriseModel model, string currency)
+    {
+        if (model.Currency == currency) return model;
+        var kpis = model.Kpis
+            .Select(k => k.Unit == model.Currency ? k with { Unit = currency } : k)
+            .ToList();
+        return model with { Currency = currency, Kpis = kpis };
     }
 
     /// <summary>État courant du modèle d'entreprise (leviers → états dérivés).</summary>
