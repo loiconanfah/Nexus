@@ -6,10 +6,10 @@
   pour rester lisibles sur fond clair.
 */
 @theme {
-  --color-bg: #eef2f5;
+  --color-bg: #f4f6f9;
   --color-surface: #ffffff;
   --color-surface-2: #f1f4f7;
-  --color-border: #cfd7de;
+  --color-border: #dfe4ea;
   --color-text: #0f1720;
   --color-text-muted: #4a5763;
   --color-text-strong: #070b10;
@@ -25,6 +25,12 @@
   --color-critical: #b91c1c;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Arrondis plus généreux : les angles quasi droits donnaient un aspect « fil de fer ». */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
 }
 
 html,
@@ -35,7 +41,7 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-bg);
+  background: var(--nx-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -81,18 +87,18 @@ body {
   /* Trois niveaux nettement distincts : fond gris-bleu, cartes blanches,
      champs légèrement teintés. Avant, fond, cartes et surfaces étaient trois
      gris quasi identiques : tout se fondait, et le blanc « cassait ». */
-  --nx-bg: #eef2f5;
+  --nx-bg: #f4f6f9;
   --nx-panel: #ffffff;
   --nx-surface: #ffffff;
   --nx-surface-container: #ffffff;
-  --nx-surface-high: #f3f6f8;
-  --nx-surface-highest: #e5eaee;
-  --nx-border: #cfd7de;
+  --nx-surface-high: #f5f7fa;
+  --nx-surface-highest: #e8ecf1;
+  --nx-border: #dfe4ea;
   --nx-outline: #66737e;
-  --nx-text: #0f1720;
-  --nx-text-muted: #4a5763;
+  --nx-text: #16202a;
+  --nx-text-muted: #5a6776;
   --nx-cyan: #0891b2;
-  --nx-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --nx-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.06);
 
   /* Couleurs sémantiques (à utiliser au lieu de codes hexadécimaux) */
   --nx-danger: #c62828;
@@ -167,6 +173,37 @@ body {
   --nx-teal: #4ae0d0;
   --nx-magenta: #e05ae0;
   --nx-critical-strong: #ff5449;
+}
+
+/* =====================================================================
+   Thème CLAIR — finitions
+   ===================================================================== */
+
+/* Menu latéral sombre, à l'encre du logo : il encadre le contenu et ancre la
+   marque. Les jetons sont redéfinis localement, le balisage reste identique. */
+:root:not([data-theme='dark']) .nx-sidebar {
+  --nx-panel: #0f1a22;
+  --nx-text: #eef3f6;
+  --nx-text-muted: #a3b2bd;
+  --nx-border: #22323d;
+  --nx-cyan: #22c9e4;
+  --nx-cyan-text: #7fe3f2;
+  --nx-logo-ink: #ffffff;
+  --nx-logo-accent: #22c9e4;
+  color-scheme: dark;
+}
+
+/* Cartes : ombre douce plutôt qu'un simple filet gris. */
+:root:not([data-theme='dark']) main :is([style*='background: var(--nx-panel)'], [style*='background: var(--nx-surface-container)'], [style*='background: var(--nx-surface)']) {
+  box-shadow: var(--nx-shadow);
+}
+
+/* Libellés de section : la police « code » en majuscules espacées fatigue sur
+   fond clair ; on garde la hiérarchie avec une police de lecture. */
+:root:not([data-theme='dark']) :is(main, header, [data-tour='setup']) [style*='font-family: var(--font-mono)'][style*='text-transform: uppercase'] {
+  font-family: var(--font-inter) !important;
+  font-weight: 600;
+  letter-spacing: 0.04em !important;
 }
 
 /* Trame de fond technique */
@@ -303,3 +340,7 @@ body {
   from { opacity: 0; transform: translateY(6px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* Écran d'attente (chargement du profil) */
+@keyframes nx-breathe { 0%, 100% { opacity: .45; transform: scale(.96) } 50% { opacity: 1; transform: scale(1) } }
+.nx-breathe { animation: nx-breathe 1.6s ease-in-out infinite; }

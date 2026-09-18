@@ -90,7 +90,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
       {/* ===== Sidebar ===== */}
       <nav
         data-tour="nav"
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r px-2 py-4 transition-[width] duration-200 ease-in-out md:flex ${collapsed ? 'w-[68px]' : 'w-[280px]'}`}
+        className={`nx-sidebar sticky top-0 hidden h-screen shrink-0 flex-col border-r px-2 py-4 transition-[width] duration-200 ease-in-out md:flex ${collapsed ? 'w-[68px]' : 'w-[280px]'}`}
         style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}
       >
         {/* Marque + bascule */}

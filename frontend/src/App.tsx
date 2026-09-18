@@ -37,6 +37,7 @@ import { Docs } from './pages/Docs'
 import { Legal } from './pages/Legal'
 import { Login } from './pages/Login'
 import { Setup } from './pages/Setup'
+import { LogoMark } from './components/Logo'
 import { useOrganization } from './lib/money'
 import { getTenantId } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
@@ -112,7 +113,13 @@ function AuthedApp() {
 
   if (pathname === '/demarrage') return <Setup />
   // Pas d'écran blanc si l'API est indisponible : on laisse passer, la barre de progression rattrapera.
-  if (org.isLoading) return <div className="min-h-screen" style={{ background: 'var(--nx-bg)' }} />
+  if (org.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ background: 'var(--nx-bg)' }}>
+        <div className="nx-breathe"><LogoMark size={44} title="Lenexux" /></div>
+      </div>
+    )
+  }
   if (org.data?.requiresOnboarding) return <Navigate to="/demarrage" replace />
 
   return (
