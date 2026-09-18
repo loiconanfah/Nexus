@@ -9,7 +9,9 @@ import {
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { EnterpriseModel as EM, ModelVersion } from '../lib/types'
-import { useMoney } from '../lib/money'
+import { useMoney, useOrganization } from '../lib/money'
+import { driverLabel } from '../lib/sectorVocab'
+import { SECTOR_LABELS } from './Setup'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -313,6 +315,8 @@ export function EnterpriseModel() {
 // ── Fenêtre : éditer librement les données du modèle + note de version ──
 function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void; onSaved: () => void }) {
   const { t } = useLang()
+  const sector = useOrganization().data?.profile?.sector
+  const vl = (key: string, fr: string, en: string) => { const l = driverLabel(sector, key, { fr, en }); return t(l.fr, l.en) }
   const initial: Record<string, string> = { company: model.company.name, industry: model.company.industry, note: '' }
   for (const f of DRIVER_FIELDS) {
     const raw = model.drivers[f.src]
@@ -350,7 +354,7 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
         <SectionLabel>{t('Leviers financiers & opérationnels', 'Financial & operating drivers')}</SectionLabel>
         <div className="grid gap-x-4 sm:grid-cols-2">
           {DRIVER_FIELDS.map((f) => (
-            <WInput key={f.key} numeric suffix={f.pct ? '%' : undefined} label={t(f.fr, f.en)} value={form[f.key]} onChange={(v) => set(f.key, v)} />
+            <WInput key={f.key} numeric suffix={f.pct ? '%' : undefined} label={vl(f.key, f.fr, f.en)} value={form[f.key]} onChange={(v) => set(f.key, v)} />
           ))}
         </div>
         <SectionLabel>{t('Structure de l’organisation', 'Organization structure')}</SectionLabel>
@@ -362,7 +366,7 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
         <div className="mt-2 border-t pt-3" style={{ borderColor: 'var(--nx-border)' }}>
           <WInput label={t('Note de version (optionnelle)', 'Version note (optional)')} value={form.note} onChange={(v) => set('note', v)} placeholder={t('ex. Ajustement du prix moyen', 'e.g. Adjusted average price')} />
         </div>
-        {!revenueOk && <p style={{ fontSize: 12, color: 'var(--nx-outline)' }}>{t('Nom, unités et prix moyen sont requis (> 0).', 'Name, units and average price are required (> 0).')}</p>}
+        {!revenueOk && <p style={{ fontSize: 12, color: 'var(--nx-outline)' }}>{t('Le nom et les deux premiers leviers de revenus sont requis (> 0).', 'Name, units and average price are required (> 0).')}</p>}
         {save.isError && <p style={{ fontSize: 12, color: NEG }}>{(save.error as Error).message}</p>}
       </div>
       <div className="flex items-center justify-end gap-2 border-t px-5 py-4" style={{ borderColor: 'var(--nx-border)' }}>
@@ -477,7 +481,7 @@ type WField = { key: string; fr: string; en: string; pct?: boolean }
 const WIZARD_STEPS: { title: [string, string]; hint: [string, string]; fields: WField[] }[] = [
   {
     title: ['Revenus', 'Revenue'],
-    hint: ['Combien vend l’entreprise, et à quel prix.', 'How much the company sells, and at what price.'],
+    hint: ['Votre volume d’activité, et ce qu’il rapporte en moyenne.', 'Your activity volume, and what it brings in on average.'],
     fields: [
       { key: 'units', fr: 'Unités / abonnés (par an)', en: 'Units / subscribers (per year)' },
       { key: 'avgPrice', fr: 'Prix moyen unitaire', en: 'Average unit price' },
@@ -527,8 +531,16 @@ const WIZARD_STEPS: { title: [string, string]; hint: [string, string]; fields: W
 
 function ModelWizard({ onDone }: { onDone: () => void }) {
   const { t } = useLang()
+  const profile = useOrganization().data?.profile
+  const sector = profile?.sector
+  const vl = (key: string, fr: string, en: string) => { const l = driverLabel(sector, key, { fr, en }); return t(l.fr, l.en) }
   const [step, setStep] = useState(0) // 0 = identité, 1..4 = leviers
-  const [form, setForm] = useState<Record<string, string>>({ company: '', industry: '' })
+  // Le profil saisi au démarrage fournit déjà nom, secteur et effectif : on ne les redemande pas.
+  const [form, setForm] = useState<Record<string, string>>(() => ({
+    company: profile?.name ?? '',
+    industry: profile ? t(...(SECTOR_LABELS[profile.sector] ?? [profile.sector, profile.sector])) : '',
+    headcount: profile?.headcount ? String(profile.headcount) : '',
+  }))
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const save = useMutation({
@@ -598,7 +610,7 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
             {wz.fields.map((f) => (
               <WInput
                 key={f.key} numeric suffix={f.pct ? '%' : undefined}
-                label={t(f.fr, f.en)} value={form[f.key] || ''} onChange={(v) => set(f.key, v)}
+                label={vl(f.key, f.fr, f.en)} value={form[f.key] || ''} onChange={(v) => set(f.key, v)}
                 placeholder={f.pct ? '0–100' : '0'}
               />
             ))}
@@ -607,7 +619,7 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
 
         {step === 1 && !revenueOk && (
           <p style={{ fontSize: 12, color: 'var(--nx-outline)' }}>
-            {t('Unités et prix moyen sont requis (> 0).', 'Units and average price are required (> 0).')}
+            {t('Les deux premiers champs sont requis (> 0).', 'The first two fields are required (> 0).')}
           </p>
         )}
         {save.isError && (

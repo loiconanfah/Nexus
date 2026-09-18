@@ -101,8 +101,8 @@ public sealed class EnterpriseController(
         if (!model.Configured) return BadRequest(new { error = "model_not_configured" });
 
         var lang = req.Lang == "en" ? "en" : "fr";
-        var effect = await interpreter.InterpretAsync(req.Text.Trim(), model.Drivers, lang, ct);
-        var analysis = await analyzer.AnalyzeAsync(req.Text.Trim(), model.Drivers, effect, lang, ct);
+        var effect = await interpreter.InterpretAsync(req.Text.Trim(), model.Drivers, lang, model.Currency, ct);
+        var analysis = await analyzer.AnalyzeAsync(req.Text.Trim(), model.Drivers, effect, lang, model.Currency, ct);
         return Ok(new { effect, analysis });
     }
 

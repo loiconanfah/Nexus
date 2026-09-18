@@ -20,18 +20,18 @@ public sealed record DecisionEffect(
 /// <summary>Interprète une décision business ; l'IA reformule, le déterministe borne.</summary>
 public sealed class DecisionInterpreter(IChatCompletion chat)
 {
-    public async Task<DecisionEffect> InterpretAsync(string text, BusinessDrivers d, string lang, CancellationToken ct)
+    public async Task<DecisionEffect> InterpretAsync(string text, BusinessDrivers d, string lang, string currency, CancellationToken ct)
     {
         var revenue = d.Units * d.AvgPrice;
         if (chat.IsConfigured)
         {
-            var ai = await TryAiAsync(text, d, revenue, lang, ct);
+            var ai = await TryAiAsync(text, d, revenue, lang, currency, ct);
             if (ai is not null) return ai;
         }
         return Heuristic(text, revenue, lang);
     }
 
-    private async Task<DecisionEffect?> TryAiAsync(string text, BusinessDrivers d, double revenue, string lang, CancellationToken ct)
+    private async Task<DecisionEffect?> TryAiAsync(string text, BusinessDrivers d, double revenue, string lang, string currency, CancellationToken ct)
     {
         var system =
             "Tu es un analyste qui traduit une décision d'entreprise CONCRÈTE en effets financiers structurés. " +
@@ -42,11 +42,11 @@ public sealed class DecisionInterpreter(IChatCompletion chat)
             "interpretation (1-2 phrases), assumptions (tableau), risks (tableau), confidence (0..1).\n" +
             "RÈGLES : traduis TOUTE décision concrète, pas seulement les leviers évidents. " +
             "Utilise newElement pour tout ce qui n'est pas un simple levier — un nouveau service/produit/équipe/bureau/campagne/programme, " +
-            "avec des montants ANNUELS réalistes (CAD) proportionnés à l'entreprise. Exemples : " +
-            "« prendre 20 stagiaires » → newElement {name:'Programme de stagiaires', type:'Équipe', annualCost≈20×20000, annualRevenue≈gain de productivité modéré, headcount:20} (n'utilise PAS headcountDelta, un stagiaire n'est pas au salaire plein) ; " +
+            $"avec des montants ANNUELS réalistes (en {currency}) proportionnés à l'entreprise. Exemples : " +
+            "« prendre 20 stagiaires » → newElement {name:'Programme de stagiaires', type:'Équipe', annualCost≈20×(une fraction du salaire moyen), annualRevenue≈gain de productivité modéré, headcount:20} (n'utilise PAS headcountDelta, un stagiaire n'est pas au salaire plein) ; " +
             "« ouvrir un bureau » → newElement {type:'Site', annualCost = loyer+charges, annualRevenue = ventes locales attendues} ; " +
             "« campagne marketing » → marketingPct ; « recruter 50 ingénieurs » → headcountDelta:50. " +
-            $"Taille de l'entreprise : revenu annuel ≈ {revenue:F0} CAD, effectif {d.Headcount}, salaire moyen {d.AvgSalary:F0}. " +
+            $"Taille de l'entreprise : revenu annuel ≈ {revenue:F0} {currency}, effectif {d.Headcount}, salaire moyen {d.AvgSalary:F0}. " +
             "IMPORTANT : les champs de pourcentage sont en POINTS entiers — écris 12 pour +12 %, -20 pour -20 %. N'écris JAMAIS de fraction comme 0.12. " +
             "SOIS CONSERVATEUR ET RÉALISTE : une embauche/un investissement est d'abord un COÛT (headcountDelta ou newElement.annualCost), pas un gain. " +
             "N'ajoute un effet de revenu (volumePct ou annualRevenue) QUE si la décision lie explicitement l'action à la génération de revenu " +
@@ -55,7 +55,7 @@ public sealed class DecisionInterpreter(IChatCompletion chat)
 
         var user =
             $"Décision : « {text} »\n" +
-            $"Leviers actuels : revenu {revenue:F0} CAD, effectif {d.Headcount}, prix moyen {d.AvgPrice:F0}, " +
+            $"Leviers actuels : revenu {revenue:F0} {currency}, effectif {d.Headcount}, prix moyen {d.AvgPrice:F0}, " +
             $"salaire moyen {d.AvgSalary:F0}, marketing {d.Marketing:F0}, coût des services {d.CogsPercent:P0}.";
 
         var raw = await chat.CompleteAsync(system, user, ct);

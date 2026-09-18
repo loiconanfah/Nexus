@@ -121,6 +121,15 @@ public sealed class DecisionEngine
         _ => 45,
     };
 
+    /// <summary>Montant lisible dans une phrase (« 59 659 FCFA »), sans dépendre des cultures du serveur.</summary>
+    private string Money(double v)
+    {
+        var n = Math.Round(v).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        if (!_en) n = n.Replace(',', '\u00A0');
+        var sym = _ctx.Currency switch { "XAF" or "XOF" => "FCFA", "EUR" => "€", "CAD" => "$", "USD" => "$ US", "GBP" => "£", _ => _ctx.Currency };
+        return $"{n} {sym}";
+    }
+
     private NodeRef Ref(GraphView g, string id) { var n = g.Get(id)!; return new NodeRef(n.Id, n.Name, n.Type); }
     private IReadOnlyList<NodeRef> Refs(GraphView g, IEnumerable<string> ids) => ids.Where(i => g.Get(i) is not null).Select(i => Ref(g, i)).ToList();
     private string Names(GraphView g, IEnumerable<string> ids, int max = 4)
@@ -294,7 +303,11 @@ public sealed class DecisionEngine
         var data = uses.Where(u => GraphView.DataTypes.Contains(_before.Get(u)!.Type)).ToList();
         if (s.Tools?.Any(t => IsAi(t.Type, t.Name)) == true || IsAi(s.NewType, name))
         {
-            if (data.Count == 0)
+            if (data.Count == 0 && uses.Count > 0)
+                Find("info", "hire.ai-data", L(
+                    $"Aucune base de données n'est citée explicitement : vérifiez que {Names(_before, uses)} donne bien accès aux données nécessaires (export, API, droits de lecture), et dans quelle qualité.",
+                    $"No database is explicitly listed: check that {Names(_before, uses)} actually gives access to the data needed (export, API, read rights), and at what quality."), uses);
+            else if (data.Count == 0)
                 Find("warning", "hire.ai-no-data", L(
                     "Aucune source de données n'est rattachée à ce poste orienté IA / données. Sans accès identifié aux données, l'apport restera théorique : indiquez les bases ou systèmes qu'il exploitera.",
                     "No data source is linked to this AI / data role. Without identified data access, the value stays theoretical: specify the databases or systems it will use."));
@@ -462,41 +475,55 @@ public sealed class DecisionEngine
     {
         var id = NewId("tool:" + t.Name);
         AddNew(_after, id, t.Name, string.IsNullOrWhiteSpace(t.Type) ? "Application" : t.Type!, 60);
-        if (anchor is not null) Link(_after, anchor, id, "USES");
+        // La personne qui apporte l'outil en détient le savoir ; un système l'utilise.
+        if (anchor is not null) Link(_after, anchor, id, _after.IsPerson(anchor) ? "KNOWS" : "USES");
         serves = serves.Where(x => _before.Get(x) is not null).ToList();
         uses = uses.Where(x => _before.Get(x) is not null).ToList();
         foreach (var a in serves) Link(_after, a, id, "DEPENDS_ON");
         foreach (var u in uses) Link(_after, id, u, "DEPENDS_ON");
         foreach (var x in serves.Concat(uses)) _impacted.Add(x);
 
-        if (t.External)
+        if (t.External) AttachSupplier(id, t.Name, t.Supplier, IsAi(t.Type, t.Name));
+        if (t.OutsideCountry) DataAbroad(t.Name);
+
+        return FinishTool(t, id, serves, uses, s);
+    }
+
+    /// <summary>Relie un outil externe à son fournisseur (existant : concentration mesurée ; nouveau : ajouté).</summary>
+    private void AttachSupplier(string toolId, string toolName, string? supplier, bool ai)
+    {
+        var supplierName = string.IsNullOrWhiteSpace(supplier) ? L($"Fournisseur de {toolName}", $"{toolName} provider") : supplier!;
+        var existing = _before.Nodes.FirstOrDefault(n => _before.IsSupplier(n.Id) && n.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
+        string sid;
+        if (existing is not null)
         {
-            var supplierName = string.IsNullOrWhiteSpace(t.Supplier) ? L($"Fournisseur de {t.Name}", $"{t.Name} provider") : t.Supplier!;
-            var existing = _before.Nodes.FirstOrDefault(n => _before.IsSupplier(n.Id) && n.Name.Equals(supplierName, StringComparison.OrdinalIgnoreCase));
-            string sid;
-            if (existing is not null)
-            {
-                sid = existing.Id;
-                var share = _before.Dependents(sid).Count;
-                Find("warning", "tool.supplier-concentration", L(
-                    $"{existing.Name} fournit déjà {share} élément(s) : cette décision renforce la concentration sur ce fournisseur.",
-                    $"{existing.Name} already supplies {share} element(s): this decision increases concentration on that supplier."), [sid]);
-            }
-            else
-            {
-                sid = NewId("supplier:" + supplierName);
-                AddNew(_after, sid, supplierName, IsAi(t.Type, t.Name) ? "AiProvider" : "Supplier", 60);
-                Find("info", "tool.new-supplier", L(
-                    $"Nouveau fournisseur externe : {supplierName}. Contrat, niveau de service, réversibilité (récupération des données en fin de contrat) à négocier.",
-                    $"New external supplier: {supplierName}. Contract, service level and reversibility (data return at contract end) to negotiate."));
-            }
-            Link(_after, id, sid, "SUPPLIED_BY");
-            _mustKnow.Add(L($"{t.Name} : exiger un engagement de disponibilité et une clause de réversibilité des données.",
-                            $"{t.Name}: require an availability commitment and a data reversibility clause."));
+            sid = existing.Id;
+            var share = _before.Dependents(sid).Count;
+            Find("warning", "tool.supplier-concentration", L(
+                $"{existing.Name} fournit déjà {share} élément(s) : cette décision renforce la concentration sur ce fournisseur.",
+                $"{existing.Name} already supplies {share} element(s): this decision increases concentration on that supplier."), [sid]);
         }
-        if (t.OutsideCountry)
-            _mustKnow.Add(L($"{t.Name} traite des données hors {(_ctx.Country is { Length: > 0 } c ? $"du pays du siège ({c})" : "du pays du siège")} : vérifier la réglementation applicable aux transferts de données (autorisation, consentement, clauses contractuelles).",
-                            $"{t.Name} processes data outside {(_ctx.Country is { Length: > 0 } c2 ? $"the head-office country ({c2})" : "the head-office country")}: check the rules applicable to data transfers (authorisation, consent, contractual clauses)."));
+        else
+        {
+            sid = NewId("supplier:" + supplierName);
+            AddNew(_after, sid, supplierName, ai ? "AiProvider" : "Supplier", 60);
+            Find("info", "tool.new-supplier", L(
+                $"Nouveau fournisseur externe : {supplierName}. Contrat, niveau de service, réversibilité (récupération des données en fin de contrat) à négocier.",
+                $"New external supplier: {supplierName}. Contract, service level and reversibility (data return at contract end) to negotiate."));
+        }
+        Link(_after, toolId, sid, "SUPPLIED_BY");
+        _mustKnow.Add(L($"{toolName} : exiger un engagement de disponibilité et une clause de réversibilité des données.",
+                        $"{toolName}: require an availability commitment and a data reversibility clause."));
+    }
+
+    private void DataAbroad(string toolName)
+    {
+        _mustKnow.Add(L($"{toolName} traite des données hors {(_ctx.Country is { Length: > 0 } c ? $"du pays du siège ({c})" : "du pays du siège")} : vérifier la réglementation applicable aux transferts de données (autorisation, consentement, clauses contractuelles).",
+                        $"{toolName} processes data outside {(_ctx.Country is { Length: > 0 } c2 ? $"the head-office country ({c2})" : "the head-office country")}: check the rules applicable to data transfers (authorisation, consent, contractual clauses)."));
+    }
+
+    private string FinishTool(ToolSpec t, string id, List<string> serves, List<string> uses, DecisionSpec s)
+    {
 
         // Intégrations : chaque système existant à connecter.
         var (rate, rateSrc) = DayRate(s.DayRate);
@@ -504,8 +531,8 @@ public sealed class DecisionEngine
         if (uses.Count > 0)
             Cost("integration:" + t.Name, L($"Intégration de {t.Name} ({uses.Count} système(s) : {Names(_before, uses, 3)})", $"Integrating {t.Name} ({uses.Count} system(s): {Names(_before, uses, 3)})"),
                 uses.Count * days * rate, 0, rateSrc == "input" && s.IntegrationDaysEach is not null ? "input" : "graph",
-                L($"{uses.Count} système(s) comptés dans le graphe × {days} j × {rate:N0} {_ctx.Currency}/j{(rateSrc == "assumption" ? " (tarif estimé)" : "")}",
-                  $"{uses.Count} system(s) counted in the graph × {days} d × {rate:N0} {_ctx.Currency}/d{(rateSrc == "assumption" ? " (estimated rate)" : "")}"));
+                L($"{uses.Count} système(s) comptés dans le graphe × {days} j × {Money(rate)}/j{(rateSrc == "assumption" ? " (tarif estimé)" : "")}",
+                  $"{uses.Count} system(s) counted in the graph × {days} d × {Money(rate)}/d{(rateSrc == "assumption" ? " (estimated rate)" : "")}"));
         else
             _missing.Add(L($"Systèmes existants auxquels {t.Name} devra être connecté", $"Existing systems {t.Name} must connect to"));
 
@@ -550,12 +577,15 @@ public sealed class DecisionEngine
         var dependents = _before.Dependents(old.Id);
         var direct = _before.DirectDependents(old.Id).Distinct().ToList();
         var upstream = _before.DirectDependencies(old.Id).Distinct().ToList();
-        var interfaces = direct.Concat(upstream).Distinct().ToList();
+        // Les personnes ne sont pas des liaisons techniques : elles relèvent de la formation (voir plus bas).
+        var interfaces = direct.Concat(upstream).Distinct().Where(x => !_before.IsPerson(x)).ToList();
         foreach (var x in dependents.Keys.Concat(upstream)) _impacted.Add(x);
 
         _after.Rewire(old.Id, id);
         _after.RemoveNode(old.Id);
         _removedNodes.Add(new NodeRef(old.Id, old.Name, old.Type));
+        if (s.External) AttachSupplier(id, name, null, IsAi(s.NewType, name));
+        if (s.OutsideCountry) DataAbroad(name);
 
         Find(dependents.Count > 0 ? "warning" : "info", "replace.blast", L(
             $"{interfaces.Count} liaison(s) directe(s) à refaire ({Names(_before, interfaces)}) et {dependents.Count} élément(s) qui dépendent de {old.Name} au total : tous doivent fonctionner avec {name} le jour de la bascule.",
@@ -587,8 +617,8 @@ public sealed class DecisionEngine
         var days = s.IntegrationDaysEach ?? 5;
         if (interfaces.Count > 0)
             Cost("integration", L($"Reconnexion des {interfaces.Count} liaison(s)", $"Rebuilding {interfaces.Count} link(s)"), interfaces.Count * days * rate, 0, "graph",
-                L($"{interfaces.Count} liaison(s) comptées dans le graphe × {days} j × {rate:N0} {_ctx.Currency}/j{(rateSrc == "assumption" ? " (tarif estimé)" : "")}",
-                  $"{interfaces.Count} link(s) counted in the graph × {days} d × {rate:N0} {_ctx.Currency}/d{(rateSrc == "assumption" ? " (estimated rate)" : "")}"));
+                L($"{interfaces.Count} liaison(s) comptées dans le graphe × {days} j × {Money(rate)}/j{(rateSrc == "assumption" ? " (tarif estimé)" : "")}",
+                  $"{interfaces.Count} link(s) counted in the graph × {days} d × {Money(rate)}/d{(rateSrc == "assumption" ? " (estimated rate)" : "")}"));
         var users = _before.PeopleAround(dependents.Keys.Append(old.Id)).Count;
         var hours = s.TrainingHoursPerPerson ?? 8;
         if (users > 0)

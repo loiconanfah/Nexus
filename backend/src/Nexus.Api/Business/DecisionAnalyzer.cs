@@ -43,7 +43,7 @@ public sealed class DecisionAnalyzer(IChatCompletion chat)
 
     private static readonly DecisionEffect Zero = new(0, 0, 0, 0, 0, 0, null, "", [], [], 0, false);
 
-    public async Task<DecisionAnalysis> AnalyzeAsync(string text, BusinessDrivers d, DecisionEffect e, string lang, CancellationToken ct)
+    public async Task<DecisionAnalysis> AnalyzeAsync(string text, BusinessDrivers d, DecisionEffect e, string lang, string currency, CancellationToken ct)
     {
         var b = Compute(d, Zero);
         var s = Compute(d, e);
@@ -53,15 +53,15 @@ public sealed class DecisionAnalyzer(IChatCompletion chat)
 
         if (chat.IsConfigured)
         {
-            var ai = await TryAiAsync(text, e, b, s, netPct, revPct, verdict, lang, ct);
+            var ai = await TryAiAsync(text, e, b, s, netPct, revPct, verdict, lang, currency, ct);
             if (ai is not null) return ai;
         }
         return Deterministic(e, b, s, netPct, revPct, verdict, lang);
     }
 
-    private async Task<DecisionAnalysis?> TryAiAsync(string text, DecisionEffect e, M b, M s, double netPct, double revPct, string verdict, string lang, CancellationToken ct)
+    private async Task<DecisionAnalysis?> TryAiAsync(string text, DecisionEffect e, M b, M s, double netPct, double revPct, string verdict, string lang, string currency, CancellationToken ct)
     {
-        string Money(double v) => $"{v / 1e6:F1} M CAD";
+        string Money(double v) => $"{v / 1e6:F1} M {currency}";
         var facts =
             $"Décision : {text}\n" +
             (e.NewService is not null ? $"Nouvel élément : {e.NewService.Name} ({e.NewService.Division}), revenu {Money(e.NewService.AnnualRevenue)}, coût {Money(e.NewService.AnnualCost)}, {e.NewService.Headcount} personnes.\n" : "") +

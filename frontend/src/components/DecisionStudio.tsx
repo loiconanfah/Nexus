@@ -69,7 +69,7 @@ const KINDS: { kind: DecisionKind; icon: typeof UserPlus; label: [string, string
   { kind: 'replace-tool', icon: RefreshCw, label: ['Remplacer un outil', 'Replace a tool'], desc: ['Migration vers un autre système', 'Migration to another system'], fields: [
     { k: 'subjectId', pool: 'systems', label: ['Outil remplacé', 'Tool replaced'], help: ['Tout ce qui s’y connecte devra être reconnecté.', 'Everything connected to it must be reconnected.'], required: true },
     { k: 'newName', label: ['Nouvel outil', 'New tool'], help: ['Nom du système de remplacement.', 'Name of the replacement system.'], required: true },
-    F.oneOff, F.annual, F.removed, { ...F.overlap, label: ['Fonctionnement en parallèle', 'Parallel run'] }, F.cutover, F.days, F.rate, F.training] },
+    F.external, F.abroad, F.oneOff, F.annual, F.removed, { ...F.overlap, label: ['Fonctionnement en parallèle', 'Parallel run'] }, F.cutover, F.days, F.rate, F.training] },
   { kind: 'upgrade', icon: Wrench, label: ['Mettre à jour', 'Upgrade'], desc: ['Nouvelle version d’un système', 'New version of a system'], fields: [
     { k: 'subjectId', pool: 'systems', label: ['Système mis à jour', 'System upgraded'], help: ['Ses liaisons seront à re-tester.', 'Its links will need re-testing.'], required: true },
     F.oneOff, F.annual, F.cutover, F.rate] },
@@ -376,6 +376,7 @@ function ToolsEditor({ value, onChange, t, currency }: { value: ToolSpec[]; onCh
           <input className="nx-field" inputMode="numeric" placeholder={`${t('Annuel', 'Annual')} (${currency})`} value={tool.annualCost ?? ''} onChange={(e) => upd(i, { annualCost: num(e.target.value) })} />
           <button onClick={() => onChange(value.filter((_, j) => j !== i))} className="self-center p-1" aria-label={t('Retirer', 'Remove')}><Minus size={15} style={{ color: 'var(--nx-text-muted)' }} /></button>
           <label className="flex items-center gap-2 text-xs sm:col-span-2" style={{ color: 'var(--nx-text-muted)' }}><input type="checkbox" checked={!!tool.external} onChange={(e) => upd(i, { external: e.target.checked })} />{t('Prestataire externe', 'External vendor')}</label>
+          {tool.external && <input className="nx-field sm:col-span-3" placeholder={t('Nom du fournisseur (s’il existe déjà dans le graphe, la concentration est mesurée)', 'Supplier name (if already in the graph, concentration is measured)')} value={tool.supplier ?? ''} onChange={(e) => upd(i, { supplier: e.target.value || null })} />}
           <label className="flex items-center gap-2 text-xs sm:col-span-3" style={{ color: 'var(--nx-text-muted)' }}><input type="checkbox" checked={!!tool.outsideCountry} onChange={(e) => upd(i, { outsideCountry: e.target.checked })} />{t('Données hors du pays du siège', 'Data outside head-office country')}</label>
         </div>
       ))}

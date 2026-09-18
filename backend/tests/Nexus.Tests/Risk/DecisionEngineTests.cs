@@ -59,6 +59,10 @@ public class DecisionEngineTests
     }
 
     [Fact]
+    public void Un_poste_IA_sans_aucun_systeme_rattache_est_signale()
+        => Assert.Contains(Run(new DecisionSpec(DecisionKinds.Hire, NewName: "Data scientist", Serves: [Sales])).Findings, f => f.Code == "hire.ai-no-data");
+
+    [Fact]
     public void Recruter_un_second_detenteur_ameliore_la_resilience()
     {
         var r = Run(new DecisionSpec(DecisionKinds.Hire, NewName: "Second administrateur", Serves: [Billing], Uses: [Erp, Db]));
@@ -69,11 +73,15 @@ public class DecisionEngineTests
     }
 
     [Fact]
-    public void Un_expert_IA_sans_donnees_rattachees_est_signale()
+    public void Un_expert_IA_devient_personne_cle_de_ses_outils_et_l_acces_aux_donnees_est_questionne()
     {
         var r = Run(new DecisionSpec(DecisionKinds.Hire, NewName: "Expert IA", Serves: [Sales], Uses: [Crm],
             Tools: [new ToolSpec("Plateforme IA", "AiService", "Fournisseur IA", External: true, OutsideCountry: true, AnnualCost: 12_000)]));
-        Assert.Contains(r.Findings, f => f.Code == "hire.ai-no-data");
+        // Le CRM n'est pas une base de données : l'accès aux données est à vérifier, pas absent.
+        Assert.Contains(r.Findings, f => f.Code == "hire.ai-data" && f.Severity == "info");
+        // Seul à maîtriser la plateforme dont dépendent les ventes : une nouvelle personne clé.
+        Assert.Contains(r.Diff.AddedEdges, e => e.SourceName == "Expert IA" && e.TargetName == "Plateforme IA" && e.Type == "KNOWS");
+        Assert.True(r.After.KeyPeople >= r.Before.KeyPeople);
         Assert.Contains(r.Diff.AddedNodes, n => n.Type == "AiProvider");
         Assert.Contains(r.MustKnow, m => m.Contains("hors") && m.Contains("FR"));
         Assert.Contains(r.Costs, c => c.Key == "integration:Plateforme IA" && c.Source == "graph");
