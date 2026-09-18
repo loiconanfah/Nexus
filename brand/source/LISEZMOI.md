@@ -43,6 +43,15 @@ Les fiabilités des sources de preuve (page 5) reprennent les valeurs réelles d
 `backend/src/Nexus.Domain/ValueObjects/EvidenceSource.cs`. Si elles changent dans
 le code, les mettre à jour dans la constante `SOURCES`.
 
+## Régénérer le pitch deck (16 diapositives 16:9)
+
+    python brand/source/build_pitch.py
+    chrome --headless=new --no-pdf-header-footer --virtual-time-budget=20000       --print-to-pdf=brand/Pitch-Lenexux.pdf file:///<chemin>/pitch.html
+
+Porte l'histoire du nom — Living Enterprise Nexus, dont le S devient un X — et
+la promesse fondatrice : « Show me what breaks, why, what it affects, and what
+to fix first. » Importe build_brochure.py, comme le document de concept.
+
 ## Régénérer la charte graphique
 
     chrome --headless=new --no-pdf-header-footer --virtual-time-budget=15000 \
