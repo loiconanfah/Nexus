@@ -49,6 +49,9 @@ import type {
   CalibrationPreview,
   SetupProgress,
   Notice,
+  DecisionSpec,
+  DecisionReport,
+  DecisionDraft,
 } from './types'
 
 const BASE = '/api/v1'
@@ -77,6 +80,10 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export const api = {
+  analyzeDecision: (spec: DecisionSpec, lang: string) =>
+    fetch(`${BASE}/decisions/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ spec, lang }) }).then(handle<DecisionReport>),
+  interpretDecision: (text: string, lang: string) =>
+    fetch(`${BASE}/decisions/interpret`, { method: 'POST', headers: headers(), body: JSON.stringify({ text, lang }) }).then(handle<DecisionDraft>),
   organization: () => fetch(`${BASE}/organization`, { headers: headers(false) }).then(handle<OrganizationState>),
   saveOrganization: (body: OrganizationInput) =>
     fetch(`${BASE}/organization`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) })

@@ -593,3 +593,72 @@ export interface Notice {
   route: string | null
   at: string | null
 }
+
+// --- Décisions fondées sur le graphe -----------------------------------------
+
+export type DecisionKind = 'hire' | 'replace' | 'departure' | 'new-tool' | 'replace-tool' | 'upgrade' | 'change-supplier' | 'open-site' | 'close-site' | 'automate'
+
+export interface ToolSpec {
+  name: string
+  type?: string | null
+  supplier?: string | null
+  external?: boolean
+  outsideCountry?: boolean
+  oneOffCost?: number | null
+  annualCost?: number | null
+}
+
+export interface DecisionSpec {
+  kind: DecisionKind
+  title?: string | null
+  subjectId?: string | null
+  newName?: string | null
+  newType?: string | null
+  serves?: string[]
+  uses?: string[]
+  tools?: ToolSpec[] | null
+  external?: boolean
+  outsideCountry?: boolean
+  annualSalary?: number | null
+  headcount?: number | null
+  oneOffCost?: number | null
+  annualCost?: number | null
+  annualCostRemoved?: number | null
+  overlapMonths?: number | null
+  dayRate?: number | null
+  integrationDaysEach?: number | null
+  trainingHoursPerPerson?: number | null
+  cutoverHours?: number | null
+  expectedAnnualGain?: number | null
+  hoursSavedPerMonth?: number | null
+  gainRationale?: string | null
+}
+
+export interface DecisionNodeRef { id: string; name: string; type: string }
+export interface DecisionEdgeRef { source: string; sourceName: string; target: string; targetName: string; type: string }
+export interface DecisionFinding { severity: 'danger' | 'warning' | 'info' | 'positive'; code: string; text: string; nodes: DecisionNodeRef[] }
+export interface DecisionResilience { score: number; singlePointsOfFailure: number; keyPeople: number; soleKnowledgeSystems: number; maxSupplierShare: number; mostConcentratedSupplier: string | null; elements: number }
+export interface DecisionCostLine { key: string; label: string; year1: number; recurring: number; source: 'input' | 'graph' | 'engine' | 'profile' | 'assumption'; basis: string }
+export interface DecisionPhase { title: string; weeks: number; items: string[] }
+
+export interface DecisionReport {
+  kind: DecisionKind
+  headline: string
+  subject: DecisionNodeRef | null
+  findings: DecisionFinding[]
+  diff: { addedNodes: DecisionNodeRef[]; addedEdges: DecisionEdgeRef[]; removedNodes: DecisionNodeRef[]; removedEdges: DecisionEdgeRef[]; impacted: DecisionNodeRef[] }
+  before: DecisionResilience
+  after: DecisionResilience
+  costs: DecisionCostLine[]
+  benefits: DecisionCostLine[]
+  totals: { year1Cost: number; recurringCost: number; year1Benefit: number; recurringBenefit: number; transitionRisk: number; paybackMonths: number | null; assumptionLines: number }
+  plan: DecisionPhase[]
+  mustKnow: string[]
+  missingInputs: string[]
+  verdict: 'favorable' | 'conditional' | 'unfavorable' | 'insufficient'
+  verdictText: string
+  confidence: number
+  currency: string
+}
+
+export interface DecisionDraft { spec: DecisionSpec; matched: DecisionNodeRef[]; usedAi: boolean; note: string | null }

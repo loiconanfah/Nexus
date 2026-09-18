@@ -10,6 +10,7 @@ import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { EnterpriseModel, DecisionAnalysis } from '../lib/types'
 import { useMoney } from '../lib/money'
+import { DecisionStudio } from '../components/DecisionStudio'
 
 const Enterprise3D = lazy(() => import('../components/Enterprise3D').then((m) => ({ default: m.Enterprise3D })))
 
@@ -78,7 +79,7 @@ const PRESETS: { fr: string; en: string; levers: Partial<Levers> }[] = [
   { fr: 'Réduire les coûts de 5 pts', en: 'Cut costs by 5 pts', levers: { cogsPts: -5 } },
 ]
 
-export function DecisionSim() {
+function FinancialLevers() {
   const { t, lang } = useLang()
   const { data, isLoading } = useQuery({ queryKey: ['enterprise-model'], queryFn: api.enterpriseModel })
   const [tab, setTab] = useState<'levers' | 'holo' | 'compare'>('levers')
@@ -136,7 +137,7 @@ export function DecisionSim() {
     const raw: { id: string; name: string; lev: Levers; els: ElementItem[] }[] = [
       { id: 'current', name: lang === 'fr' ? 'Scénario actuel' : 'Current', lev: levers, els: elements },
     ]
-    for (const sc of scenariosQ.data ?? []) {
+    for (const sc of (scenariosQ.data ?? []).filter((x) => !x.payload.includes('"graph-decision"'))) {
       try {
         const p = JSON.parse(sc.payload) as { levers?: Partial<Levers>; elements?: ElementItem[] }
         raw.push({ id: sc.id, name: sc.name, lev: { ...ZERO, ...(p.levers ?? {}) }, els: p.elements ?? [] })
@@ -330,7 +331,7 @@ export function DecisionSim() {
           <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--nx-outline)' }}>{t('Scénarios', 'Scenarios')}</span>
           <input value={scenName} onChange={(e) => setScenName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveScenario()} placeholder={t('Nom…', 'Name…')} className="rounded-sm border px-2 py-1 outline-none" style={{ background: 'var(--nx-surface-high)', borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontSize: 12, width: 140 }} />
           <button onClick={saveScenario} disabled={!scenName.trim() || !dirty} className="flex items-center gap-1 rounded-sm border px-2 py-1 disabled:opacity-50" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)', fontFamily: mono, fontSize: 11 }}><Save size={12} /> {t('Enregistrer', 'Save')}</button>
-          {scenariosQ.data?.map((s) => (
+          {scenariosQ.data?.filter((x) => !x.payload.includes('"graph-decision"')).map((s) => (
             <span key={s.id} className="flex items-center gap-1 rounded-full border px-2 py-1" style={{ borderColor: 'var(--nx-border)', fontSize: 12 }}>
               <button onClick={() => loadScenario(s.payload)} style={{ color: 'var(--nx-text-muted)' }}>{s.name}</button>
               <button onClick={() => delScenario(s.id)} style={{ color: 'var(--nx-outline)' }}><X size={11} /></button>
@@ -580,6 +581,45 @@ function Ring({ value, color }: { value: number; color: string }) {
         <circle cx="40" cy="40" r={r} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - value / 100)} style={{ transition: 'stroke-dashoffset 300ms' }} />
       </svg>
       <div className="absolute flex items-center gap-0.5" style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}><Gauge size={13} style={{ color }} />{value}</div>
+    </div>
+  )
+}
+
+/**
+ * Décision & simulation : deux façons de décider.
+ * - Décision opérationnelle : une décision réelle (recruter, remplacer, changer
+ *   d'outil, de fournisseur, de site, automatiser) analysée sur le graphe.
+ * - Leviers financiers : effet d'une variation de prix, de volume, d'effectif…
+ *   sur le compte de résultat.
+ */
+export function DecisionSim() {
+  const { t } = useLang()
+  const [mode, setMode] = useState<'graph' | 'finance'>(() => {
+    try { return localStorage.getItem('nexus.decision.mode') === 'finance' ? 'finance' : 'graph' } catch { return 'graph' }
+  })
+  const pick = (m: 'graph' | 'finance') => { setMode(m); try { localStorage.setItem('nexus.decision.mode', m) } catch { /* ignore */ } }
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 style={{ fontFamily: 'var(--font-geist)', fontSize: 24, color: 'var(--nx-text)' }}>{t('Décision & simulation', 'Decision & simulation')}</h2>
+          <p className="mt-1 max-w-3xl text-sm" style={{ color: 'var(--nx-text-muted)' }}>
+            {mode === 'graph'
+              ? t('Avant de décider, voyez ce que la décision touche réellement : savoir détenu, outils à reconnecter, personnes à former, fournisseurs ajoutés, risque de transition — chiffré ligne par ligne.',
+                  'Before deciding, see what the decision really touches: knowledge held, tools to reconnect, people to train, suppliers added, transition risk — priced line by line.')
+              : t('Faites varier prix, volumes, effectif ou dépenses et mesurez l’effet sur le compte de résultat.', 'Vary prices, volumes, headcount or spending and measure the effect on the income statement.')}
+          </p>
+        </div>
+        <div className="flex shrink-0 rounded-md border p-0.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-high)' }} role="tablist">
+          {([['graph', t('Décision opérationnelle', 'Operational decision')], ['finance', t('Leviers financiers', 'Financial levers')]] as const).map(([k, label]) => (
+            <button key={k} role="tab" aria-selected={mode === k} onClick={() => pick(k)} className="rounded px-3 py-1.5 text-sm font-medium"
+              style={{ background: mode === k ? 'var(--nx-panel)' : 'transparent', color: mode === k ? 'var(--nx-text)' : 'var(--nx-text-muted)', boxShadow: mode === k ? 'var(--nx-shadow)' : 'none' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {mode === 'graph' ? <DecisionStudio /> : <FinancialLevers />}
     </div>
   )
 }
