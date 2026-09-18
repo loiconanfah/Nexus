@@ -21,7 +21,8 @@ public sealed class SimulationsController(
     PropagationEngine propagation,
     Nexus.Api.Impact.ImpactConfigStore impactConfig,
     Nexus.Graph.IGraphRepository graph,
-    IChatCompletion chat) : NexusController(tenantProvider)
+    IChatCompletion chat,
+    Nexus.Api.Organization.OrganizationStore organization) : NexusController(tenantProvider)
 {
     /// <summary>Simule la défaillance d'un actif et renvoie la propagation + l'impact financier estimé.</summary>
     [HttpPost]
@@ -81,7 +82,7 @@ public sealed class SimulationsController(
             expectedImpact = expected,
             maxRecoveryHours = maxRecovery,
             avgProbability,
-            currency = "CAD",
+            currency = await organization.CurrencyAsync(tenant, ct),
             nodeDetails = nodes,
         });
     }
@@ -151,8 +152,8 @@ public sealed class SimulationsController(
     {
         var total = r.Direct + r.Indirect;
         return lang == "en"
-            ? $"“{r.ActionLabel}” on {r.OriginName} impacts {total} element(s) ({r.Direct} direct, {r.Indirect} indirect); {r.Spared} dependent element(s) are spared by this incident type. Probability-weighted exposure ≈ {r.Expected:N0} {r.Currency} (worst case {r.WorstCase:N0})."
-            : $"« {r.ActionLabel} » sur {r.OriginName} impacte {total} élément(s) ({r.Direct} direct(s), {r.Indirect} indirect(s)) ; {r.Spared} élément(s) dépendant(s) sont épargnés par ce type d'incident. Exposition pondérée ≈ {r.Expected:N0} {r.Currency} (pire cas {r.WorstCase:N0}).";
+            ? $"“{r.ActionLabel}” on {r.OriginName} impacts {total} element(s) ({r.Direct} direct, {r.Indirect} indirect); {r.Spared} dependent element(s) are spared by this incident type. Probability-weighted exposure ≈ {Nexus.Api.Organization.Currencies.Format(r.Expected, r.Currency, "en")} (worst case {Nexus.Api.Organization.Currencies.Format(r.WorstCase, r.Currency, "en")})."
+            : $"« {r.ActionLabel} » sur {r.OriginName} impacte {total} élément(s) ({r.Direct} direct(s), {r.Indirect} indirect(s)) ; {r.Spared} élément(s) dépendant(s) sont épargnés par ce type d'incident. Exposition pondérée ≈ {Nexus.Api.Organization.Currencies.Format(r.Expected, r.Currency, "fr")} (pire cas {Nexus.Api.Organization.Currencies.Format(r.WorstCase, r.Currency, "fr")}).";
     }
 
     private static List<string> HeuristicMitigations(ExplainRequest r, string lang)

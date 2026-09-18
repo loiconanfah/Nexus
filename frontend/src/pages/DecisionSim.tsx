@@ -9,6 +9,7 @@ import {
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { EnterpriseModel, DecisionAnalysis } from '../lib/types'
+import { useMoney } from '../lib/money'
 
 const Enterprise3D = lazy(() => import('../components/Enterprise3D').then((m) => ({ default: m.Enterprise3D })))
 
@@ -114,12 +115,8 @@ export function DecisionSim() {
   async function delScenario(id: string) { await api.deleteScenario(id); scenariosQ.refetch() }
 
   const nf = new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA')
-  const money = (v: number) => {
-    const a = Math.abs(v)
-    if (a >= 1e6) return `${(v / 1e6).toFixed(a >= 1e8 ? 0 : 1)} M$`
-    if (a >= 1e3) return `${(v / 1e3).toFixed(0)} k$`
-    return nf.format(Math.round(v))
-  }
+  const m = useMoney()
+  const money = m.compact
 
   const model = useMemo(() => {
     if (!data?.configured) return null
@@ -393,6 +390,7 @@ export function DecisionSim() {
 }
 
 function ComparePanel({ base, sim, money, nf, t, compact }: { base: Metrics; sim: Metrics; money: (v: number) => string; nf: Intl.NumberFormat; t: (fr: string, en: string) => string; compact?: boolean }) {
+  const m = useMoney()
   const chart = [
     { name: t('Revenu', 'Revenue'), actuel: base.revenue / 1e6, simule: sim.revenue / 1e6 },
     { name: 'EBITDA', actuel: base.ebitda / 1e6, simule: sim.ebitda / 1e6 },
@@ -408,7 +406,7 @@ function ComparePanel({ base, sim, money, nf, t, compact }: { base: Metrics; sim
             <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" vertical={false} />
             <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
             <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 10, fontFamily: mono }} axisLine={false} tickLine={false} width={40} />
-            <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(v, n) => [`${Number(v).toFixed(1)} M$`, String(n) === 'actuel' ? t('Actuel', 'Current') : t('Simulé', 'Simulated')]} />
+            <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(v, n) => [`${Number(v).toFixed(1)} ${m.millions}`, String(n) === 'actuel' ? t('Actuel', 'Current') : t('Simulé', 'Simulated')]} />
             <Bar dataKey="actuel" fill="#5f7079" radius={[2, 2, 0, 0]} />
             <Bar dataKey="simule" radius={[2, 2, 0, 0]}>
               {chart.map((c, i) => <Cell key={i} fill={c.simule >= c.actuel ? '#3fb27f' : '#d15b54'} />)}
@@ -432,6 +430,7 @@ function ComparePanel({ base, sim, money, nf, t, compact }: { base: Metrics; sim
 
 interface Comparable { id: string; name: string; m: Metrics; base: Metrics; score: number }
 function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparable[]; money: (v: number) => string; nf: Intl.NumberFormat; t: (fr: string, en: string) => string }) {
+  const m = useMoney()
   if (comparables.length <= 1) {
     return (
       <div className="rounded-lg border p-10 text-center" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontSize: 14 }}>
@@ -454,14 +453,14 @@ function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparab
     <div className="flex flex-col gap-4">
       {/* Graphique : résultat net par scénario */}
       <div className="rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-        <h3 className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}><Scale size={14} /> {t('Résultat net par scénario (M$)', 'Net profit by scenario (M$)')}</h3>
+        <h3 className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}><Scale size={14} /> {`${t('Résultat net par scénario', 'Net profit by scenario')} (${m.millions})`}</h3>
         <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" vertical={false} />
               <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
               <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={false} tickLine={false} width={40} />
-              <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} formatter={(v) => [`${Number(v).toFixed(1)} M$`, t('Résultat net', 'Net profit')]} />
+              <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} formatter={(v) => [`${Number(v).toFixed(1)} ${m.millions}`, t('Résultat net', 'Net profit')]} />
               <Bar dataKey="net" radius={[3, 3, 0, 0]}>
                 {chart.map((_, i) => <Cell key={i} fill={comparables[i].id === winnerId ? '#3fb27f' : '#5f7079'} />)}
               </Bar>

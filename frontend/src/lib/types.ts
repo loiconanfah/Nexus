@@ -517,3 +517,79 @@ export interface ImpactTuning {
 export interface ImpactConfig {
   tuning: ImpactTuning; customized: boolean; defaults: ImpactTuning
 }
+
+// --- Organisation, mise en place et notifications ---------------------------
+
+export interface OrganizationProfile {
+  name: string
+  sector: string
+  country: string
+  currency: string
+  sizeBand: string
+  annualRevenue: number
+  headcount: number
+  operatingMode: 'business' | '24x7'
+  completedAt: string | null
+  updatedAt: string
+  completed: boolean
+}
+
+export interface CalibrationPreview {
+  hourlyRevenue: number
+  operatingHours: number
+  costVeryHigh: number
+  costModerate: number
+  costMinimal: number
+}
+
+export interface OrganizationState {
+  profile: OrganizationProfile | null
+  requiresOnboarding: boolean
+  waitingForAdmin: boolean
+  canEdit: boolean
+  currency: string
+  currencies: { code: string; name: string; symbol: string; decimals: number }[]
+  sectors: string[]
+  sizeBands: string[]
+  calibration: CalibrationPreview | null
+}
+
+export interface OrganizationInput {
+  name: string
+  sector: string
+  country: string
+  currency: string
+  sizeBand: string
+  annualRevenue: number
+  headcount: number
+  operatingMode: 'business' | '24x7'
+  recalibrate?: boolean
+}
+
+export interface SetupStep {
+  key: string
+  required: boolean
+  done: boolean
+  current: number
+  target: number
+  route: string
+}
+
+export interface SetupProgress {
+  percent: number
+  requiredDone: boolean
+  doneCount: number
+  total: number
+  steps: SetupStep[]
+  next: string | null
+}
+
+export interface Notice {
+  id: string
+  kind: 'task' | 'operation' | 'alert'
+  severity: 'danger' | 'warning' | 'info' | 'success'
+  code: string
+  data: Record<string, unknown>
+  route: string | null
+  at: string | null
+}

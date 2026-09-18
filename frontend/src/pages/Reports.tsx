@@ -69,11 +69,11 @@ export function Reports() {
         </div>
 
         <div className="mt-auto flex flex-col gap-2 border-t p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-          <button onClick={() => refetch()} disabled={isFetching} className="flex h-11 w-full items-center justify-center gap-2 rounded-sm disabled:opacity-50"
+          <button onClick={() => { void api.milestone('report'); void refetch() }} disabled={isFetching} className="flex h-11 w-full items-center justify-center gap-2 rounded-sm disabled:opacity-50"
             style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             <Sparkles size={16} /> {isFetching ? t('Génération…', 'Generating…') : t('Générer le rapport', 'Generate Report')}
           </button>
-          <button onClick={() => window.print()} className="flex h-10 w-full items-center justify-center gap-2 rounded-sm border" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12, textTransform: 'uppercase' }}>
+          <button onClick={() => { void api.milestone('report'); window.print() }} className="flex h-10 w-full items-center justify-center gap-2 rounded-sm border" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12, textTransform: 'uppercase' }}>
             <Printer size={15} /> {t('Exporter PDF', 'Export PDF')}
           </button>
         </div>

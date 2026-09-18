@@ -50,6 +50,11 @@ public sealed class OrganizationStore(NexusDbContext db)
                 operating_mode text NOT NULL DEFAULT 'business',
                 completed_at timestamptz,
                 updated_at timestamptz NOT NULL DEFAULT now());
+            CREATE TABLE IF NOT EXISTS onboarding_milestones (
+                tenant_id uuid NOT NULL,
+                key text NOT NULL,
+                reached_at timestamptz NOT NULL DEFAULT now(),
+                PRIMARY KEY (tenant_id, key));
             """;
         await cmd.ExecuteNonQueryAsync(ct);
         return conn;
@@ -111,4 +116,31 @@ public sealed class OrganizationStore(NexusDbContext db)
     /// <summary>Devise de l'espace — le dollar canadien tant qu'aucun profil n'est saisi.</summary>
     public async Task<string> CurrencyAsync(Guid tenant, CancellationToken ct)
         => (await GetAsync(tenant, ct))?.Currency ?? Currencies.Default;
+
+    /// <summary>
+    /// Jalons qu'aucune donnée ne trace d'elle-même (une simulation n'est pas
+    /// persistée, un rapport non plus) : ils sont notés une fois, au premier passage.
+    /// </summary>
+    public static readonly string[] MilestoneKeys = ["simulation", "report", "tour"];
+
+    public async Task MarkMilestoneAsync(Guid tenant, string key, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "INSERT INTO onboarding_milestones (tenant_id, key) VALUES (@t, @k) ON CONFLICT DO NOTHING;";
+        P(cmd, "@t", tenant); P(cmd, "@k", key);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task<IReadOnlyDictionary<string, DateTime>> MilestonesAsync(Guid tenant, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT key, reached_at FROM onboarding_milestones WHERE tenant_id = @t;";
+        P(cmd, "@t", tenant);
+        var map = new Dictionary<string, DateTime>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct)) map[r.GetString(0)] = r.GetDateTime(1);
+        return map;
+    }
 }

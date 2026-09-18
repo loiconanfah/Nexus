@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Waypoints, ArrowRight, AlertTriangle, Zap, ShieldAlert, Sparkles, TrendingDown } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { useMoney } from '../lib/money'
 import { entityTypeLabel } from '../lib/labels'
 import { EvidenceBanner } from '../components/EvidenceBanner'
 
@@ -12,12 +13,24 @@ const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const NEG = '#d15b54'
 
-const EXAMPLES: [string, string][] = [
-  ['Que se passe-t-il si nous perdons le fournisseur Ericsson ?', 'What happens if we lose supplier Ericsson?'],
-  ['Que se passe-t-il si le fournisseur OpenAI tombe ?', 'What happens if the OpenAI provider goes down?'],
-  ['Impact si le Data Center Montréal tombe en panne', 'Impact if Data Center Montréal goes down'],
-  ['Que se passe-t-il si le HSS est indisponible ?', 'What happens if the HSS is unavailable?'],
-]
+/**
+ * Questions d'exemple tirées de l'espace lui-même : un fournisseur, un système et
+ * une activité qui existent vraiment. Une microfinance ne doit pas se voir
+ * proposer « et si nous perdons Ericsson ? ».
+ */
+function examplesFrom(nodes: { name: string; entityType: string; criticality: number }[]): [string, string][] {
+  const pick = (types: string[]) => [...nodes].filter((n) => types.includes(n.entityType)).sort((a, b) => b.criticality - a.criticality)[0]
+  const out: [string, string][] = []
+  const sup = pick(['Supplier', 'AiProvider'])
+  if (sup) out.push([`Que se passe-t-il si nous perdons le fournisseur ${sup.name} ?`, `What happens if we lose supplier ${sup.name}?`])
+  const sys = pick(['Application', 'System', 'Database', 'Service', 'Server', 'Infrastructure', 'Network', 'CloudResource'])
+  if (sys) out.push([`Et si ${sys.name} est indisponible une journée ?`, `What if ${sys.name} is unavailable for a day?`])
+  const site = pick(['Location'])
+  if (site) out.push([`Impact si le site ${site.name} est fermé`, `Impact if site ${site.name} is closed`])
+  const role = pick(['Person', 'Role', 'Team'])
+  if (role) out.push([`Que se passe-t-il si ${role.name} est absent ?`, `What happens if ${role.name} is absent?`])
+  return out
+}
 
 export function ImpactIntelligence() {
   const { t, lang } = useLang()
@@ -26,13 +39,9 @@ export function ImpactIntelligence() {
   const analyze = useMutation({ mutationFn: (question: string) => api.analyzeImpact(question, lang) })
   const data = analyze.data
 
-  const nf = new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA')
-  const money = (v: number) => {
-    const a = Math.abs(v)
-    if (a >= 1e6) return `${(v / 1e6).toFixed(a >= 1e8 ? 0 : 2)} M$`
-    if (a >= 1e3) return `${(v / 1e3).toFixed(0)} k$`
-    return nf.format(Math.round(v))
-  }
+  const money = useMoney().compact
+  const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph, staleTime: 60_000 })
+  const examples = examplesFrom(graph.data?.nodes ?? [])
   const run = (text: string) => { setQ(text); if (text.trim()) analyze.mutate(text.trim()) }
 
   return (
@@ -73,7 +82,7 @@ export function ImpactIntelligence() {
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {EXAMPLES.map(([fr, en]) => (
+          {examples.map(([fr, en]) => (
             <button
               key={fr} onClick={() => run(t(fr, en))}
               className="rounded-full border px-3 py-1"

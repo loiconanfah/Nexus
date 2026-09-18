@@ -9,6 +9,8 @@ import { useLang } from '../lib/i18n'
 import { CollectorsPanel } from '../components/CollectorsPanel'
 import { UsersPanel } from '../components/UsersPanel'
 import type { ImpactTuning } from '../lib/types'
+import { useMoney, useOrganization } from '../lib/money'
+import { SECTOR_LABELS } from './Setup'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -61,6 +63,9 @@ export function Admin() {
           </div>
         </div>
       </div>
+
+      {/* Profil de l'organisation (saisi à l'assistant de démarrage) */}
+      <OrganizationCard />
 
       {/* Intégrations IA */}
       <AiIntegration />
@@ -329,6 +334,41 @@ function InfoRow({ label, value, mono: isMono }: { label: string; value: string;
     <div className="flex items-center justify-between px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
       <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{label}</span>
       <span style={{ fontFamily: isMono ? mono : geist, fontSize: 13, color: 'var(--nx-text)' }}>{value}</span>
+    </div>
+  )
+}
+
+function OrganizationCard() {
+  const { t } = useLang()
+  const navigate = useNavigate()
+  const { data } = useOrganization()
+  const money = useMoney()
+  const p = data?.profile
+  return (
+    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+      <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
+        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Profil de l’organisation', 'Organisation profile')}</h3>
+        {data?.canEdit && (
+          <button onClick={() => navigate('/demarrage')} className="rounded-sm border px-2.5 py-1 text-xs" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-cyan-text)' }}>
+            {p ? t('Modifier', 'Edit') : t('Compléter', 'Complete')}
+          </button>
+        )}
+      </div>
+      {p ? (
+        <div className="grid sm:grid-cols-2">
+          <InfoRow label={t('Nom', 'Name')} value={p.name} />
+          <InfoRow label={t('Secteur', 'Industry')} value={t(...(SECTOR_LABELS[p.sector] ?? [p.sector, p.sector]))} />
+          <InfoRow label={t('Devise', 'Currency')} value={`${money.currency.name} (${money.symbol})`} />
+          <InfoRow label={t('Chiffre d’affaires', 'Revenue')} value={money.compact(p.annualRevenue)} />
+          <InfoRow label={t('Effectif', 'Headcount')} value={String(p.headcount)} />
+          <InfoRow label={t('Fonctionnement', 'Operation')} value={p.operatingMode === '24x7' ? t('En continu 24 h/24', 'Around the clock') : t('Heures d’ouverture', 'Business hours')} />
+        </div>
+      ) : (
+        <p className="px-4 py-4 text-sm" style={{ color: 'var(--nx-text-muted)' }}>
+          {t('Aucun profil saisi : les montants s’affichent en dollars canadiens et le coût d’arrêt n’est pas étalonné sur votre organisation.',
+            'No profile yet: amounts are shown in Canadian dollars and downtime cost is not calibrated to your organisation.')}
+        </p>
+      )}
     </div>
   )
 }

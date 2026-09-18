@@ -43,6 +43,12 @@ import type {
   AttackExplain,
   AttackExplainPayload,
   SupplierIntel,
+  OrganizationState,
+  OrganizationInput,
+  OrganizationProfile,
+  CalibrationPreview,
+  SetupProgress,
+  Notice,
 } from './types'
 
 const BASE = '/api/v1'
@@ -71,6 +77,21 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export const api = {
+  organization: () => fetch(`${BASE}/organization`, { headers: headers(false) }).then(handle<OrganizationState>),
+  saveOrganization: (body: OrganizationInput) =>
+    fetch(`${BASE}/organization`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ profile: OrganizationProfile; calibrated: boolean }>),
+  completeOrganization: () =>
+    fetch(`${BASE}/organization/complete`, { method: 'POST', headers: headers(false) }).then(handle<{ completed: boolean }>),
+  calibration: (revenue: number, mode: string) =>
+    fetch(`${BASE}/organization/calibration?revenue=${encodeURIComponent(revenue)}&mode=${encodeURIComponent(mode)}`, { headers: headers(false) })
+      .then(handle<CalibrationPreview>),
+  setupProgress: () => fetch(`${BASE}/onboarding/progress`, { headers: headers(false) }).then(handle<SetupProgress>),
+  notifications: () =>
+    fetch(`${BASE}/onboarding/notifications`, { headers: headers(false) }).then(handle<{ notifications: Notice[]; generatedAt: string }>),
+  /** Jalon de mise en place (première simulation, premier rapport). Silencieux en cas d'échec. */
+  milestone: (key: 'simulation' | 'report' | 'tour') =>
+    fetch(`${BASE}/onboarding/milestones/${key}`, { method: 'POST', headers: headers(false) }).then(() => undefined, () => undefined),
   overview: () => fetch(`${BASE}/overview`, { headers: headers(false) }).then(handle<Overview>),
 
   enterpriseModel: () => fetch(`${BASE}/enterprise/model`, { headers: headers(false) }).then(handle<EnterpriseModel>),

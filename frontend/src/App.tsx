@@ -36,6 +36,8 @@ import { DemoChoice } from './pages/DemoChoice'
 import { Docs } from './pages/Docs'
 import { Legal } from './pages/Legal'
 import { Login } from './pages/Login'
+import { Setup } from './pages/Setup'
+import { useOrganization } from './lib/money'
 import { getTenantId } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
 
@@ -73,9 +75,6 @@ const TITLES: Record<string, [string, string]> = {
 
 export default function App() {
   const { pathname } = useLocation()
-  const { t } = useLang()
-  const navigate = useNavigate()
-  const tenant = getTenantId()
 
   // Pages publiques plein écran (hors du layout applicatif).
   if (pathname === '/welcome') {
@@ -97,6 +96,24 @@ export default function App() {
   if (!isAuthed()) {
     return <Navigate to="/welcome" replace />
   }
+  return <AuthedApp />
+}
+
+/**
+ * Application connectée. Un espace neuf passe d'abord par l'assistant de
+ * démarrage : sans profil, ni la devise ni le chiffrage ne sont les siens.
+ */
+function AuthedApp() {
+  const { pathname } = useLocation()
+  const { t } = useLang()
+  const navigate = useNavigate()
+  const tenant = getTenantId()
+  const org = useOrganization()
+
+  if (pathname === '/demarrage') return <Setup />
+  // Pas d'écran blanc si l'API est indisponible : on laisse passer, la barre de progression rattrapera.
+  if (org.isLoading) return <div className="min-h-screen" style={{ background: 'var(--nx-bg)' }} />
+  if (org.data?.requiresOnboarding) return <Navigate to="/demarrage" replace />
 
   return (
     <Layout

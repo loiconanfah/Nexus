@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { fibSpherePoint, makeIconSprite, makeLabelSprite, disposeObject, type IconCmp } from '../lib/holoThree'
 import { useLang } from '../lib/i18n'
+import { useMoney } from '../lib/money'
 
 const CYAN = '#00e5ff'
 const VIOLET = '#8b7fc0'
@@ -47,7 +48,7 @@ export function Enterprise3D({ companyName, companyRevenue, divisions, segments,
   const [hover, setHover] = useState<Hover | null>(null)
 
   const nf = new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA')
-  const money = (v: number) => (Math.abs(v) >= 1e6 ? `${(v / 1e6).toFixed(1)} M$` : `${(v / 1e3).toFixed(0)} k$`)
+  const money = useMoney().compact
 
   // Init unique.
   useEffect(() => {

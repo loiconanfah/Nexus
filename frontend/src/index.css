@@ -153,6 +153,21 @@ body {
   box-shadow: 0 0 0 1px var(--nx-cyan);
 }
 
+/* Champ de formulaire standard (assistant de démarrage) */
+.nx-field {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-surface-high);
+  color: var(--nx-text);
+  padding: 9px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.nx-field:focus, .nx-field:focus-within { border-color: var(--nx-cyan); box-shadow: 0 0 0 1px var(--nx-cyan); }
+[data-invalid] .nx-field { border-color: #ef4444; }
+
 /* Bordure pulsée du bouton Run Simulation */
 .nx-pulse {
   animation: nx-border-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;

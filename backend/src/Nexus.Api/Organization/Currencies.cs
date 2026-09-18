@@ -40,4 +40,20 @@ public static class Currencies
         "GB" => "GBP",
         _ => Default,
     };
+
+    /// <summary>
+    /// Montant lisible pour un récit : « 8 076 FCFA », « 1 250 000 $ » en français,
+    /// « $1,250,000 » en anglais. Jamais le code ISO brut dans une phrase.
+    /// </summary>
+    public static string Format(double amount, string? code, string lang)
+    {
+        var info = All.FirstOrDefault(c => c.Code == (code ?? "").Trim().ToUpperInvariant());
+        var symbol = info?.Symbol ?? code ?? "";
+        var en = lang == "en";
+        // L'API tourne en globalisation invariante (aucune culture chargée) : le
+        // séparateur de milliers français (espace insécable) est posé à la main.
+        var n = Math.Round(amount).ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        if (!en) n = n.Replace(',', ' ');
+        return en && symbol is "$" or "£" or "€" ? $"{symbol}{n}" : $"{n} {symbol}";
+    }
 }

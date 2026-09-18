@@ -10,6 +10,7 @@ import { fibSpherePoint, makeIconSprite, makeLabelSprite, disposeObject, type Ic
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
+import { useMoney } from '../lib/money'
 
 const CYAN = '#00e5ff'
 const ERR = '#d15b54'
@@ -191,6 +192,8 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const mountRef = useRef<HTMLDivElement>(null)
   const simRef = useRef<SimState | null>(null)
   const impactRef = useRef<Record<string, number>>({}); impactRef.current = impactById ?? {}
+  const money = useMoney()
+  const moneyRef = useRef(money); moneyRef.current = money
   const sceneRef = useRef<THREE.Scene | null>(null)
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const orbitRef = useRef<OrbitControls | null>(null)
@@ -271,7 +274,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
         const id = mesh.userData.id as string
         const imp = impactRef.current[id]
         const baseSub = mesh.userData.sub as string
-        const sub = imp !== undefined ? `${baseSub} · ${imp.toLocaleString('fr-CA')} $` : baseSub
+        const sub = imp !== undefined ? `${baseSub} · ${moneyRef.current.full(imp)}` : baseSub
         setHover({ name: mesh.userData.name as string, sub, x: px, y: py })
       } else setHover(null)
     }

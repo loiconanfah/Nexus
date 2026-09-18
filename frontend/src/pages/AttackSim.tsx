@@ -7,6 +7,7 @@ const Graph3D = lazy(() => import('../components/Graph3D').then((m) => ({ defaul
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel, relationTypeLabel } from '../lib/labels'
 import type { GraphEdge, GraphEntityRecord, AttackExplainPayload } from '../lib/types'
+import { useMoney } from '../lib/money'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -100,6 +101,7 @@ function spread(entryId: string, edges: GraphEdge[], active: Record<string, Dir>
 
 export function AttackSim() {
   const { t, lang } = useLang()
+  const money = useMoney()
   const graph = useQuery({ queryKey: ['graph'], queryFn: api.graph })
   const nodes = graph.data?.nodes ?? []
   const edges = graph.data?.edges ?? []
@@ -168,11 +170,12 @@ export function AttackSim() {
     if (!res) return
     setResult(res)
     nonce.current += 1
+    void api.milestone('simulation')
     setSim({ originId: entryId, affected: res.affectedMap, action: scenario.palette, nonce: nonce.current })
     explain.mutate({
       entryName: res.entry.name, entryType: res.entry.entityType, scenario: t(scenario.fr, scenario.en),
       compromised: res.items.length, servicesExposed: res.services.length, dataExposed: res.data.length,
-      worstCase: res.worst, expected: res.expected, currency: 'CAD', byType: res.byType,
+      worstCase: res.worst, expected: res.expected, currency: money.code, byType: res.byType,
       chain: res.chain.map((s) => ({ name: s.name, type: s.type, via: s.via })), lang,
     })
     if (iso.size === 0) setBaseline(res)
@@ -184,7 +187,7 @@ export function AttackSim() {
   }
   function resetCountermeasures() { setIsolated(new Set()); apply(compute(new Set()), new Set()) }
 
-  const fmt = (n: number) => new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { maximumFractionDigits: 0 }).format(n)
+  const fmt = money.plain
   const avoided = baseline && result ? baseline.expected - result.expected : 0
 
   return (
@@ -280,7 +283,7 @@ export function AttackSim() {
             </div>
             <div className="rounded-sm border p-3" style={{ background: 'rgba(209,91,84,0.06)', borderColor: 'rgba(209,91,84,0.35)' }}>
               <div style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Impact attendu', 'Expected impact')}</div>
-              <div className="flex items-baseline gap-1"><span style={{ fontFamily: geist, fontSize: 26, color: NEG }}>{fmt(result.expected)}</span><span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>CAD · {t('pire cas', 'worst')} {fmt(result.worst)}</span></div>
+              <div className="flex items-baseline gap-1"><span style={{ fontFamily: geist, fontSize: 26, color: NEG }}>{fmt(result.expected)}</span><span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{money.code} · {t('pire cas', 'worst')} {fmt(result.worst)}</span></div>
             </div>
 
             {/* Contre-mesures */}
@@ -290,7 +293,7 @@ export function AttackSim() {
                   <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: '#3fb27f' }}><ShieldCheck size={12} /> {t('Contre-mesures', 'Countermeasures')}</span>
                   <button onClick={resetCountermeasures} className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}><RotateCcw size={11} /> {t('réinit.', 'reset')}</button>
                 </div>
-                <p style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{t(`${isolated.size} élément(s) isolé(s) → ${fmt(avoided)} CAD évités, impact ramené à ${fmt(result.expected)} CAD.`, `${isolated.size} element(s) isolated → ${fmt(avoided)} CAD avoided, impact down to ${fmt(result.expected)} CAD.`)}</p>
+                <p style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{t(`${isolated.size} élément(s) isolé(s) → ${money.full(avoided)} évités, impact ramené à ${money.full(result.expected)}.`, `${isolated.size} element(s) isolated → ${money.full(avoided)} avoided, impact down to ${money.full(result.expected)}.`)}</p>
               </div>
             )}
 
@@ -338,11 +341,11 @@ export function AttackSim() {
                     <div key={c.node.id} className="rounded-sm border p-2" style={{ borderColor: iso ? '#3fb27f' : pivot ? `color-mix(in srgb, ${NEG} 45%, var(--nx-border))` : 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
                       <div className="flex items-center justify-between gap-2">
                         <span className="min-w-0 truncate" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{c.node.name} <span style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-outline)' }}>· {entityTypeLabel(c.node.entityType, t)} · S{c.hop} · {Math.round(c.prob * 100)}%</span></span>
-                        <span className="flex-none" style={{ fontFamily: mono, fontSize: 11, color: NEG }}>{fmt(c.euro)} $</span>
+                        <span className="flex-none" style={{ fontFamily: mono, fontSize: 11, color: NEG }}>{money.full(c.euro)}</span>
                       </div>
                       <div className="mt-1 flex items-end justify-between gap-2">
                         <span style={{ fontSize: 11, color: 'var(--nx-text-muted)', lineHeight: 1.35 }}>
-                          {pivot && <span style={{ color: NEG, fontFamily: mono, fontSize: 10 }}>{t('Point de bascule', 'Choke point')} · {t('couperait', 'would cut')} {c.cut} (~{fmt(c.cutEuro)} $) · </span>}
+                          {pivot && <span style={{ color: NEG, fontFamily: mono, fontSize: 10 }}>{t('Point de bascule', 'Choke point')} · {t('couperait', 'would cut')} {c.cut} (~{money.full(c.cutEuro)}) · </span>}
                           {t(reco(c.node.entityType)[0], reco(c.node.entityType)[1])}
                         </span>
                         <button onClick={() => toggleIsolate(c.node.id)} className="flex-none rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 10, border: `1px solid ${iso ? '#3fb27f' : 'var(--nx-border)'}`, color: iso ? '#3fb27f' : 'var(--nx-text-muted)' }}>{iso ? t('isolé', 'isolated') : t('isoler', 'isolate')}</button>

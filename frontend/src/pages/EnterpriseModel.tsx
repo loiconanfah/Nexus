@@ -9,6 +9,7 @@ import {
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { EnterpriseModel as EM, ModelVersion } from '../lib/types'
+import { useMoney } from '../lib/money'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -92,12 +93,8 @@ export function EnterpriseModel() {
   const { data, isLoading, error, refetch } = useQuery({ queryKey: ['enterprise-model'], queryFn: api.enterpriseModel })
 
   const nf = new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA')
-  function money(v: number, cur: string): string {
-    const abs = Math.abs(v)
-    if (abs >= 1e6) return `${(v / 1e6).toFixed(abs >= 1e8 ? 0 : 1)} M${cur === 'CAD' ? '$' : ''}`
-    if (abs >= 1e3) return `${(v / 1e3).toFixed(0)} k${cur === 'CAD' ? '$' : ''}`
-    return nf.format(Math.round(v))
-  }
+  const m = useMoney()
+  const money = (v: number, _cur?: string): string => m.compact(v)
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DU MODÈLE D’ENTREPRISE…', 'LOADING ENTERPRISE MODEL…')}</div>
   if (error) return <div style={{ color: NEG }}>{(error as Error).message}</div>
@@ -211,7 +208,7 @@ export function EnterpriseModel() {
 
         {/* Tendance 12 mois */}
         <div className="rounded-lg border p-5 lg:col-span-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-          <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Tendance 12 mois (M$)', '12-month trend (M$)')}</h3>
+          <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{`${t('Tendance 12 mois', '12-month trend')} (${m.millions})`}</h3>
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
@@ -222,7 +219,7 @@ export function EnterpriseModel() {
                 <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" />
                 <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={false} tickLine={false} width={44} />
-                <Tooltip contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(value, name) => { const n = String(name); return [`${Number(value).toFixed(1)} M$`, n === 'revenue' ? t('Revenu', 'Revenue') : n === 'ebitda' ? 'EBITDA' : t('Net', 'Net')] }} />
+                <Tooltip contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(value, name) => { const n = String(name); return [`${Number(value).toFixed(1)} ${m.millions}`, n === 'revenue' ? t('Revenu', 'Revenue') : n === 'ebitda' ? 'EBITDA' : t('Net', 'Net')] }} />
                 <Area type="monotone" dataKey="revenue" stroke="#00e5ff" strokeWidth={2} fill="url(#gr-rev)" />
                 <Area type="monotone" dataKey="ebitda" stroke="#3fb27f" strokeWidth={2} fill="url(#gr-eb)" />
                 <Area type="monotone" dataKey="net" stroke="#c69a4e" strokeWidth={1.5} fillOpacity={0} />

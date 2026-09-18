@@ -16,6 +16,7 @@ import { entityTypeLabel } from '../lib/labels'
 import type { BlastNode, PropagationResult, ScenarioType, SimExplainPayload } from '../lib/types'
 import { EvidenceBanner } from '../components/EvidenceBanner'
 import { Sparkles } from 'lucide-react'
+import { useMoney } from '../lib/money'
 
 /** Agrège les KPIs d'un scénario à partir d'une liste de nœuds affectés. */
 function aggregate(meta: { assetId: string; scenario: ScenarioType; currency: string }, affected: BlastNode[]): PropagationResult {
@@ -250,6 +251,7 @@ export function Simulation() {
       return mergeResults([primary, second])
     },
     onSuccess: (r) => {
+      void api.milestone('simulation')
       const o = origin ? { id: origin.id, name: origin.name, entityType: origin.entityType, criticality: origin.criticality } : undefined
       const m = applyModel(r, actionRef.current, o)
       setResult(r); setModeled(m)
@@ -484,7 +486,8 @@ function DraggablePanel({ title, side, top, width, onClose, children }: {
 function ImpactPanel({ origin, originType, action, modeled }: { origin: string; originType: string; action: SimAction; modeled: Modeled }) {
   const { t, lang } = useLang()
   const r = modeled.result
-  const fmtMoney = (n: number) => new Intl.NumberFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { maximumFractionDigits: 0 }).format(n)
+  const money = useMoney()
+  const fmtMoney = money.plain
   const act = ACTIONS.find((a) => a.key === action)
   const actColor = act?.color ?? ERR
 
@@ -593,8 +596,9 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
   )
 }
 
-function ImpactCardRow({ c, i, fmtMoney }: { c: ImpactCard; i: number; fmtMoney: (n: number) => string }) {
+function ImpactCardRow({ c, i }: { c: ImpactCard; i: number; fmtMoney?: (n: number) => string }) {
   const { t } = useLang()
+  const money = useMoney()
   const [open, setOpen] = useState(false)
   const accent = c.depth === 0 ? '#ff3b30' : c.direct ? '#ff7a5c' : '#c69a4e'
   const tag = c.depth === 0 ? t('cible', 'target') : c.direct ? t('direct', 'direct') : t('indirect', 'indirect')
@@ -614,14 +618,14 @@ function ImpactCardRow({ c, i, fmtMoney }: { c: ImpactCard; i: number; fmtMoney:
             <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{c.name}</span>
             <span className="shrink-0 rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, textTransform: 'uppercase', color: accent, border: `1px solid ${accent}55` }}>{tag}</span>
           </div>
-          <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(c.type, t)} · T+{c.depth}h · <span style={{ color: 'var(--nx-text)' }}>{fmtMoney(c.euro)} $</span></div>
+          <div style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(c.type, t)} · T+{c.depth}h · <span style={{ color: 'var(--nx-text)' }}>{money.full(c.euro)}</span></div>
         </div>
         <ChevronDown size={14} className="shrink-0 transition-transform" style={{ color: 'var(--nx-text-muted)', transform: open ? 'rotate(180deg)' : 'none' }} />
       </button>
       {open && (
         <div className="border-t px-2.5 py-2" style={{ borderColor: 'var(--nx-border)' }}>
           <div className="grid grid-cols-3 gap-2">
-            <Detail label={t('Coût / h', 'Cost / h')} value={`${fmtMoney(costPerH)} $`} />
+            <Detail label={t('Coût / h', 'Cost / h')} value={money.full(costPerH)} />
             <Detail label={t('Rétablissement', 'Recovery')} value={`${c.rto} h`} />
             <Detail label={t('Probabilité', 'Probability')} value={`${Math.round(c.prob * 100)} %`} />
           </div>

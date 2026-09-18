@@ -166,6 +166,11 @@ function alreadyDone(): boolean {
 
 type Rect = { top: number; left: number; width: number; height: number }
 
+/** Reporte la visite automatique (elle reste disponible via la boussole et l'Accueil). */
+export function deferGuidedTour() {
+  try { localStorage.setItem(DONE_KEY, '1') } catch { /* ignore */ }
+}
+
 export function GuidedTour() {
   const { t } = useLang()
   const navigate = useNavigate()

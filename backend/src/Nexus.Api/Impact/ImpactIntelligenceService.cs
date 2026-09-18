@@ -53,12 +53,15 @@ public sealed class ImpactIntelligenceService(
     PropagationEngine propagation,
     ImpactConfigStore impactConfig,
     IGraphRepository graph,
-    IChatCompletion chat)
+    IChatCompletion chat,
+    Nexus.Api.Organization.OrganizationStore organization)
 {
-    private const string Currency = "CAD";
+    // Devise de l'espace, lue au début de chaque analyse (service à portée de requête).
+    private string Currency = Nexus.Api.Organization.Currencies.Default;
 
     public async Task<ImpactAnalysis> AnalyzeAsync(Guid tenant, string question, string lang, CancellationToken ct)
     {
+        Currency = await organization.CurrencyAsync(tenant, ct);
         // 1. Extraire le SUJET (nom d'entité) et un éventuel type de scénario.
         var (subject, scenarioHint) = await ExtractAsync(question, lang, ct);
 
@@ -295,10 +298,10 @@ public sealed class ImpactIntelligenceService(
         catch (JsonException) { return null; }
     }
 
-    private static string HeuristicNarrative(FuzzyMatch t, int affected, long worst, long expected, string lang)
+    private string HeuristicNarrative(FuzzyMatch t, int affected, long worst, long expected, string lang)
         => lang == "en"
-            ? $"Losing {t.Name} propagates to {affected} dependent element(s). Worst-case exposure ≈ {worst:N0} {Currency}, probability-weighted ≈ {expected:N0} {Currency}."
-            : $"La perte de {t.Name} se propage à {affected} élément(s) dépendant(s). Exposition pire cas ≈ {worst:N0} {Currency}, pondérée par la probabilité ≈ {expected:N0} {Currency}.";
+            ? $"Losing {t.Name} propagates to {affected} dependent element(s). Worst-case exposure ≈ {Nexus.Api.Organization.Currencies.Format(worst, Currency, lang)}, probability-weighted ≈ {Nexus.Api.Organization.Currencies.Format(expected, Currency, lang)}."
+            : $"La perte de {t.Name} se propage à {affected} élément(s) dépendant(s). Exposition pire cas ≈ {Nexus.Api.Organization.Currencies.Format(worst, Currency, lang)}, pondérée par la probabilité ≈ {Nexus.Api.Organization.Currencies.Format(expected, Currency, lang)}.";
 
     private static IReadOnlyList<string> HeuristicMitigations(IReadOnlyList<DangerousDependency> dangerous, string lang)
     {
