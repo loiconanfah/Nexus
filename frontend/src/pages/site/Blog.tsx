@@ -1,9 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ArrowUpRight, Clock } from 'lucide-react'
 import { useLang } from '../../lib/i18n'
 import { usePageMeta } from '../../lib/seo'
 import { POSTS, postBySlug, type Block, type Post } from '../../lib/blog'
-import { BoxBtn, PageHero, SitePage } from '../../components/site/Site'
+import { BoxBtn, PageHero, SitePage, SocialLinks } from '../../components/site/Site'
+import { EXTERNAL_POSTS } from '../../lib/social'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -52,6 +53,35 @@ export function Blog() {
               </button>
             ))}
           </div>
+
+          {EXTERNAL_POSTS.length > 0 && (
+            <div className="mt-6 flex flex-col gap-5 border-t pt-12" style={{ borderColor: '#17171f' }}>
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  <div className="slb-label self-start">{t('Publié ailleurs', 'Published elsewhere')}</div>
+                  <p style={{ color: '#a2a2b0' }}>{t('Nos articles publiés sur d’autres plateformes. Suivez-nous :', 'Our articles published on other platforms. Follow us:')}</p>
+                </div>
+                <SocialLinks />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {EXTERNAL_POSTS.map((p) => (
+                  <a key={p.url} href={p.url} target="_blank" rel="noopener noreferrer" className="slb-card slb-card-link flex flex-col gap-3 p-6">
+                    <div className="flex flex-wrap items-center gap-3" style={{ fontFamily: mono, fontSize: 11.5, color: '#8a8a98', textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                      <span className="slb-label" style={{ padding: '3px 8px' }}>{p.source}</span>
+                      <span>{formatDate(p.date, lang)}</span>
+                      {p.lang !== lang && <span>{p.lang === 'en' ? t('En anglais', 'In English') : t('En français', 'In French')}</span>}
+                    </div>
+                    <span style={{ fontFamily: geist, fontSize: 19, fontWeight: 600, lineHeight: 1.3, color: '#f3f3f6' }}>{p.title}</span>
+                    <span style={{ color: '#a2a2b0', fontSize: 14.5, lineHeight: 1.55 }}>{t(...p.summary)}</span>
+                    <span className="mt-auto flex items-center justify-between gap-2" style={{ fontSize: 13, color: '#8a8a98' }}>
+                      {t(...p.author)}
+                      <span className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 12, color: '#7fe8f7', textTransform: 'uppercase' }}>{t('Lire sur', 'Read on')} {p.source} <ArrowUpRight size={13} /></span>
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
     </SitePage>

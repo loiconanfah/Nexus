@@ -4,6 +4,7 @@ import { ArrowRight, ArrowUpRight, ChevronDown, Menu, X } from 'lucide-react'
 import { useLang } from '../../lib/i18n'
 import { Logo } from '../Logo'
 import { reopenConsent } from '../CookieConsent'
+import { SOCIAL, type Social } from '../../lib/social'
 
 /*
   Habillage commun du site vitrine (accueil public, blog, vidéos, solutions) :
@@ -179,6 +180,7 @@ export function SiteFooter() {
           <p style={{ fontSize: 13, color: '#8a8a98', lineHeight: 1.6, maxWidth: 280 }}>
             {t('L’intelligence des dépendances et de l’impact opérationnel. Une solution SplitsPay Inc.', 'Dependency and operational impact intelligence. A SplitsPay Inc. solution.')}
           </p>
+          <SocialLinks />
           <button onClick={() => navigate('/login')} className="flex w-fit items-center gap-1" style={{ fontFamily: mono, fontSize: 11, color: '#7fe8f7' }}>
             {t('Se connecter', 'Sign in')} <ArrowUpRight size={13} />
           </button>
@@ -201,6 +203,30 @@ export function SiteFooter() {
       </div>
     </footer>
   )
+}
+
+/** Liens vers les réseaux (source : lib/social.ts). */
+export function SocialLinks() {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {SOCIAL.map((s) => (
+        <a key={s.key} href={s.url} target="_blank" rel="noopener noreferrer me" aria-label={s.label} title={s.label} className="slb-social">
+          <SocialIcon s={s} />
+        </a>
+      ))}
+    </div>
+  )
+}
+
+function SocialIcon({ s }: { s: Social }) {
+  if (s.key === 'linkedin') {
+    return (
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden fill="currentColor">
+        <path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z" />
+      </svg>
+    )
+  }
+  return <span style={{ fontFamily: mono, fontSize: 10.5, fontWeight: 600, letterSpacing: '.02em' }}>{s.key === 'medium' ? 'M' : s.label}</span>
 }
 
 /** Page du site vitrine : habillage, en-tête et pied de page communs. */
@@ -281,6 +307,8 @@ export const SILBER_CSS = `
 .slb-foot-head { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #6b6b78; margin-bottom: 4px; }
 .slb-foot-link { font-size: 13px; color: #a2a2b0; text-align: left; }
 .slb-foot-link:hover { color: #fff; }
+.slb-social { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid #26262e; color: #b9b9c6; transition: color .15s, border-color .15s; }
+.slb-social:hover { color: #fff; border-color: #3a3a47; }
 
 /* Boutons encadres a deux parties (label | fleche) facon Silber */
 .slb-btn { display: inline-flex; align-items: stretch; border: 1px solid #2e2e38; background: #0f0f14; color: #f3f3f6; }
