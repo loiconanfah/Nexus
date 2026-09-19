@@ -34,6 +34,9 @@ import { Help } from './pages/Help'
 import { Landing } from './pages/Landing'
 import { DemoChoice } from './pages/DemoChoice'
 import { Docs } from './pages/Docs'
+import { Blog, BlogPost } from './pages/site/Blog'
+import { Videos } from './pages/site/Videos'
+import { Solutions } from './pages/site/Solutions'
 import { Legal } from './pages/Legal'
 import { Login } from './pages/Login'
 import { Setup } from './pages/Setup'
@@ -92,6 +95,23 @@ export default function App() {
   }
   if (pathname === '/docs') {
     return <><Docs /><CookieConsent /></>
+  }
+  if (pathname === '/videos') {
+    return <><Videos /><CookieConsent /></>
+  }
+  if (pathname === '/solutions') {
+    return <><Solutions /><CookieConsent /></>
+  }
+  if (pathname === '/blog' || pathname.startsWith('/blog/')) {
+    return (
+      <>
+        <Routes>
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+        </Routes>
+        <CookieConsent />
+      </>
+    )
   }
   // Gate d'authentification : les visiteurs non connectés arrivent sur la landing.
   if (!isAuthed()) {

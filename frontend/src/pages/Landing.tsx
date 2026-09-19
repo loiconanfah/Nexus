@@ -1,42 +1,28 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, ArrowUpRight, PlayCircle, ShieldCheck,
+  ArrowRight, PlayCircle, ShieldCheck,
   Plug, Bot, CheckCircle2, Lock, Shield, Server, AlertTriangle,
   Activity, Briefcase, Landmark, HeartPulse, Building2, Factory, Zap, ChevronDown, KeyRound,
-  Scale, Menu, Network, LineChart, Radar, Users, Workflow, Upload, Boxes, EyeOff,
+  Scale, Network, LineChart, Radar, Users, Workflow, Upload, Boxes, EyeOff,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 import { usePageMeta } from '../lib/seo'
-import { Logo } from '../components/Logo'
-import { reopenConsent } from '../components/CookieConsent'
+import { BoxBtn, Eyebrow, SitePage } from '../components/site/Site'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 
-// Palette SOMBRE fixe (style « Silber AI ») — indépendante du thème de l'app.
-// On règle les tokens --nx-* en sombre sur la racine pour que les visuels
-// (graphe, barres) rendent correctement en fond noir.
-const DARK_VARS: React.CSSProperties = {
-  ['--nx-bg' as string]: '#050506',
-  ['--nx-panel' as string]: '#0d0d11',
-  ['--nx-surface' as string]: '#0a0a0d',
-  ['--nx-surface-container' as string]: '#121216',
-  ['--nx-surface-high' as string]: '#1b1b21',
-  ['--nx-surface-highest' as string]: '#26262e',
-  ['--nx-border' as string]: '#26262e',
-  ['--nx-outline' as string]: '#6b6b78',
-  ['--nx-text' as string]: '#f3f3f6',
-  ['--nx-text-muted' as string]: '#a2a2b0',
-  ['--nx-cyan' as string]: '#22d3ee',
-  ['--nx-cyan-text' as string]: '#7fe8f7',
-  ['--nx-on-cyan' as string]: '#070714',
-}
-
 export function Landing() {
   const navigate = useNavigate()
-  const { lang, setLang, t } = useLang()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const { t } = useLang()
+  const { hash } = useLocation()
+  // Arrivée depuis une autre page du site sur une section (« /welcome#faq »).
+  useEffect(() => {
+    if (!hash) return
+    const id = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 60)
+    return () => clearTimeout(id)
+  }, [hash])
   usePageMeta(
     'Lenexux — Intelligence des dépendances et d’impact opérationnel',
     'Cartographiez vos systèmes, fournisseurs, personnes et IA en un graphe de dépendances, révélez les points uniques de défaillance, simulez pannes et cyberattaques, et chiffrez l’impact financier.',
@@ -44,54 +30,7 @@ export function Landing() {
   )
 
   return (
-    <div className="slb h-full overflow-y-auto" style={{ ...DARK_VARS, background: '#050506', color: '#f3f3f6', fontFamily: 'var(--font-inter)' }}>
-      <style>{SILBER_CSS}</style>
-
-      {/* ══════════ NAV ══════════ */}
-      <header className="slb-nav">
-        <a href="/welcome" aria-label="Lenexux — accueil" className="flex items-center">
-          <Logo size={34} variant="dark" wordSize={20} />
-        </a>
-        <nav className="slb-nav-links">
-          <a href="#probleme">{t('Le problème', 'Problem')}</a>
-          <a href="#fonctionnement">{t('Fonctionnement', 'How it works')}</a>
-          <a href="#minute">{t('En une minute', 'In one minute')}</a>
-          <a href="#produit">{t('Le produit', 'Product')}</a>
-          <a href="#difference">{t('Pourquoi Lenexux', 'Why Lenexux')}</a>
-          <a href="#demarrer">{t('Démarrer', 'Get started')}</a>
-          <a href="#plateforme">{t('Plateforme', 'Platform')}</a>
-          <a href="#secteurs">{t('Secteurs', 'Industries')}</a>
-          <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }}>Documentation</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center border" style={{ borderColor: '#2a2a33' }}>
-            {(['fr', 'en'] as const).map((l) => (
-              <button key={l} onClick={() => setLang(l)} className="px-2 py-1"
-                style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: lang === l ? '#070714' : '#a2a2b0', background: lang === l ? '#22d3ee' : 'transparent' }}>{l}</button>
-            ))}
-          </div>
-          <BoxBtn onClick={() => navigate('/login')} label={t('Se connecter', 'Sign in')} small />
-          <button className="slb-burger" aria-label="menu" aria-expanded={menuOpen} onClick={() => setMenuOpen((o) => !o)}><Menu size={18} /></button>
-        </div>
-
-        {/* Menu mobile (déroulant sous l'en-tête, < 900px) */}
-        {menuOpen && (
-          <div className="slb-mobile-menu">
-            <a href="#probleme" onClick={() => setMenuOpen(false)}>{t('Le problème', 'Problem')}</a>
-            <a href="#fonctionnement" onClick={() => setMenuOpen(false)}>{t('Fonctionnement', 'How it works')}</a>
-            <a href="#minute" onClick={() => setMenuOpen(false)}>{t('En une minute', 'In one minute')}</a>
-            <a href="#produit" onClick={() => setMenuOpen(false)}>{t('Le produit', 'Product')}</a>
-            <a href="#difference" onClick={() => setMenuOpen(false)}>{t('Pourquoi Lenexux', 'Why Lenexux')}</a>
-            <a href="#demarrer" onClick={() => setMenuOpen(false)}>{t('Démarrer', 'Get started')}</a>
-            <a href="#plateforme" onClick={() => setMenuOpen(false)}>{t('Plateforme', 'Platform')}</a>
-            <a href="#secteurs" onClick={() => setMenuOpen(false)}>{t('Secteurs', 'Industries')}</a>
-            <a href="/docs" onClick={(e) => { e.preventDefault(); setMenuOpen(false); navigate('/docs') }}>Documentation</a>
-            <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
-          </div>
-        )}
-      </header>
-
+    <SitePage>
       {/* ══════════ HERO ══════════ */}
       <section className="slb-hero">
         <div className="slb-light" aria-hidden>
@@ -489,24 +428,7 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ══════════ FOOTER ══════════ */}
-      <footer className="border-t px-6 py-10" style={{ borderColor: '#1c1c22' }}>
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-2">
-            <Logo size={24} variant="dark" wordSize={15} />
-            <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>· SplitsPay Inc.</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1" style={{ fontFamily: mono, fontSize: 11 }}>
-            <a href="/docs" onClick={(e) => { e.preventDefault(); navigate('/docs') }} style={{ color: '#8a8a98' }}>Documentation</a>
-            <a href="/legal?doc=terms" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=terms') }} style={{ color: '#8a8a98' }}>{t('Conditions', 'Terms')}</a>
-            <a href="/legal?doc=privacy" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=privacy') }} style={{ color: '#8a8a98' }}>{t('Confidentialité', 'Privacy')}</a>
-            <a href="/legal?doc=dpa" onClick={(e) => { e.preventDefault(); navigate('/legal?doc=dpa') }} style={{ color: '#8a8a98' }}>DPA</a>
-            <button onClick={reopenConsent} style={{ color: '#8a8a98' }}>{t('Témoins', 'Cookies')}</button>
-            <button onClick={() => navigate('/login')} className="flex items-center gap-1" style={{ color: '#7fe8f7' }}>{t('Se connecter', 'Sign in')} <ArrowUpRight size={14} /></button>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </SitePage>
   )
 }
 
@@ -665,17 +587,6 @@ function Showcase({ t }: { t: (fr: string, en: string) => string }) {
 }
 
 // ── Primitives « Silber » ─────────────────────────────────────────────────────
-function BoxBtn({ label, onClick, primary, small, icon }: { label: string; onClick?: () => void; primary?: boolean; small?: boolean; icon?: React.ReactNode }) {
-  return (
-    <button onClick={onClick} className={`slb-btn ${primary ? 'slb-btn-primary' : ''} ${small ? 'slb-btn-sm' : ''}`}>
-      <span className="slb-btn-label">{icon}{label}</span>
-      <span className="slb-btn-arrow"><ArrowRight size={small ? 13 : 15} /></span>
-    </button>
-  )
-}
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <div className="slb-eyebrow"><span className="slb-eyebrow-mark">▸</span>{children}</div>
-}
 function Section({ children, alt, id }: { children: React.ReactNode; alt?: boolean; id?: string }) {
   return <section id={id} className="px-6 py-20 md:py-28" style={{ background: alt ? '#08080b' : '#050506' }}><div className="mx-auto max-w-6xl">{children}</div></section>
 }
@@ -862,98 +773,3 @@ function KillChain() {
     </div>
   )
 }
-
-// ── CSS bespoke (style Silber AI) ─────────────────────────────────────────────
-const SILBER_CSS = `
-.slb { scroll-behavior: smooth; }
-.slb a { color: inherit; }
-
-.slb-nav { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 24px; gap: 16px; background: rgba(5,5,6,.72); backdrop-filter: blur(10px); border-bottom: 1px solid #14141a; }
-.slb-nav-links { display: none; gap: 28px; font-size: 13.5px; color: #c8c8d2; }
-@media (min-width: 900px) { .slb-nav-links { display: flex; } }
-.slb-nav-links a:hover { color: #fff; }
-.slb-burger { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid #2a2a33; color: #c8c8d2; }
-@media (min-width: 900px) { .slb-burger { display: none; } }
-.slb-mobile-menu { position: absolute; top: 100%; left: 0; right: 0; display: flex; flex-direction: column; padding: 8px 20px 16px; background: #0b0b12; border-bottom: 1px solid #2a2a33; box-shadow: 0 12px 24px rgba(0,0,0,0.4); }
-.slb-mobile-menu a { padding: 11px 2px; font-size: 15px; color: #d5d5df; border-bottom: 1px solid #17171f; }
-.slb-mobile-menu a:hover { color: #fff; }
-@media (min-width: 900px) { .slb-mobile-menu { display: none; } }
-
-/* Boutons encadres a deux parties (label | fleche) facon Silber */
-.slb-btn { display: inline-flex; align-items: stretch; border: 1px solid #2e2e38; background: #0f0f14; color: #f3f3f6; }
-.slb-btn-label { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .04em; text-transform: uppercase; }
-.slb-btn-arrow { display: inline-flex; align-items: center; padding: 0 12px; border-left: 1px solid #2e2e38; color: #7fe8f7; transition: background .16s; }
-.slb-btn:hover .slb-btn-arrow { background: #17171f; }
-.slb-btn-primary { background: #22d3ee; border-color: #22d3ee; color: #070714; }
-.slb-btn-primary .slb-btn-arrow { border-left-color: rgba(7,7,20,.25); color: #070714; }
-.slb-btn-primary:hover .slb-btn-arrow { background: rgba(7,7,20,.12); }
-.slb-btn-sm .slb-btn-label { padding: 8px 12px; font-size: 11px; }
-.slb-btn-sm .slb-btn-arrow { padding: 0 8px; }
-
-/* Eyebrow encadre */
-.slb-eyebrow { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; border: 1px solid #2a2a33;
-  padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: #b9b9c6; margin-bottom: 26px; }
-.slb-eyebrow-mark { color: #8a6bff; }
-
-/* Label de section */
-.slb-label { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #2a2a33; padding: 5px 11px;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7fe8f7; }
-
-.slb-h1 { font-weight: 600; letter-spacing: -.03em; line-height: 1.02; color: #fbfbfe; font-size: clamp(2.6rem, 7.4vw, 6.4rem); }
-.slb-accent { background: linear-gradient(100deg, #22d3ee 0%, #0aa5bd 60%, #7fe8f7 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.slb-h2 { margin-top: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.06; color: #f7f7fb; font-size: clamp(1.9rem, 3.6vw, 3.2rem); max-width: 22ch; }
-.slb-sub { max-width: 620px; margin-top: 26px; font-size: clamp(1rem, 1.3vw, 1.18rem); line-height: 1.6; color: #a2a2b0; }
-
-/* HERO */
-.slb-hero { position: relative; overflow: hidden; min-height: 92vh; display: flex; align-items: center; background: #050506; }
-.slb-hero-inner { position: relative; z-index: 10; width: 100%; max-width: 1180px; margin: 0 auto; padding: 40px 24px; display: flex; flex-direction: column; }
-.slb-grid { position: absolute; inset: 0; z-index: 1;
-  background-image: linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 12.5% 100%;
-  mask-image: linear-gradient(180deg, #000 0%, transparent 85%); }
-
-/* Vague de lumiere liquide bleu/violet */
-.slb-light { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
-.slb-silk { position: absolute; border-radius: 50%; filter: blur(80px); mix-blend-mode: screen; will-change: transform; opacity: .8; }
-.slb-silk-1 { width: 120vw; height: 60vh; left: -10vw; bottom: -22vh;
-  background: linear-gradient(120deg, rgba(34,211,238,0) 8%, rgba(34,211,238,.5) 38%, rgba(10,165,189,.6) 62%, rgba(34,211,238,0) 92%);
-  transform: rotate(-8deg); animation: slbSilk1 20s ease-in-out infinite; }
-.slb-silk-2 { width: 90vw; height: 50vh; right: -12vw; bottom: -10vh;
-  background: radial-gradient(closest-side, rgba(34,211,238,.42), rgba(34,211,238,0) 72%); animation: slbSilk2 16s ease-in-out infinite; }
-.slb-silk-3 { width: 70vw; height: 40vh; left: 30vw; bottom: -18vh;
-  background: linear-gradient(80deg, rgba(127,232,247,0) 12%, rgba(34,211,238,.4) 50%, rgba(127,232,247,0) 88%); animation: slbSilk3 24s ease-in-out infinite; }
-@keyframes slbSilk1 { 0%,100% { transform: translate(0,0) rotate(-8deg) scale(1); } 50% { transform: translate(4%,-4%) rotate(-4deg) scale(1.12); } }
-@keyframes slbSilk2 { 0%,100% { transform: translate(0,0) scale(1); opacity:.7; } 50% { transform: translate(-6%,-3%) scale(1.18); opacity:.9; } }
-@keyframes slbSilk3 { 0%,100% { transform: translate(0,0) scale(1.05); } 50% { transform: translate(6%,-5%) scale(1.2); } }
-.slb-light-soft .slb-silk { opacity: .45; }
-
-/* Cartes numerotees */
-.slb-numcard { background: #050506; padding: 34px 26px; }
-.slb-numcard-tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #6b6b78; }
-.slb-numcard-n { font-size: 46px; font-weight: 300; color: #2f2f3a; line-height: 1; }
-
-/* Cellule (persona) */
-.slb-cell { background: #050506; padding: 30px 24px; }
-
-/* Onglets de la galerie produit */
-.slb-shot-tab { border: 1px solid; padding: 7px 14px; font-family: var(--font-mono); font-size: 11.5px;
-  letter-spacing: .04em; text-transform: uppercase; transition: border-color .15s, color .15s; }
-.slb-shot-tab[aria-pressed="false"]:hover { border-color: #3a3a47; color: #f3f3f6; }
-
-/* Chips */
-.slb-chip { border: 1px solid #26262e; padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; color: #b9b9c6; }
-
-/* STAT */
-.slb-stat { position: relative; overflow: hidden; padding: 120px 0; background: #050506; }
-.slb-stat-num { margin-top: 14px; font-weight: 600; letter-spacing: -.03em; line-height: 1; font-size: clamp(3.4rem, 9vw, 8rem);
-  background: linear-gradient(100deg, #22d3ee, #0aa5bd 55%, #7fe8f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-
-/* CTA */
-.slb-cta { position: relative; overflow: hidden; padding: 130px 0; background: #050506; border-top: 1px solid #14141a; }
-
-.slb-faq summary::-webkit-details-marker { display: none; }
-.slb-faq[open] .slb-faq-chev { transform: rotate(180deg); }
-.slb-faq-chev { transition: transform .2s ease; }
-
-@media (prefers-reduced-motion: reduce) { .slb-silk { animation: none; } }
-`

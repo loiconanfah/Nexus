@@ -6,6 +6,7 @@ import {
   Truck, Upload, Users, Video, Waypoints, Zap, Eye, Lightbulb, Compass,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
+import { DEMO_VIDEOS } from '../lib/demoVideos'
 import { startGuidedTour } from '../components/GuidedTour'
 
 const mono = 'var(--font-mono)'
@@ -13,19 +14,6 @@ const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   VIDÉOS DE DÉMONSTRATION
-
-   Déposez les fichiers dans `frontend/public/videos/` puis décrivez-les ici.
-   `src` est le chemin SERVI (public/ est la racine du site) : un fichier
-   `frontend/public/videos/tour.mp4` se référence donc par `/videos/tour.mp4`.
-   `poster` est facultatif — une image d'aperçu, même emplacement.
-   Tant que cette liste est vide, l'Accueil affiche un espace d'attente explicite
-   au lieu d'un lecteur vide.
-   ══════════════════════════════════════════════════════════════════════════ */
-type DemoVideo = { src: string; poster?: string; title: [string, string]; body: [string, string]; duration?: string }
-
-const DEMO_VIDEOS: DemoVideo[] = []
 
 /* ══════════════════════════════════════════════════════════════════════════════
    LES 8 FONCTIONS PHARES
