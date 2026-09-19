@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Cookie } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 
@@ -19,6 +20,47 @@ import { useLang } from '../lib/i18n'
 
 const KEY = 'nexus.consent.analytics'
 const GA_ID = 'G-DZ515V72NY'
+const CLARITY_ID = 'ykws704x72'
+
+/**
+ * Pages où Microsoft Clarity peut observer la navigation : le site public
+ * seulement. Dans l'application, il enregistrerait les graphes, montants et
+ * noms des organisations clientes, ce qui n'est pas acceptable.
+ */
+const CLARITY_PAGES = ['/welcome', '/blog', '/videos', '/solutions', '/docs', '/demo', '/legal']
+const isPublicPage = (path: string) => CLARITY_PAGES.some((p) => path === p || path.startsWith(`${p}/`))
+
+type ClarityFn = ((...a: unknown[]) => void) & { q?: unknown[] }
+const clarityWin = () => window as unknown as { clarity?: ClarityFn }
+
+/** Un script tiers ne doit jamais casser le site : tout appel à Clarity est isolé. */
+function clarityCall(...args: unknown[]) {
+  try { clarityWin().clarity?.(...args) } catch { /* Clarity indisponible ou dans un état inattendu : on ignore */ }
+}
+
+/** Charge Clarity (cartes de clics, sessions) — après consentement, sur le site public. */
+function loadClarity() {
+  const w = clarityWin()
+  if (!document.getElementById('clarity-script')) {
+    w.clarity = w.clarity || (function clarity(...args: unknown[]) { (w.clarity!.q = w.clarity!.q || []).push(args) } as ClarityFn)
+    const s = document.createElement('script')
+    s.id = 'clarity-script'
+    s.async = true
+    s.src = `https://www.clarity.ms/tag/${CLARITY_ID}?ref=bwt`
+    document.head.appendChild(s)
+  } else {
+    clarityCall('start')
+  }
+  // Consentement explicite transmis à Clarity (mesure oui, publicité non).
+  clarityCall('consentv2', { ad_Storage: 'denied', analytics_Storage: 'granted' })
+}
+
+/** Suspend Clarity (entrée dans l'application ou retrait du consentement). */
+function stopClarity() {
+  if (!document.getElementById('clarity-script')) return
+  clarityCall('consentv2', { ad_Storage: 'denied', analytics_Storage: 'denied' })
+  clarityCall('stop')
+}
 const mono = 'var(--font-mono)'
 
 type Choice = 'granted' | 'denied' | null
@@ -49,13 +91,13 @@ function loadAnalytics() {
   w.gtag('config', GA_ID, { anonymize_ip: true, allow_google_signals: false })
 }
 
-/** Retire les témoins déposés par Google Analytics. */
+/** Retire les témoins déposés par Google Analytics et Microsoft Clarity. */
 function clearAnalyticsCookies() {
   const host = location.hostname
   const domains = [host, `.${host}`, `.${host.split('.').slice(-2).join('.')}`]
   for (const c of document.cookie.split(';')) {
     const name = c.split('=')[0].trim()
-    if (!/^(_ga|_gid|_gat)/.test(name)) continue
+    if (!/^(_ga|_gid|_gat|_clck|_clsk|CLID|MUID)/.test(name)) continue
     for (const d of domains) {
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${d}`
     }
@@ -70,6 +112,7 @@ export function reopenConsent() {
 
 export function CookieConsent() {
   const { t } = useLang()
+  const { pathname } = useLocation()
   const [choice, setChoice] = useState<Choice>(() => readChoice())
   const [open, setOpen] = useState(false)
 
@@ -78,6 +121,12 @@ export function CookieConsent() {
     if (choice === 'granted') loadAnalytics()
     if (choice === null) setOpen(true)
   }, [choice])
+
+  // Clarity suit la page : actif sur le site public, suspendu dans l'application.
+  useEffect(() => {
+    if (choice === 'granted' && isPublicPage(pathname)) loadClarity()
+    else stopClarity()
+  }, [choice, pathname])
 
   useEffect(() => {
     function onOpen() { setOpen(true) }
@@ -90,7 +139,7 @@ export function CookieConsent() {
     setChoice(next)
     setOpen(false)
     if (next === 'granted') loadAnalytics()
-    else clearAnalyticsCookies()
+    else { stopClarity(); clearAnalyticsCookies() }
   }
 
   if (!open) return null
@@ -115,8 +164,8 @@ export function CookieConsent() {
       </div>
 
       <p className="mt-3" style={{ fontSize: 13.5, lineHeight: 1.6, color: '#c8c8d2' }}>
-        {t('Nous aimerions mesurer la fréquentation de ce site avec Google Analytics, pour savoir ce qui est lu. Rien n’est déposé tant que vous n’avez pas accepté, et refuser ne change rien à votre navigation.',
-           'We would like to measure traffic on this site with Google Analytics, to learn what gets read. Nothing is stored until you accept, and declining changes nothing about your browsing.')}
+        {t('Nous aimerions mesurer la fréquentation de ce site avec Google Analytics et comprendre comment ses pages sont parcourues avec Microsoft Clarity (clics, défilement, champs masqués). Rien n’est déposé tant que vous n’avez pas accepté, et refuser ne change rien à votre navigation. L’application elle-même n’est jamais observée.',
+           'We would like to measure traffic on this site with Google Analytics and understand how its pages are browsed with Microsoft Clarity (clicks, scrolling, masked fields). Nothing is stored until you accept, and declining changes nothing about your browsing. The application itself is never observed.')}
       </p>
       <p className="mt-2" style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>
         {t('Les témoins strictement nécessaires au fonctionnement — votre session, votre langue — ne sont pas concernés : ils ne servent pas à vous suivre.',

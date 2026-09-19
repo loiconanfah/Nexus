@@ -87,6 +87,7 @@ const SUBPROCESSORS: { name: string; role: string; place: string }[] = [
   { name: 'Google LLC', role: 'Modèles d’intelligence artificielle (Gemini), sur appel', place: 'États-Unis' },
   { name: 'Anthropic PBC', role: 'Modèles d’intelligence artificielle (Claude), sur appel', place: 'États-Unis' },
   { name: 'Google LLC', role: 'Mesure d’audience du site public (Google Analytics), uniquement après consentement', place: 'États-Unis' },
+  { name: 'Microsoft Corporation', role: 'Analyse de navigation du site public (Microsoft Clarity : clics, défilement, champs masqués), uniquement après consentement, jamais dans l’application', place: 'États-Unis' },
 ]
 
 function SubList({ rows }: { rows: typeof SUBPROCESSORS }) {
