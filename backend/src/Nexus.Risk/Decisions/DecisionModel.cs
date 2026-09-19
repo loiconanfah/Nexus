@@ -58,9 +58,12 @@ public sealed record DecisionSpec(
     int? IntegrationDaysEach = null,          // jours d'intégration par système connecté
     int? TrainingHoursPerPerson = null,
     int? CutoverHours = null,                 // durée d'interruption prévue à la bascule
-    double? ExpectedAnnualGain = null,        // gain annuel attendu (saisi, jamais inventé)
+    double? ExpectedAnnualGain = null,        // gain annuel attendu (saisi, ou suggéré et signalé comme tel)
     double? HoursSavedPerMonth = null,        // automatisation : heures libérées par mois
-    string? GainRationale = null);
+    string? GainRationale = null,
+    // Champs proposés par l'assistant (IA ou graphe) et pas encore confirmés par
+    // l'utilisateur : leurs montants restent affichés comme « suggérés ».
+    IReadOnlyList<string>? Suggested = null);
 
 /// <summary>Contexte chiffré de l'organisation (profil + réglages d'impact).</summary>
 public sealed record DecisionContext(
@@ -92,7 +95,7 @@ public sealed record Resilience(
 /// <summary>
 /// Une ligne de chiffrage. <c>Source</c> dit d'où vient le montant :
 /// input (saisi), graph (compté dans le graphe), engine (moteur d'impact),
-/// assumption (hypothèse — à confirmer).
+/// assumption (hypothèse — à confirmer), suggested (proposé par l'assistant, non confirmé).
 /// </summary>
 public sealed record CostLine(string Key, string Label, double Year1, double Recurring, string Source, string Basis);
 

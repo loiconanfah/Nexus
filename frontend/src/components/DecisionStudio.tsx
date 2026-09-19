@@ -8,7 +8,7 @@ import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import { useMoney } from '../lib/money'
-import type { DecisionCostLine, DecisionKind, DecisionReport, DecisionSpec, GraphEntityRecord, ToolSpec } from '../lib/types'
+import type { BlindSpot, DecisionCostLine, DecisionDraft, DecisionKind, DecisionPatch, DecisionReport, DecisionSpec, FieldSuggestion, GraphEntityRecord, ToolSpec } from '../lib/types'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -115,7 +115,8 @@ export function DecisionStudio() {
 
   const [spec, setSpec] = useState<DecisionSpec | null>(null)
   const [text, setText] = useState('')
-  const [draftNote, setDraftNote] = useState<string | null>(null)
+  const [draft, setDraft] = useState<DecisionDraft | null>(null)
+  const [ignored, setIgnored] = useState<Set<string>>(new Set())
   const [report, setReport] = useState<DecisionReport | null>(null)
   const [busy, setBusy] = useState<'interpret' | 'analyze' | 'plan' | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -123,7 +124,25 @@ export function DecisionStudio() {
   const [saveName, setSaveName] = useState('')
 
   const def = KINDS.find((k) => k.kind === spec?.kind)
-  const set = (patch: Partial<DecisionSpec>) => setSpec((s) => (s ? { ...s, ...patch } : s))
+  // Toute modification d'un champ par l'utilisateur vaut confirmation : il n'est plus « suggéré ».
+  const set = (patch: Partial<DecisionSpec>) =>
+    setSpec((s) => (s ? { ...s, ...patch, suggested: (s.suggested ?? []).filter((f) => !(f in patch)) } : s))
+  const confirmField = (field: string) => setSpec((s) => (s ? { ...s, suggested: (s.suggested ?? []).filter((f) => f !== field) } : s))
+  const confirmAll = () => setSpec((s) => (s ? { ...s, suggested: [] } : s))
+
+  function applyPatch(p: DecisionPatch) {
+    setSpec((s) => {
+      if (!s) return s
+      const n = { ...s } as DecisionSpec & Record<string, unknown>
+      if ((p.field === 'serves' || p.field === 'uses') && p.addIds?.length) n[p.field] = [...new Set([...(s[p.field] ?? []), ...p.addIds])]
+      else if (p.field === 'tools' && p.addTool) n.tools = [...(s.tools ?? []), p.addTool]
+      else if (p.flag != null) n[p.field] = p.flag
+      else if (p.number != null) n[p.field] = p.number
+      else if (p.text != null) n[p.field] = p.text
+      n.suggested = (s.suggested ?? []).filter((f) => f !== p.field)
+      return n
+    })
+  }
   const missingRequired = def?.fields.filter((f) => 'required' in f && f.required && !spec?.[f.k as keyof DecisionSpec]) ?? []
 
   async function interpret() {
@@ -131,10 +150,9 @@ export function DecisionStudio() {
     setBusy('interpret'); setError(null); setReport(null)
     try {
       const d = await api.interpretDecision(text.trim(), lang)
-      setSpec({ ...d.spec, serves: d.spec.serves ?? [], uses: d.spec.uses ?? [] })
-      setDraftNote(d.note ?? (d.usedAi
-        ? t('Brouillon préparé par l’IA à partir de votre phrase : vérifiez chaque champ avant d’analyser.', 'Draft prepared by AI from your sentence: check each field before analysing.')
-        : t('Brouillon préparé à partir de votre phrase : vérifiez chaque champ avant d’analyser.', 'Draft prepared from your sentence: check each field before analysing.')))
+      setSpec({ ...d.spec, serves: d.spec.serves ?? [], uses: d.spec.uses ?? [], suggested: d.spec.suggested ?? [] })
+      setDraft(d)
+      setIgnored(new Set())
     } catch (e) { setError((e as Error).message) } finally { setBusy(null) }
   }
 
@@ -183,14 +201,14 @@ export function DecisionStudio() {
             className="nx-field flex-1" maxLength={1000} />
           <button onClick={() => void interpret()} disabled={!text.trim() || busy !== null} className="flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
             style={{ background: CYAN, color: 'var(--nx-on-cyan)' }}>
-            {busy === 'interpret' ? <Loader2 size={15} className="animate-spin" /> : <Wand2 size={15} />} {t('Préparer', 'Prepare')}
+            {busy === 'interpret' ? <Loader2 size={15} className="animate-spin" /> : <Wand2 size={15} />} {busy === 'interpret' ? t('Analyse en cours…', 'Analysing…') : t('Préparer', 'Prepare')}
           </button>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {KINDS.map(({ kind, icon: Icon, label, desc }) => {
             const active = spec?.kind === kind
             return (
-              <button key={kind} onClick={() => { setSpec({ kind, serves: [], uses: [] }); setReport(null); setDraftNote(null) }}
+              <button key={kind} onClick={() => { setSpec({ kind, serves: [], uses: [] }); setReport(null); setDraft(null) }}
                 className="flex flex-col items-start gap-1 rounded-md border p-3 text-left transition-colors"
                 style={{ borderColor: active ? CYAN : 'var(--nx-border)', background: active ? 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)' : 'var(--nx-surface-high)' }}>
                 <Icon size={17} style={{ color: active ? CYAN : 'var(--nx-text-muted)' }} />
@@ -219,7 +237,10 @@ export function DecisionStudio() {
           <StepTitle n={2} title={t(`Précisez : ${t(...def.label).toLowerCase()}`, `Details: ${t(...def.label).toLowerCase()}`)}
             sub={t('Seuls les champs marqués d’un astérisque sont obligatoires. Chaque champ laissé vide devient une hypothèse signalée dans le rapport — jamais un chiffre inventé en silence.',
               'Only fields marked with an asterisk are required. Every empty field becomes an assumption flagged in the report — never a silently invented figure.')} />
-          {draftNote && <div className="mt-3 flex items-start gap-2 rounded-md p-3 text-sm" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)', color: 'var(--nx-text)' }}><Sparkles size={15} className="mt-0.5 shrink-0" style={{ color: CYAN }} />{draftNote}</div>}
+          {draft && (
+            <AssistantPanel draft={draft} spec={spec} t={t} ignored={ignored}
+              onIgnore={(id) => setIgnored((s) => new Set(s).add(id))} onApply={(b) => { if (b.patch) applyPatch(b.patch); setIgnored((s) => new Set(s).add(b.id)) }} />
+          )}
           {nodes.length === 0 && !graph.isLoading && (
             <div className="mt-3 rounded-md p-3 text-sm" style={{ background: 'color-mix(in srgb, var(--nx-warning) 10%, transparent)', color: 'var(--nx-text)' }}>
               {t('Votre graphe est vide : l’analyse ne pourra rien mesurer. Importez d’abord vos activités, systèmes et personnes.', 'Your graph is empty: the analysis cannot measure anything. Import your activities, systems and people first.')}
@@ -227,7 +248,9 @@ export function DecisionStudio() {
           )}
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {def.fields.map((f) => (
-              <FieldView key={f.k + ('label' in f ? f.label[0] : '')} f={f} spec={spec} set={set} nodes={nodes} t={t} currency={money.symbol} />
+              <FieldView key={f.k + ('label' in f ? f.label[0] : '')} f={f} spec={spec} set={set} nodes={nodes} t={t} currency={money.symbol}
+                suggestion={draft?.suggestions.find((x) => x.field === f.k)} pending={(spec.suggested ?? []).includes(f.k)}
+                onConfirm={() => confirmField(f.k)} />
             ))}
           </div>
           <div className="mt-5 flex flex-wrap items-center gap-3 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
@@ -236,6 +259,12 @@ export function DecisionStudio() {
               {busy === 'analyze' ? <Loader2 size={15} className="animate-spin" /> : <ArrowRight size={15} />} {t('Analyser la décision', 'Analyse the decision')}
             </button>
             {missingRequired.length > 0 && <span className="text-sm" style={{ color: 'var(--nx-text-muted)' }}>{t('À compléter : ', 'To complete: ')}{missingRequired.map((f) => t(...f.label)).join(', ')}</span>}
+            {(spec.suggested?.length ?? 0) > 0 && (
+              <span className="flex flex-wrap items-center gap-2 text-sm" style={{ color: 'var(--nx-text-muted)' }}>
+                {t(`${spec.suggested!.length} champ(s) suggéré(s) non confirmé(s) : ils resteront signalés dans le rapport.`, `${spec.suggested!.length} suggested field(s) not confirmed: they will stay flagged in the report.`)}
+                <button onClick={confirmAll} className="rounded-md border px-2 py-0.5 text-xs font-medium" style={{ borderColor: 'var(--nx-border)', color: CYAN_T }}>{t('Tout confirmer', 'Confirm all')}</button>
+              </span>
+            )}
           </div>
         </section>
       )}
@@ -265,14 +294,30 @@ function StepTitle({ n, title, sub }: { n: number; title: string; sub: string })
 
 // ── Champs ──────────────────────────────────────────────────────────────────
 
-function FieldView({ f, spec, set, nodes, t, currency }: { f: FieldDef; spec: DecisionSpec; set: (p: Partial<DecisionSpec>) => void; nodes: GraphEntityRecord[]; t: T; currency: string }) {
+function FieldView({ f, spec, set, nodes, t, currency, suggestion, pending, onConfirm }: {
+  f: FieldDef; spec: DecisionSpec; set: (p: Partial<DecisionSpec>) => void; nodes: GraphEntityRecord[]; t: T; currency: string
+  suggestion?: FieldSuggestion; pending?: boolean; onConfirm?: () => void
+}) {
   const required = 'required' in f && f.required
   const wide = f.k === 'serves' || f.k === 'uses' || f.k === 'tools' || f.k === 'gainRationale'
   const label = (
     <span className="flex items-center gap-1 text-sm font-medium" style={{ color: 'var(--nx-text)' }}>
       {t(...f.label)}{required && <span style={{ color: CYAN_T }}>*</span>}
+      {pending && (
+        <span className="ml-1 flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: 'color-mix(in srgb, var(--nx-magenta) 12%, transparent)', color: 'var(--nx-magenta)' }}>
+          <Sparkles size={11} />{suggestion?.source === 'graph' ? t('Suggéré · graphe', 'Suggested · graph') : t('Suggéré · IA', 'Suggested · AI')}
+        </span>
+      )}
+      {pending && onConfirm && (
+        <button type="button" onClick={(e) => { e.preventDefault(); onConfirm() }} className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium" style={{ color: CYAN_T }}>
+          <Check size={11} />{t('Confirmer', 'Confirm')}
+        </button>
+      )}
     </span>
   )
+  const why = pending && suggestion?.reason
+    ? <span className="rounded-md px-2 py-1 text-xs" style={{ background: 'color-mix(in srgb, var(--nx-magenta) 7%, transparent)', color: 'var(--nx-text)', lineHeight: 1.45 }}>{suggestion.reason}</span>
+    : null
   const help = <span className="text-xs" style={{ color: 'var(--nx-text-muted)', lineHeight: 1.45 }}>{t(...f.help)}</span>
   const pool = (p: Pool) => { const types = POOLS[p]; return types ? nodes.filter((n) => types.includes(n.entityType)) : nodes }
 
@@ -316,7 +361,7 @@ function FieldView({ f, spec, set, nodes, t, currency }: { f: FieldDef; spec: De
     return (
       <label className="flex cursor-pointer items-start gap-3 rounded-md border p-3" style={{ borderColor: 'var(--nx-border)' }}>
         <input type="checkbox" className="mt-1" checked={!!spec[f.k]} onChange={(e) => set({ [f.k]: e.target.checked })} />
-        <span className="flex flex-col gap-0.5">{label}{help}</span>
+        <span className="flex flex-1 flex-col gap-0.5">{label}{why}{help}</span>
       </label>
     )
   } else if (f.k === 'tools') {
@@ -326,7 +371,7 @@ function FieldView({ f, spec, set, nodes, t, currency }: { f: FieldDef; spec: De
     control = <input className="nx-field" value={spec[key] ?? ''} maxLength={160} placeholder={'placeholder' in f && f.placeholder ? t(...f.placeholder) : ''} onChange={(e) => set({ [key]: e.target.value || null })} />
   }
 
-  return <div className={`flex flex-col gap-1.5 ${wide ? 'md:col-span-2' : ''}`}>{label}{control}{help}</div>
+  return <div className={`flex flex-col gap-1.5 ${wide ? 'md:col-span-2' : ''}`}>{label}{control}{why}{help}</div>
 }
 
 function MultiPick({ options, value, onChange, t }: { options: GraphEntityRecord[]; value: string[]; onChange: (v: string[]) => void; t: T }) {
@@ -409,6 +454,7 @@ const SOURCE: Record<DecisionCostLine['source'], { fr: string; en: string; color
   engine: { fr: 'Moteur d’impact', en: 'Impact engine', color: 'var(--nx-info)', tip: ['Calculé par le moteur d’impact (coût d’arrêt × probabilité)', 'Computed by the impact engine (downtime cost × probability)'] },
   profile: { fr: 'Profil', en: 'Profile', color: 'var(--nx-teal)', tip: ['Issu du profil ou du modèle de l’organisation', 'From the organisation profile or model'] },
   assumption: { fr: 'Hypothèse', en: 'Assumption', color: 'var(--nx-warning)', tip: ['Estimation à confirmer', 'Estimate to confirm'] },
+  suggested: { fr: 'Suggéré', en: 'Suggested', color: 'var(--nx-magenta)', tip: ['Proposé par l’assistant, non confirmé', 'Proposed by the assistant, not confirmed'] },
 }
 
 function Report({ report: r, t, money, busy, planSent, onPlan, saveName, setSaveName, onSave }: {
@@ -646,6 +692,80 @@ function ResBox({ label, r, t }: { label: string; r: DecisionReport['before']; t
       <div style={{ color: 'var(--nx-text-muted)' }}>{t(`${r.singlePointsOfFailure} point(s) unique(s) de défaillance`, `${r.singlePointsOfFailure} single point(s) of failure`)}</div>
       <div style={{ color: 'var(--nx-text-muted)' }}>{t(`${r.keyPeople} personne(s) clé(s) · ${r.soleKnowledgeSystems} système(s) à détenteur unique`, `${r.keyPeople} key person(s) · ${r.soleKnowledgeSystems} solely held system(s)`)}</div>
       {r.mostConcentratedSupplier && <div style={{ color: 'var(--nx-text-muted)' }}>{t(`Fournisseur le plus concentré : ${r.mostConcentratedSupplier} (${Math.round(r.maxSupplierShare * 100)} %)`, `Most concentrated supplier: ${r.mostConcentratedSupplier} (${Math.round(r.maxSupplierShare * 100)}%)`)}</div>}
+    </div>
+  )
+}
+
+// ── Assistant : compréhension et angles morts ────────────────────────────────
+
+const SPOT = {
+  danger: { color: 'var(--nx-danger)', icon: XCircle },
+  warning: { color: 'var(--nx-orange)', icon: AlertTriangle },
+  info: { color: 'var(--nx-cyan-text)', icon: Info },
+} as const
+
+function AssistantPanel({ draft, spec, t, ignored, onIgnore, onApply }: {
+  draft: DecisionDraft; spec: DecisionSpec; t: T; ignored: Set<string>; onIgnore: (id: string) => void; onApply: (b: BlindSpot) => void
+}) {
+  const spots = draft.blindSpots.filter((b) => !ignored.has(b.id))
+  const pending = (spec.suggested ?? []).length
+  return (
+    <div className="mt-4 flex flex-col gap-3 rounded-lg border p-4" style={{ borderColor: 'color-mix(in srgb, var(--nx-magenta) 30%, var(--nx-border))', background: 'color-mix(in srgb, var(--nx-magenta) 4%, var(--nx-panel))' }}>
+      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold" style={{ color: 'var(--nx-text)' }}>
+        <Sparkles size={15} style={{ color: 'var(--nx-magenta)' }} />
+        {draft.usedAi ? t('Préparé par l’assistant IA', 'Prepared by the AI assistant') : t('Préparé à partir de votre graphe', 'Prepared from your graph')}
+        <span className="text-xs font-normal" style={{ color: 'var(--nx-text-muted)' }}>
+          · {t(`${draft.suggestions.length} champ(s) complété(s), ${draft.blindSpots.length} angle(s) mort(s)`, `${draft.suggestions.length} field(s) completed, ${draft.blindSpots.length} blind spot(s)`)}
+        </span>
+      </div>
+      {draft.understanding && <p className="text-sm" style={{ color: 'var(--nx-text)', lineHeight: 1.55 }}><b>{t('Compris : ', 'Understood: ')}</b>{draft.understanding}</p>}
+      {draft.note && <p className="text-sm" style={{ color: 'var(--nx-text-muted)' }}>{draft.note}</p>}
+      {!draft.usedAi && (
+        <p className="text-xs" style={{ color: 'var(--nx-text-muted)' }}>
+          {t('Aucune IA n’est configurée pour cet espace : les suggestions viennent uniquement du graphe. Ajoutez une clé dans Admin & système pour que l’assistant estime aussi les coûts, les outils nécessaires et les angles morts métier.',
+            'No AI is configured for this workspace: suggestions come from the graph only. Add a key in Admin & System so the assistant also estimates costs, required tools and business blind spots.')}
+        </p>
+      )}
+      {pending > 0 && (
+        <p className="text-xs" style={{ color: 'var(--nx-text-muted)' }}>
+          {t('Les champs marqués « Suggéré » sont des propositions : vérifiez-les, modifiez-les ou confirmez-les. Non confirmés, leurs montants restent signalés comme suggestions dans le rapport.',
+            'Fields marked “Suggested” are proposals: check, edit or confirm them. Unconfirmed, their amounts stay flagged as suggestions in the report.')}
+        </p>
+      )}
+
+      {spots.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <div className="text-xs font-semibold uppercase" style={{ color: 'var(--nx-text-muted)', letterSpacing: '0.05em' }}>{t('Angles morts — ce que la phrase ne dit pas', 'Blind spots — what the sentence does not say')}</div>
+          {spots.map((b) => {
+            const sv = SPOT[b.severity] ?? SPOT.info
+            const Icon = sv.icon
+            return (
+              <div key={b.id} className="flex gap-3 rounded-md border p-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+                <Icon size={16} className="mt-0.5 shrink-0" style={{ color: sv.color }} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold" style={{ color: 'var(--nx-text)' }}>{b.title}</span>
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: 'var(--nx-surface-high)', color: 'var(--nx-text-muted)' }}>{b.source === 'ai' ? t('IA', 'AI') : t('Graphe', 'Graph')}</span>
+                  </div>
+                  <p className="mt-0.5 text-sm" style={{ color: 'var(--nx-text)', lineHeight: 1.5 }}>{b.detail}</p>
+                  {b.question && <p className="mt-1 text-sm italic" style={{ color: 'var(--nx-text-muted)' }}>{b.question}</p>}
+                  {b.nodes.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">{b.nodes.map((n) => <span key={n.id} className="rounded px-1.5 py-0.5 text-xs" style={{ background: 'var(--nx-surface-high)', color: 'var(--nx-text-muted)' }}>{n.name}</span>)}</div>
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {b.patch && (
+                    <button onClick={() => onApply(b)} className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold" style={{ background: CYAN, color: 'var(--nx-on-cyan)' }}>
+                      <Check size={12} />{t('Appliquer', 'Apply')}
+                    </button>
+                  )}
+                  <button onClick={() => onIgnore(b.id)} className="rounded-md px-2 py-1 text-xs" style={{ color: 'var(--nx-text-muted)' }}>{t('Ignorer', 'Dismiss')}</button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

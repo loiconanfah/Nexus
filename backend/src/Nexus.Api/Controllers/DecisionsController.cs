@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Business;
-using Nexus.Api.Decisions;
+using Nexus.AI.Decisions;
 using Nexus.Api.Impact;
 using Nexus.Api.Organization;
 using Nexus.Api.Tenancy;
@@ -12,7 +12,7 @@ namespace Nexus.Api.Controllers;
 /// <summary>
 /// Décisions fondées sur le graphe : recruter, remplacer, changer d'outil, de
 /// fournisseur, de site, automatiser. Le moteur est déterministe ; l'IA ne sert
-/// qu'à pré-remplir une décision à partir d'une phrase.
+/// qu'à préparer la décision : champs suggérés et angles morts, toujours à confirmer.
 /// </summary>
 [Route("api/v1/decisions")]
 public sealed class DecisionsController(
@@ -21,12 +21,12 @@ public sealed class DecisionsController(
     OrganizationStore organization,
     ImpactConfigStore impactConfig,
     BusinessStore business,
-    DecisionIntentParser parser) : NexusController(tenantProvider)
+    DecisionAssistant assistant) : NexusController(tenantProvider)
 {
     public sealed record AnalyzeRequest(DecisionSpec Spec, string? Lang);
     public sealed record InterpretRequest(string Text, string? Lang);
 
-    private async Task<(GraphView Graph, DecisionContext Ctx)> LoadAsync(Guid tenant, CancellationToken ct)
+    private async Task<(GraphView Graph, DecisionContext Ctx, string? Sector)> LoadAsync(Guid tenant, CancellationToken ct)
     {
         var entities = await graph.GetEntitiesAsync(tenant, ct: ct);
         var edges = await graph.GetRelationsAsync(tenant, ct: ct);
@@ -41,7 +41,7 @@ public sealed class DecisionsController(
             model?.Drivers.AvgSalary is > 0 ? model.Drivers.AvgSalary : null,
             profile?.Country,
             tuning);
-        return (GraphView.From(entities, edges), ctx);
+        return (GraphView.From(entities, edges), ctx, profile?.Sector);
     }
 
     [HttpPost("analyze")]
@@ -49,7 +49,7 @@ public sealed class DecisionsController(
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
         if (req?.Spec is null || !DecisionKinds.All.Contains(req.Spec.Kind)) return BadRequest(new { error = "kind_invalid" });
-        var (g, ctx) = await LoadAsync(tenant, ct);
+        var (g, ctx, _) = await LoadAsync(tenant, ct);
         return Ok(new DecisionEngine(g, ctx, req.Lang == "en" ? "en" : "fr").Analyze(req.Spec));
     }
 
@@ -58,7 +58,7 @@ public sealed class DecisionsController(
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
         if (string.IsNullOrWhiteSpace(req?.Text) || req.Text.Length > 1000) return BadRequest(new { error = "text_invalid" });
-        var (g, _) = await LoadAsync(tenant, ct);
-        return Ok(await parser.ParseAsync(req.Text.Trim(), g, req.Lang == "en" ? "en" : "fr", ct));
+        var (g, ctx, sector) = await LoadAsync(tenant, ct);
+        return Ok(await assistant.PrepareAsync(req.Text.Trim(), g, ctx, sector, req.Lang == "en" ? "en" : "fr", ct));
     }
 }

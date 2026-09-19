@@ -125,6 +125,22 @@ public sealed class GraphView
         return seen;
     }
 
+    /// <summary>Tout ce dont <paramref name="id"/> dépend, directement ou non (sa chaîne d'approvisionnement).</summary>
+    public HashSet<string> Dependencies(string id, int maxDepth = 4)
+    {
+        var seen = new HashSet<string>();
+        var frontier = new Queue<(string Id, int Depth)>();
+        frontier.Enqueue((id, 0));
+        while (frontier.Count > 0)
+        {
+            var (cur, d) = frontier.Dequeue();
+            if (d >= maxDepth) continue;
+            foreach (var dep in DirectDependencies(cur))
+                if (dep != id && seen.Add(dep)) frontier.Enqueue((dep, d + 1));
+        }
+        return seen;
+    }
+
     /// <summary>Systèmes dont une personne détient le savoir (KNOWS / MAINTAINS) ou dont elle est une dépendance.</summary>
     public HashSet<string> HeldBy(string personId)
     {

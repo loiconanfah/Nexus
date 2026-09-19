@@ -632,13 +632,15 @@ export interface DecisionSpec {
   expectedAnnualGain?: number | null
   hoursSavedPerMonth?: number | null
   gainRationale?: string | null
+  /** Champs proposés par l'assistant et pas encore confirmés. */
+  suggested?: string[]
 }
 
 export interface DecisionNodeRef { id: string; name: string; type: string }
 export interface DecisionEdgeRef { source: string; sourceName: string; target: string; targetName: string; type: string }
 export interface DecisionFinding { severity: 'danger' | 'warning' | 'info' | 'positive'; code: string; text: string; nodes: DecisionNodeRef[] }
 export interface DecisionResilience { score: number; singlePointsOfFailure: number; keyPeople: number; soleKnowledgeSystems: number; maxSupplierShare: number; mostConcentratedSupplier: string | null; elements: number }
-export interface DecisionCostLine { key: string; label: string; year1: number; recurring: number; source: 'input' | 'graph' | 'engine' | 'profile' | 'assumption'; basis: string }
+export interface DecisionCostLine { key: string; label: string; year1: number; recurring: number; source: 'input' | 'graph' | 'engine' | 'profile' | 'assumption' | 'suggested'; basis: string }
 export interface DecisionPhase { title: string; weeks: number; items: string[] }
 
 export interface DecisionReport {
@@ -661,4 +663,15 @@ export interface DecisionReport {
   currency: string
 }
 
-export interface DecisionDraft { spec: DecisionSpec; matched: DecisionNodeRef[]; usedAi: boolean; note: string | null }
+export interface FieldSuggestion { field: string; source: 'ai' | 'graph'; reason: string }
+export interface DecisionPatch { field: string; text?: string | null; number?: number | null; flag?: boolean | null; addIds?: string[] | null; addTool?: ToolSpec | null }
+export interface BlindSpot { id: string; severity: 'danger' | 'warning' | 'info'; title: string; detail: string; question: string | null; nodes: DecisionNodeRef[]; patch: DecisionPatch | null; source: 'ai' | 'graph' }
+export interface DecisionDraft {
+  spec: DecisionSpec
+  matched: DecisionNodeRef[]
+  usedAi: boolean
+  note: string | null
+  understanding: string | null
+  suggestions: FieldSuggestion[]
+  blindSpots: BlindSpot[]
+}

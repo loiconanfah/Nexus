@@ -142,14 +142,44 @@ public sealed class DecisionEngine
     private void Find(string severity, string code, string text, IEnumerable<string>? ids = null, GraphView? g = null)
         => _findings.Add(new Finding(severity, code, text, ids is null ? [] : Refs(g ?? _before, ids)));
 
+    private DecisionSpec _spec = new(DecisionKinds.Hire);
+
+    /// <summary>Champ de la décision d'où provient une ligne « saisie ».</summary>
+    private static string FieldFor(string key) => key.Split(':')[0] switch
+    {
+        _ when key.Contains(':') && (key.StartsWith("oneoff") || key.StartsWith("annual")) => "tools",
+        "oneoff" or "capex" or "closing" => "oneOffCost",
+        "annual" or "opex" => "annualCost",
+        "removed" or "savings" or "parallel" => "annualCostRemoved",
+        "gain" => "expectedAnnualGain",
+        "time" => "hoursSavedPerMonth",
+        "salary" or "overlap" or "staff" or "payroll" => "annualSalary",
+        "integration" => "dayRate",
+        _ => key,
+    };
+
+    /// <summary>Un montant saisi par l'assistant et non confirmé reste une suggestion.</summary>
+    private (string Source, string Basis) Confirmed(string key, string source, string basis)
+    {
+        if (source != "input" || _spec.Suggested is not { Count: > 0 } sug) return (source, basis);
+        var field = FieldFor(key);
+        return sug.Any(f => f.Equals(field, StringComparison.OrdinalIgnoreCase))
+            ? ("suggested", L($"Suggéré par l'assistant — à confirmer. {basis}", $"Suggested by the assistant — to confirm. {basis}"))
+            : (source, basis);
+    }
+
     private void Cost(string key, string label, double year1, double recurring, string source, string basis)
     {
+        (source, basis) = Confirmed(key, source, basis);
         if (Math.Abs(year1) < 0.5 && Math.Abs(recurring) < 0.5 && source != "assumption") return;
         _costs.Add(new CostLine(key, label, Math.Round(year1), Math.Round(recurring), source, basis));
     }
 
     private void Benefit(string key, string label, double year1, double recurring, string source, string basis)
-        => _benefits.Add(new CostLine(key, label, Math.Round(year1), Math.Round(recurring), source, basis));
+    {
+        (source, basis) = Confirmed(key, source, basis);
+        _benefits.Add(new CostLine(key, label, Math.Round(year1), Math.Round(recurring), source, basis));
+    }
 
     private string NewId(string suffix) => $"new:{suffix}";
 
@@ -179,6 +209,7 @@ public sealed class DecisionEngine
 
     public DecisionReport Analyze(DecisionSpec spec)
     {
+        _spec = spec;
         _after = _before.Clone();
         var subject = _before.Get(spec.SubjectId);
 
@@ -225,7 +256,7 @@ public sealed class DecisionEngine
         double? payback = null;
         var netMonthly = (benefitRec - recurring) / 12;
         if (benefitRec > 0 && netMonthly > 0) payback = Math.Round(Math.Max(0, year1 - recurring) / netMonthly, 1);
-        var assumptions = _costs.Count(c => c.Source == "assumption") + _benefits.Count(b => b.Source == "assumption");
+        var assumptions = _costs.Count(c => c.Source is "assumption" or "suggested") + _benefits.Count(b => b.Source is "assumption" or "suggested");
 
         var totals = new DecisionTotals(Math.Round(year1), Math.Round(recurring), Math.Round(benefitY1), Math.Round(benefitRec),
             Math.Round(_transitionRisk), payback, assumptions);
@@ -834,6 +865,15 @@ public sealed class DecisionEngine
     }
 
     private (string, string) Verdict(Resilience b, Resilience a, DecisionTotals t)
+    {
+        var (v, text) = VerdictCore(b, a, t);
+        if (v == "favorable" && _benefits.Any(x => x.Source == "suggested"))
+            text += L(" Attention : le gain retenu est une suggestion de l'assistant — confirmez-le avant de conclure.",
+                      " Note: the gain used is an assistant suggestion — confirm it before concluding.");
+        return (v, text);
+    }
+
+    private (string, string) VerdictCore(Resilience b, Resilience a, DecisionTotals t)
     {
         var dangers = _findings.Count(f => f.Severity == "danger");
         if (_findings.Any(f => f.Code.EndsWith(".missing", StringComparison.Ordinal)))

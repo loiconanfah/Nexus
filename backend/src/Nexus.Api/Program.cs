@@ -73,7 +73,7 @@ builder.Services.AddScoped<Nexus.Api.Collectors.CollectorStore>();
 builder.Services.AddScoped<Nexus.Api.Organization.OrganizationStore>();
 builder.Services.AddScoped<Nexus.Api.Organization.SetupProgressService>();
 builder.Services.AddScoped<Nexus.Api.Organization.NotificationService>();
-builder.Services.AddScoped<Nexus.Api.Decisions.DecisionIntentParser>();
+builder.Services.AddScoped<Nexus.AI.Decisions.DecisionAssistant>();
 builder.Services.AddScoped<Nexus.Api.Impact.ImpactIntelligenceService>();
 // Client du connecteur REST : redirections désactivées (garde anti-SSRF avec SsrfGuard).
 builder.Services.AddHttpClient("rest-connector")
