@@ -25,6 +25,7 @@
     }
   ],
   "trailingSlash": false,
+  "installCommand": "bash scripts/vercel-install.sh",
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://nexus-api-rzh9.onrender.com/api/:path*" },
     { "source": "/health", "destination": "https://nexus-api-rzh9.onrender.com/health" },

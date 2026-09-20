@@ -102,11 +102,7 @@ function writeSitemap(list) {
 async function main() {
   const chrome = await chromePath()
   if (!chrome) {
-    const message = 'Aucun navigateur trouvé. Installez les dépendances (puppeteer en fournit un) ou renseignez CHROME_PATH.'
-    // Sur un serveur de construction, se taire reviendrait à publier un site
-    // sans une seule page lisible par un robot : mieux vaut arrêter là.
-    if (process.env.CI || process.env.VERCEL) throw new Error(message)
-    console.warn(`[prerender] ${message} Pré-rendu ignoré : le site reste fonctionnel, mais les robots sans JavaScript ne verront pas le contenu.`)
+    warnSkipped('Aucun navigateur trouvé. Installez les dépendances (puppeteer en fournit un) ou renseignez CHROME_PATH.')
     return
   }
   console.log(`[prerender] navigateur : ${chrome}`)
@@ -144,4 +140,22 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('[prerender]', e.message); process.exit(1) })
+/*
+  Le pré-rendu ne doit JAMAIS faire échouer un déploiement : sans lui le site
+  fonctionne, alors qu'un déploiement bloqué retient aussi les correctifs qui
+  n'ont rien à voir. Mais il ne doit pas non plus passer inaperçu, sous peine de
+  publier pendant des semaines un site que les robots voient vide.
+*/
+function warnSkipped(reason) {
+  console.warn([
+    '',
+    '  ' + '='.repeat(74),
+    '  PRÉ-RENDU IGNORÉ — les robots sans JavaScript verront un site vide.',
+    `  Cause : ${reason}`,
+    '  Le site reste fonctionnel pour les visiteurs.',
+    '  ' + '='.repeat(74),
+    '',
+  ].join('\n'))
+}
+
+main().catch((e) => { warnSkipped(e.message) })
