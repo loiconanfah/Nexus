@@ -34,7 +34,12 @@ function routes() {
   return list
 }
 
-function chromePath() {
+/*
+  Le navigateur : celui de la machine s'il y en a un, sinon celui que puppeteer
+  installe avec les dependances. Le second cas est celui du serveur de
+  construction, ou aucun navigateur n'est fourni.
+*/
+async function chromePath() {
   const candidates = [
     process.env.CHROME_PATH,
     'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -44,7 +49,15 @@ function chromePath() {
     '/usr/bin/chromium',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   ].filter(Boolean)
-  return candidates.find((p) => existsSync(p))
+  const local = candidates.find((p) => existsSync(p))
+  if (local) return local
+
+  try {
+    const puppeteer = (await import('puppeteer')).default
+    const p = await puppeteer.executablePath()
+    if (existsSync(p)) return p
+  } catch { /* puppeteer absent : traite plus bas */ }
+  return undefined
 }
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -87,11 +100,16 @@ function writeSitemap(list) {
 }
 
 async function main() {
-  const chrome = chromePath()
+  const chrome = await chromePath()
   if (!chrome) {
-    console.warn('[prerender] Aucun navigateur trouvé (Chrome ou Edge). Pré-rendu ignoré : le site reste fonctionnel, mais les robots sans JavaScript ne verront pas le contenu.')
+    const message = 'Aucun navigateur trouvé. Installez les dépendances (puppeteer en fournit un) ou renseignez CHROME_PATH.'
+    // Sur un serveur de construction, se taire reviendrait à publier un site
+    // sans une seule page lisible par un robot : mieux vaut arrêter là.
+    if (process.env.CI || process.env.VERCEL) throw new Error(message)
+    console.warn(`[prerender] ${message} Pré-rendu ignoré : le site reste fonctionnel, mais les robots sans JavaScript ne verront pas le contenu.`)
     return
   }
+  console.log(`[prerender] navigateur : ${chrome}`)
 
   const server = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx',
     ['vite', 'preview', '--port', String(PORT), '--strictPort'],
