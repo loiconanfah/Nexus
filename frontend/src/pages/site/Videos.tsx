@@ -31,7 +31,7 @@ const PLANNED: { title: [string, string]; body: [string, string] }[] = [
 export function Videos() {
   const { t } = useLang()
   const navigate = useNavigate()
-  usePageMeta(t('Vidéos de démonstration — Lenexux', 'Demo videos — Lenexux'),
+  usePageMeta(t('Vidéos de démonstration | Lenexux', 'Demo videos | Lenexux'),
     t('Le produit en action : cartographie, simulation de panne et d’attaque, décision.', 'The product in action: mapping, outage and attack simulation, decision-making.'), '/videos')
   const [topic, setTopic] = useState<(typeof TOPICS)[number]['key']>('all')
   const [active, setActive] = useState(0)
@@ -83,8 +83,8 @@ export function Videos() {
                 <Film size={30} style={{ color: '#22d3ee' }} />
                 <h2 style={{ fontFamily: geist, fontSize: 24, fontWeight: 600, color: '#f3f3f6' }}>{t('Les vidéos arrivent', 'Videos are on their way')}</h2>
                 <p style={{ maxWidth: 560, color: '#a2a2b0', lineHeight: 1.6 }}>
-                  {t('En attendant, la démo interactive vous laisse explorer le produit sur un jeu de données complet — sans créer de compte.',
-                    'Meanwhile, the interactive demo lets you explore the product on a full dataset — no account needed.')}
+                  {t('En attendant, la démo interactive vous laisse explorer le produit sur un jeu de données complet, sans créer de compte.',
+                    'Meanwhile, the interactive demo lets you explore the product on a full dataset, no account needed.')}
                 </p>
                 <BoxBtn primary onClick={() => navigate('/demo')} label={t('Explorer la démo', 'Explore the demo')} icon={<PlayCircle size={15} />} />
               </div>

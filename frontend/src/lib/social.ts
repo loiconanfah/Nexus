@@ -31,8 +31,8 @@ export const EXTERNAL_POSTS: ExternalPost[] = [
     title: 'Lenexux wants to map everything that could take your business down',
     author: ['Yvan Loic Nanfah Wamba, fondateur', 'Yvan Loic Nanfah Wamba, founder'],
     summary: [
-      'Un tour de la démo : graphe de dépendances, jumeau numérique, simulation d’attaque et de panne, extraction de dépendances depuis des documents — et le pari d’un moteur déterministe entouré d’une IA interchangeable.',
-      'A walk through the demo: dependency graph, digital twin, attack and outage simulation, dependency extraction from documents — and the bet on a deterministic engine wrapped in a swappable AI.',
+      'Un tour de la démo : graphe de dépendances, jumeau numérique, simulation d’attaque et de panne, extraction de dépendances depuis des documents, et le pari d’un moteur déterministe entouré d’une IA interchangeable.',
+      'A walk through the demo: dependency graph, digital twin, attack and outage simulation, dependency extraction from documents, and the bet on a deterministic engine wrapped in a swappable AI.',
     ],
   },
   {

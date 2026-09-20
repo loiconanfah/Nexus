@@ -105,7 +105,7 @@ export function SiteHeader() {
 
   return (
     <header className="slb-nav" ref={ref}>
-      <a href="/welcome" onClick={(e) => { e.preventDefault(); navigate('/welcome') }} aria-label={t('Lenexux — accueil', 'Lenexux — home')} className="flex items-center">
+      <a href="/welcome" onClick={(e) => { e.preventDefault(); navigate('/welcome') }} aria-label={t('Lenexux, accueil', 'Lenexux, home')} className="flex items-center">
         <Logo size={34} variant="dark" wordSize={20} />
       </a>
 

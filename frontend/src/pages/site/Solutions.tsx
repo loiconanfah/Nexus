@@ -59,8 +59,8 @@ const SOLUTIONS: Solution[] = [
     audience: ['Agences de sécurité privée', 'Private security agencies'],
     tagline: ['La plateforme de gestion des agences de sécurité privée', 'The management platform for private security agencies'],
     body: [
-      'Dispatch des agents par l’IA, rondes par code QR, supervision en temps réel et trois portails intégrés — administration, agents, clients — pour opérer en conformité avec la Loi sur la sécurité privée du Québec.',
-      'AI agent dispatch, QR-code patrols, real-time supervision and three integrated portals — admin, agents, clients — to operate in compliance with Quebec’s Private Security Act.',
+      'Dispatch des agents par l’IA, rondes par code QR, supervision en temps réel et trois portails intégrés, administration, agents, clients, pour opérer en conformité avec la Loi sur la sécurité privée du Québec.',
+      'AI agent dispatch, QR-code patrols, real-time supervision and three integrated portals, admin, agents, clients, to operate in compliance with Quebec’s Private Security Act.',
     ],
     points: [
       ['Dispatch et planification des quarts, multi-sites', 'Shift dispatch and scheduling, multi-site'],
@@ -133,15 +133,32 @@ const STATUS: Record<Status, { fr: string; en: string; bg: string; fg: string }>
 export function Solutions() {
   const { t } = useLang()
   const navigate = useNavigate()
-  usePageMeta(t('Solutions SplitsPay — Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay', 'SplitsPay solutions — Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay'),
+  usePageMeta(t('Solutions SplitsPay | Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay', 'SplitsPay solutions | Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay'),
     t('SplitsPay Inc. conçoit des logiciels propulsés par l’IA : Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay, et l’agence Gold Army.',
-      'SplitsPay Inc. builds AI-powered software: Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay, and the Gold Army agency.'), '/solutions')
+      'SplitsPay Inc. builds AI-powered software: Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay, and the Gold Army agency.'), '/solutions',
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: 'SplitsPay Inc.',
+      url: 'https://lenexux.com/solutions',
+      founder: { '@type': 'Person', name: 'Yvan Loic Nanfah Wamba' },
+      email: CONTACT,
+      makesOffer: SOLUTIONS.map((sol) => ({
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'SoftwareApplication',
+          name: sol.name,
+          applicationCategory: 'BusinessApplication',
+          url: sol.internal ? 'https://lenexux.com/' : sol.url,
+        },
+      })),
+    })
 
   return (
     <SitePage>
       <PageHero eyebrow="SplitsPay Inc." title={t('Un éditeur, des logiciels propulsés par l’IA', 'One publisher, AI-powered software')}
-        sub={t('SplitsPay Inc. conçoit et développe des solutions pour les organisations et pour les particuliers — de la résilience opérationnelle à la sécurité privée, de la recherche d’emploi aux finances entre proches — et accompagne les PME dans leurs projets numériques.',
-          'SplitsPay Inc. designs and builds solutions for organisations and individuals — from operational resilience to private security, from job search to money between friends — and supports SMEs in their digital projects.')}>
+        sub={t('SplitsPay Inc. conçoit et développe des solutions pour les organisations et pour les particuliers : résilience opérationnelle, sécurité privée, recherche d’emploi, finances entre proches. L’entreprise accompagne aussi les PME dans leurs projets numériques.',
+          'SplitsPay Inc. designs and builds solutions for organisations and individuals, from operational resilience to private security, from job search to money between friends. It also supports SMEs in their digital projects.')}>
         <div className="mt-8 flex flex-wrap gap-2">
           {SOLUTIONS.map((s) => (
             <a key={s.key} href={`#${s.key}`} onClick={(e) => { e.preventDefault(); document.getElementById(s.key)?.scrollIntoView({ behavior: 'smooth' }) }}

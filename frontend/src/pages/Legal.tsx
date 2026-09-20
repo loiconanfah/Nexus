@@ -32,7 +32,7 @@ export function Legal() {
   const [params, setParams] = useSearchParams()
   const nav = useNavigate()
   usePageMeta(
-    'Mentions légales — Lenexux',
+    'Mentions légales | Lenexux',
     'Conditions d’utilisation, politique de confidentialité et addendum de traitement des données (DPA) de Lenexux. Contexte Québec (Loi 25) et RGPD.',
     '/legal',
   )
@@ -81,9 +81,9 @@ function H1({ children }: { children: React.ReactNode }) {
  */
 const SUBPROCESSORS: { name: string; role: string; place: string }[] = [
   { name: 'Vercel Inc.', role: 'Hébergement du site public et de l’interface', place: 'États-Unis (réseau de diffusion mondial)' },
-  { name: 'Render Services, Inc.', role: 'Hébergement de l’API et exécution applicative', place: 'États-Unis — Oregon' },
-  { name: 'Render Services, Inc.', role: 'Base de données PostgreSQL managée (comptes, configuration)', place: 'États-Unis — Oregon' },
-  { name: 'Render Services, Inc.', role: 'Base de données de graphe Neo4j (cartographie du client)', place: 'États-Unis — Oregon' },
+  { name: 'Render Services, Inc.', role: 'Hébergement de l’API et exécution applicative', place: 'États-Unis, Oregon' },
+  { name: 'Render Services, Inc.', role: 'Base de données PostgreSQL managée (comptes, configuration)', place: 'États-Unis, Oregon' },
+  { name: 'Render Services, Inc.', role: 'Base de données de graphe Neo4j (cartographie du client)', place: 'États-Unis, Oregon' },
   { name: 'Google LLC', role: 'Modèles d’intelligence artificielle (Gemini), sur appel', place: 'États-Unis' },
   { name: 'Anthropic PBC', role: 'Modèles d’intelligence artificielle (Claude), sur appel', place: 'États-Unis' },
   { name: 'Google LLC', role: 'Mesure d’audience du site public (Google Analytics), uniquement après consentement', place: 'États-Unis' },

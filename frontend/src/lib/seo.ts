@@ -22,6 +22,18 @@ function setCanonical(href: string) {
   el.setAttribute('href', href)
 }
 
+/** Données structurées de la page (JSON-LD), remplacées à chaque navigation. */
+function setJsonLd(data: unknown) {
+  const id = 'page-jsonld'
+  const existing = document.getElementById(id)
+  if (!data) { existing?.remove(); return }
+  const el = existing ?? document.createElement('script')
+  el.id = id
+  el.setAttribute('type', 'application/ld+json')
+  el.textContent = JSON.stringify(data)
+  if (!existing) document.head.appendChild(el)
+}
+
 /**
  * Met à jour le titre, la description et l'URL canonique de la page courante.
  * Sans dépendance (pas de react-helmet) : agit directement sur le <head>, utile
@@ -29,8 +41,9 @@ function setCanonical(href: string) {
  * balises statiques de index.html couvrent les robots sans JS.
  *
  * @param path chemin canonique (ex. "/docs"). "/" par défaut.
+ * @param jsonLd données structurées de la page (article, fil d'Ariane…).
  */
-export function usePageMeta(title: string, description: string, path = '/') {
+export function usePageMeta(title: string, description: string, path = '/', jsonLd?: unknown) {
   useEffect(() => {
     const url = `${SITE}${path === '/' ? '/' : path}`
     document.title = title
@@ -41,5 +54,6 @@ export function usePageMeta(title: string, description: string, path = '/') {
     setMeta('name', 'twitter:title', title)
     setMeta('name', 'twitter:description', description)
     setCanonical(url)
-  }, [title, description, path])
+    setJsonLd(jsonLd)
+  }, [title, description, path, jsonLd])
 }

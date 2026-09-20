@@ -66,7 +66,7 @@ export function Docs() {
   const nav = useNavigate()
   const [active, setActive] = useState('presentation')
   usePageMeta(
-    'Documentation — Lenexux',
+    'Documentation | Lenexux',
     'Documentation complète de Lenexux : concepts, ontologie, graphe de dépendances, impact transversal, simulation de panne et de cyberattaque, dépendances IA, modèle d’entreprise, connecteurs, API, sécurité et exploitation.',
     '/docs',
   )
@@ -110,12 +110,12 @@ export function Docs() {
             <Bullets items={[
               'Entité : un élément du graphe (serveur, application, fournisseur, personne, processus…).',
               'Dépendance (relation) : « A dépend de B ». La panne de B remonte vers ses dépendants A.',
-              'Criticité (0–100) : importance d’une entité ; alimente l’impact et le coût d’arrêt.',
-              'Confiance (0–1) : degré de certitude d’une relation (source, IA suggérée, validée).',
+              'Criticité (0, 100) : importance d’une entité ; alimente l’impact et le coût d’arrêt.',
+              'Confiance (0, 1) : degré de certitude d’une relation (source, IA suggérée, validée).',
               'Impact direct vs indirect : direct = dépend immédiatement de la cible (profondeur 1) ; indirect = touché par la cascade (profondeur ≥ 2).',
-              'SPOF : point unique de défaillance — entité sans redondance dont dépendent beaucoup d’autres.',
+              'SPOF : point unique de défaillance, entité sans redondance dont dépendent beaucoup d’autres.',
               'Propagation de compromission : en cyberattaque, un attaquant se déplace le long des relations d’accès et de données (latéralement), distincte de la propagation de panne.',
-              'Dépendance IA : un modèle, agent ou fournisseur d’IA est une dépendance comme une autre — sa défaillance se propage et se chiffre par le même moteur.',
+              'Dépendance IA : un modèle, agent ou fournisseur d’IA est une dépendance comme une autre, sa défaillance se propage et se chiffre par le même moteur.',
               'Tenant : espace client isolé. Chaque organisation a ses données, invisibles des autres.',
             ]} />
           </Sec>
@@ -152,12 +152,12 @@ export function Docs() {
 
           <Sec id="graphe" title="Graphe de dépendances">
             <P>Deux vues : un <b>plan 2D</b> (ReactFlow) pour la lecture structurée et un <b>hologramme 3D</b> (Three.js) pour l’exploration. Sélectionner un élément met en avant ses relations et atténue le reste ; recherche, plein écran, déplacement des nœuds, clic pour les détails.</P>
-            <Figure src="graph.png" caption="Graphe de dépendances — exploration." />
+            <Figure src="graph.png" caption="Graphe de dépendances, exploration." />
           </Sec>
 
           <Sec id="impact" title="Impact transversal">
             <P>Posez une question métier en langage naturel — <i>« que se passe-t-il si nous perdons le fournisseur X ? »</i>. Lenexux résout la cible dans le graphe, calcule la cascade, l’impact financier (pondéré par la probabilité), les éléments critiques et les points uniques de défaillance, puis propose des mitigations.</P>
-            <Figure src="impact.png" caption="Impact transversal — entrée en langage naturel." />
+            <Figure src="impact.png" caption="Impact transversal, entrée en langage naturel." />
           </Sec>
 
           <Sec id="simulation" title="Simulation holographique (« ET SI ? »)">
@@ -169,7 +169,7 @@ export function Docs() {
           <Sec id="attaques" title="Simulation de cyberattaque (kill-chain)">
             <P>Au-delà de la panne, Lenexux rejoue une <b>attaque</b> qui se <b>propage</b> d’un élément à l’autre. On choisit un <b>point d’entrée</b> (employé, outil externe, partage cloud, agent IA…) et un <b>sens de propagation</b> ; le moteur suit les relations d’<b>accès et de données</b> pour révéler la chaîne de compromission — pas seulement les liens visibles, mais le cheminement <b>logique</b> d’un attaquant.</P>
             <P>Quatre scénarios prêts à l’emploi (ex. <i>« un partage cloud est piraté et les agents IA qui en tirent leurs données se mettent à exfiltrer »</i>, <i>« un agent IA effectue un piratage interne parti d’un employé ayant utilisé un outil externe »</i>) et un <b>constructeur libre</b> bilingue (libellés lisibles, pas des codes bruts). Pour <b>chaque nœud compromis</b> : l’impact financier (€), la probabilité, une <b>recommandation</b> ciblée, et le gain d’une <b>isolation</b> (contre-mesure). Une <b>analyse IA</b> narre la kill-chain, les risques et les contre-mesures.</P>
-            <Figure src="attacks.png" caption="Simulation de cyberattaque — chaîne de compromission et contre-mesures." />
+            <Figure src="attacks.png" caption="Simulation de cyberattaque, chaîne de compromission et contre-mesures." />
           </Sec>
 
           <Sec id="ai-deps" title="Dépendances IA (modèles, agents, fournisseurs)">
@@ -185,12 +185,12 @@ export function Docs() {
           <Sec id="modele" title="Modèle d’entreprise (jumeau décisionnel)">
             <P>Un jumeau financier dérivé de leviers déterministes (clients/abonnés, prix, coûts, effectif, marketing, R&D, trésorerie…). S’il n’existe pas, un <b>assistant guidé</b> le crée ; le compte de résultat, la trésorerie et les KPIs sont ensuite calculés automatiquement.</P>
             <Bullets items={[
-              'Édition libre : le bouton « Modifier les données » ouvre tous les leviers (finances) et la « Structure de l’organisation » (divisions, sites, fournisseurs, projets) — tout l’en-tête est modifiable.',
+              'Édition libre : le bouton « Modifier les données » ouvre tous les leviers (finances) et la « Structure de l’organisation » (divisions, sites, fournisseurs, projets), tout l’en-tête est modifiable.',
               'Sauvegarde & historique : chaque enregistrement crée une version datée (note optionnelle) ; le panneau « Historique » liste les versions et permet de restaurer l’une d’elles en un clic (la restauration crée elle-même une version).',
-              'Ratios & santé financière : marge brute / EBITDA / nette, marketing/revenu, R&D/revenu, autonomie de trésorerie, revenu/employé, attrition — avec code couleur de santé.',
+              'Ratios & santé financière : marge brute / EBITDA / nette, marketing/revenu, R&D/revenu, autonomie de trésorerie, revenu/employé, attrition, avec code couleur de santé.',
               '« Où va chaque dollar de revenu » : ventilation lisible des coûts (livraison, salaires, R&D, marketing, amortissements).',
             ]} />
-            <Figure src="enterprise.png" caption="Modèle d’entreprise — édition, historique et ratios (démo Bell)." />
+            <Figure src="enterprise.png" caption="Modèle d’entreprise, édition, historique et ratios (démo Bell)." />
           </Sec>
 
           <Sec id="decision" title="Décision & simulation">
@@ -280,12 +280,12 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
             <Figure src="onboarding.png" caption="Import des données (fichier + source REST live)." />
           </Sec>
 
-          <Sec id="collector" title="Collector — la sonde installée chez vous">
+          <Sec id="collector" title="Collector, la sonde installée chez vous">
             <P>Vos systèmes internes ne sont pas exposés sur Internet, et c'est très bien ainsi : Lenexux refuse d'ailleurs délibérément d'atteindre une adresse privée depuis le cloud (garde anti-SSRF). Le <b>Collector</b> lève ce blocage sans affaiblir votre sécurité.</P>
             <Bullets items={[
               'Aucun port ouvert, aucune règle de pare-feu entrante : la sonde SORT en HTTPS pour venir chercher son travail. Rien ne peut l’atteindre de l’extérieur.',
               'Aucun privilège : conteneur non-root, identifiants en lecture seule que vous choisissez, et uniquement vers les sources que vous désignez.',
-              'Elle ne fait que COLLECTER. La résolution d’entités, l’ontologie, les preuves et le calcul d’impact restent côté Lenexux — le moteur évolue sans jamais redéployer chez vous.',
+              'Elle ne fait que COLLECTER. La résolution d’entités, l’ontologie, les preuves et le calcul d’impact restent côté Lenexux, le moteur évolue sans jamais redéployer chez vous.',
               'Clé d’authentification stockée en empreinte (jamais en clair), révocable en un clic depuis Admin.',
             ]} />
             <P className="mt-2"><b>Mise en place</b> — trois étapes :</P>
@@ -299,13 +299,13 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
   -e LENEXUX_COLLECTOR_KEY=lxc_… \\
   lenexux-collector`}</Code>
             <P><b>Collecte récurrente.</b> Une collecte peut se répéter (ex. toutes les 24 h) : elle se ré-inscrit d'elle-même après chaque exécution. C'est important, car une dépendance qui n'est plus reconfirmée voit sa confiance <b>décoter avec le temps</b> — la cartographie signale ainsi son propre vieillissement.</P>
-            <P><b>Ce que la sonde sait interroger aujourd'hui</b> : toute API JSON interne (CMDB, Kubernetes, catalogue de services, application maison), avec ou sans en-tête d'authentification. Les données collectées entrent par le même pipeline que n'importe quelle source, et portent une preuve « source interrogée en direct » — plus fiable qu'un fichier déclaratif.</P>
+            <P><b>Ce que la sonde sait interroger aujourd'hui</b> : toute API JSON interne (CMDB, Kubernetes, catalogue de services, application maison), avec ou sans en-tête d'authentification. Les données collectées entrent par le même pipeline que n'importe quelle source, et portent une preuve « source interrogée en direct », plus fiable qu'un fichier déclaratif.</P>
           </Sec>
 
           <Sec id="connecteurs" title="Connecteurs">
             <Bullets items={[
               'CSV / Excel : tout tableur d’actifs ou de dépendances.',
-              'REST / API JSON (live) : pointez une API renvoyant un tableau JSON — pull en direct, détection des colonnes, ingestion via le pipeline. Garde anti-SSRF (refuse les adresses internes) et redirections désactivées.',
+              'REST / API JSON (live) : pointez une API renvoyant un tableau JSON, pull en direct, détection des colonnes, ingestion via le pipeline. Garde anti-SSRF (refuse les adresses internes) et redirections désactivées.',
               'Import assisté par IA : collez des données brutes, l’IA déduit le mapping vers l’ontologie.',
               'Webhook / MCP : réception d’événements, exposition de Lenexux comme serveur MCP (roadmap pour les connecteurs natifs par éditeur).',
             ]} />
@@ -316,7 +316,7 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
           {/* ── ADMINISTRATION ── */}
           <Sec id="admin" title="Administration">
             <Bullets items={[
-              'Comptes & rôles : plusieurs personnes partagent le MÊME espace de travail. Deux rôles — administrateur (configure : comptes, sondes, IA, réglages d’impact) et membre (consulte et analyse). Un espace conserve toujours au moins un administrateur.',
+              'Comptes & rôles : plusieurs personnes partagent le MÊME espace de travail. Deux rôles, administrateur (configure : comptes, sondes, IA, réglages d’impact) et membre (consulte et analyse). Un espace conserve toujours au moins un administrateur.',
               'Collectors : déclarer, surveiller et révoquer les sondes installées dans votre réseau ; planifier des collectes récurrentes.',
               'Configuration IA : par tenant, choix du fournisseur (Anthropic, Gemini, OpenAI, Azure) et du modèle ; la clé est stockée côté serveur et n’est jamais renvoyée.',
               'Quota LLM : plafond mensuel par tenant (appels + caractères), repli déterministe au-delà. Consommation via GET /api/v1/ai/usage.',

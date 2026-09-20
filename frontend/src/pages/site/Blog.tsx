@@ -17,8 +17,22 @@ function formatDate(iso: string, lang: string) {
 export function Blog() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
-  usePageMeta(t('Blog — Lenexux', 'Blog — Lenexux'),
-    t('Méthodes et retours de terrain sur la cartographie des dépendances, le chiffrage d’impact et la décision.', 'Methods and field notes on dependency mapping, impact pricing and decision-making.'), '/blog')
+  usePageMeta(t('Blog | Lenexux', 'Blog | Lenexux'),
+    t('Méthodes et retours de terrain sur la cartographie des dépendances, le chiffrage d’impact et la décision.', 'Methods and field notes on dependency mapping, impact pricing and decision-making.'), '/blog',
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Blog',
+      name: 'Blog Lenexux',
+      url: 'https://lenexux.com/blog',
+      publisher: { '@id': 'https://lenexux.com/#organization' },
+      blogPost: POSTS.map((p) => ({
+        '@type': 'BlogPosting',
+        headline: t(...p.title),
+        description: t(...p.summary),
+        datePublished: p.date,
+        url: `https://lenexux.com/blog/${p.slug}`,
+      })),
+    })
   const [first, ...rest] = POSTS
 
   return (
@@ -104,7 +118,34 @@ export function BlogPost() {
   const { t, lang } = useLang()
   const navigate = useNavigate()
   const post = postBySlug(slug)
-  usePageMeta(post ? `${t(...post.title)} — Lenexux` : 'Blog — Lenexux', post ? t(...post.summary) : '', `/blog/${slug}`)
+  // Données structurées : un article, avec son fil d'Ariane, pour les moteurs
+  // et les assistants qui lisent le balisage plutôt que la page.
+  const jsonLd = post ? {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'BlogPosting',
+        headline: t(...post.title),
+        description: t(...post.summary),
+        datePublished: post.date,
+        inLanguage: lang === 'fr' ? 'fr' : 'en',
+        author: { '@type': 'Organization', name: 'Lenexux', url: 'https://lenexux.com/' },
+        publisher: { '@id': 'https://lenexux.com/#organization' },
+        mainEntityOfPage: `https://lenexux.com/blog/${post.slug}`,
+        image: 'https://lenexux.com/og-image.png',
+        keywords: t(...post.tag),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Lenexux', item: 'https://lenexux.com/' },
+          { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://lenexux.com/blog' },
+          { '@type': 'ListItem', position: 3, name: t(...post.title) },
+        ],
+      },
+    ],
+  } : undefined
+  usePageMeta(post ? `${t(...post.title)} | Lenexux` : 'Blog | Lenexux', post ? t(...post.summary) : '', `/blog/${slug}`, jsonLd)
 
   if (!post) {
     return (

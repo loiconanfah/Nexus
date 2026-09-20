@@ -296,7 +296,7 @@ export function Login() {
             }}
           >
             <Building2 size={18} />
-            <span>{t('Accès démo — choisir un jeu', 'Demo access — choose a dataset')}</span>
+            <span>{t('Accès démo, choisir un jeu', 'Demo access, choose a dataset')}</span>
           </button>
 
           {/* Pied */}

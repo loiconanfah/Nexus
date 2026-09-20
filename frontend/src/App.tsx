@@ -1,49 +1,66 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { Layout } from './components/Layout'
 import { GuidedTour } from './components/GuidedTour'
 import { CookieConsent } from './components/CookieConsent'
 import { useLang } from './lib/i18n'
-import { Home } from './pages/Home'
-import { Dashboard } from './pages/Dashboard'
-import { Simulation } from './pages/Simulation'
-import { GraphExplorer } from './pages/GraphExplorer'
-import { RiskCenter } from './pages/RiskCenter'
-import { Assets } from './pages/Assets'
-import { AiAnalyst } from './pages/AiAnalyst'
-import { Reports } from './pages/Reports'
-import { HumanDependency } from './pages/HumanDependency'
-import { DependencyIntelligence } from './pages/DependencyIntelligence'
-import { SupplierIntelligence } from './pages/SupplierIntelligence'
-import { Incidents } from './pages/Incidents'
-import { Audit } from './pages/Audit'
-import { ChangeImpact } from './pages/ChangeImpact'
-import { DigitalTwin } from './pages/DigitalTwin'
-import { History } from './pages/History'
-import { DocumentIntelligence } from './pages/DocumentIntelligence'
-import { Onboarding } from './pages/Onboarding'
-import { IntegrationMarketplace } from './pages/IntegrationMarketplace'
-import { Admin } from './pages/Admin'
-import { ActionPlan } from './pages/ActionPlan'
-import { EnterpriseModel } from './pages/EnterpriseModel'
-import { DecisionSim } from './pages/DecisionSim'
-import { ImpactIntelligence } from './pages/ImpactIntelligence'
-import { RelationInference } from './pages/RelationInference'
-import { AttackSim } from './pages/AttackSim'
-import { Help } from './pages/Help'
 import { Landing } from './pages/Landing'
-import { DemoChoice } from './pages/DemoChoice'
-import { Docs } from './pages/Docs'
-import { Blog, BlogPost } from './pages/site/Blog'
-import { Videos } from './pages/site/Videos'
-import { Solutions } from './pages/site/Solutions'
-import { Legal } from './pages/Legal'
-import { Login } from './pages/Login'
-import { Setup } from './pages/Setup'
 import { LogoMark } from './components/Logo'
 import { useOrganization } from './lib/money'
 import { getTenantId } from './lib/tenant'
 import { isAuthed, logout } from './lib/auth'
+
+/*
+  Chargement à la demande : la page d'accueil publique ne télécharge que son
+  propre code. Les écrans de l'application (graphe 3D, simulations, rapports)
+  arrivent au moment où on les ouvre.
+*/
+const Home = lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })))
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
+const Simulation = lazy(() => import('./pages/Simulation').then((m) => ({ default: m.Simulation })))
+const GraphExplorer = lazy(() => import('./pages/GraphExplorer').then((m) => ({ default: m.GraphExplorer })))
+const RiskCenter = lazy(() => import('./pages/RiskCenter').then((m) => ({ default: m.RiskCenter })))
+const Assets = lazy(() => import('./pages/Assets').then((m) => ({ default: m.Assets })))
+const AiAnalyst = lazy(() => import('./pages/AiAnalyst').then((m) => ({ default: m.AiAnalyst })))
+const Reports = lazy(() => import('./pages/Reports').then((m) => ({ default: m.Reports })))
+const HumanDependency = lazy(() => import('./pages/HumanDependency').then((m) => ({ default: m.HumanDependency })))
+const DependencyIntelligence = lazy(() => import('./pages/DependencyIntelligence').then((m) => ({ default: m.DependencyIntelligence })))
+const SupplierIntelligence = lazy(() => import('./pages/SupplierIntelligence').then((m) => ({ default: m.SupplierIntelligence })))
+const Incidents = lazy(() => import('./pages/Incidents').then((m) => ({ default: m.Incidents })))
+const Audit = lazy(() => import('./pages/Audit').then((m) => ({ default: m.Audit })))
+const ChangeImpact = lazy(() => import('./pages/ChangeImpact').then((m) => ({ default: m.ChangeImpact })))
+const DigitalTwin = lazy(() => import('./pages/DigitalTwin').then((m) => ({ default: m.DigitalTwin })))
+const History = lazy(() => import('./pages/History').then((m) => ({ default: m.History })))
+const DocumentIntelligence = lazy(() => import('./pages/DocumentIntelligence').then((m) => ({ default: m.DocumentIntelligence })))
+const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })))
+const IntegrationMarketplace = lazy(() => import('./pages/IntegrationMarketplace').then((m) => ({ default: m.IntegrationMarketplace })))
+const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })))
+const ActionPlan = lazy(() => import('./pages/ActionPlan').then((m) => ({ default: m.ActionPlan })))
+const EnterpriseModel = lazy(() => import('./pages/EnterpriseModel').then((m) => ({ default: m.EnterpriseModel })))
+const DecisionSim = lazy(() => import('./pages/DecisionSim').then((m) => ({ default: m.DecisionSim })))
+const ImpactIntelligence = lazy(() => import('./pages/ImpactIntelligence').then((m) => ({ default: m.ImpactIntelligence })))
+const RelationInference = lazy(() => import('./pages/RelationInference').then((m) => ({ default: m.RelationInference })))
+const AttackSim = lazy(() => import('./pages/AttackSim').then((m) => ({ default: m.AttackSim })))
+const Help = lazy(() => import('./pages/Help').then((m) => ({ default: m.Help })))
+const Setup = lazy(() => import('./pages/Setup').then((m) => ({ default: m.Setup })))
+const Docs = lazy(() => import('./pages/Docs').then((m) => ({ default: m.Docs })))
+const Legal = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Legal })))
+const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const DemoChoice = lazy(() => import('./pages/DemoChoice').then((m) => ({ default: m.DemoChoice })))
+const Blog = lazy(() => import('./pages/site/Blog').then((m) => ({ default: m.Blog })))
+const BlogPost = lazy(() => import('./pages/site/Blog').then((m) => ({ default: m.BlogPost })))
+const Videos = lazy(() => import('./pages/site/Videos').then((m) => ({ default: m.Videos })))
+const Solutions = lazy(() => import('./pages/site/Solutions').then((m) => ({ default: m.Solutions })))
+
+/** Écran d'attente pendant le chargement d'un écran. */
+function Loading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center" style={{ background: 'var(--nx-bg)' }}>
+      <div className="nx-breathe"><LogoMark size={44} title="Lenexux" /></div>
+    </div>
+  )
+}
 
 // Titre affiché en en-tête de chaque écran. Bilingue et aligné sur le libellé
 // du menu : l'utilisateur retrouve en haut de page exactement ce qu'il a cliqué.
@@ -82,33 +99,35 @@ export default function App() {
 
   // Pages publiques plein écran (hors du layout applicatif).
   if (pathname === '/welcome') {
-    return <><Landing /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><Landing /></Suspense><CookieConsent /></>
   }
   if (pathname === '/demo') {
-    return <><DemoChoice /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><DemoChoice /></Suspense><CookieConsent /></>
   }
   if (pathname === '/login') {
-    return <><Login /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><Login /></Suspense><CookieConsent /></>
   }
   if (pathname === '/legal') {
-    return <><Legal /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><Legal /></Suspense><CookieConsent /></>
   }
   if (pathname === '/docs') {
-    return <><Docs /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><Docs /></Suspense><CookieConsent /></>
   }
   if (pathname === '/videos') {
-    return <><Videos /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><Videos /></Suspense><CookieConsent /></>
   }
   if (pathname === '/solutions') {
-    return <><Solutions /><CookieConsent /></>
+    return <><Suspense fallback={<Loading />}><Solutions /></Suspense><CookieConsent /></>
   }
   if (pathname === '/blog' || pathname.startsWith('/blog/')) {
     return (
       <>
-        <Routes>
-          <Route path="/blog" element={<Blog />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-        </Routes>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+          </Routes>
+        </Suspense>
         <CookieConsent />
       </>
     )
@@ -131,7 +150,7 @@ function AuthedApp() {
   const tenant = getTenantId()
   const org = useOrganization()
 
-  if (pathname === '/demarrage') return <Setup />
+  if (pathname === '/demarrage') return <Suspense fallback={<Loading />}><Setup /></Suspense>
   // Pas d'écran blanc si l'API est indisponible : on laisse passer, la barre de progression rattrapera.
   if (org.isLoading) {
     return (
@@ -165,6 +184,7 @@ function AuthedApp() {
     >
       <GuidedTour />
       <CookieConsent />
+      <Suspense fallback={<Loading />}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -194,6 +214,7 @@ function AuthedApp() {
         <Route path="/human" element={<HumanDependency />} />
         <Route path="/actions" element={<ActionPlan />} />
       </Routes>
+      </Suspense>
     </Layout>
   )
 }

@@ -1,0 +1,39 @@
+# Lenexux
+
+> Plateforme d'intelligence des dépendances et de l'impact opérationnel. Lenexux relie systèmes, fournisseurs, personnes et modèles d'IA dans un même graphe, révèle les points uniques de défaillance, simule pannes, cyberattaques et décisions, et chiffre leur impact dans la devise de l'organisation.
+
+Éditeur : SPLITSPAY INC. Fondateur : Yvan Loic Nanfah Wamba. Contact : yvanloic@lenexux.com. Site : https://lenexux.com
+
+## Ce que fait Lenexux
+
+- Cartographie des dépendances : import de fichiers CSV et Excel, connecteurs d'API, ou sonde installée dans le réseau du client, sans port entrant.
+- Points uniques de défaillance : éléments sans secours dont dépend une activité, et personnes seules à détenir un savoir critique.
+- Simulation de pannes : propagation en cascade, coût horaire par élément, délai de rétablissement, probabilité décroissante avec la distance. Résultats en pire cas et en cas attendu.
+- Simulation de cyberattaques : chemin d'attaque, points de bascule, contre-mesures classées par dommage évité.
+- Décision fondée sur le graphe : recruter, remplacer une personne, introduire ou remplacer un outil, changer de fournisseur, ouvrir ou fermer un site, automatiser un processus. Chaque décision est appliquée sur une copie du graphe, puis chiffrée ligne par ligne avec la source de chaque montant.
+- Preuves : chaque dépendance porte ses preuves (import, observation, inférence IA, validation humaine) et un score de confiance.
+- Rapports exécutifs, plan d'action, historique du jumeau numérique.
+
+## Principes
+
+- Le moteur de calcul est déterministe : les mêmes données donnent toujours le même résultat, et chaque chiffre se décompose.
+- L'IA interprète, reformule et suggère. Elle ne produit jamais les montants, et ses suggestions restent signalées tant qu'un humain ne les a pas confirmées.
+- Multi-devises, dont le franc CFA. Interface en français et en anglais.
+
+## Pour qui
+
+Directions générales, DSI, équipes risques, continuité d'activité et conformité, dans la banque et la microfinance, l'assurance, les télécoms, la santé, le secteur public, l'industrie et la logistique.
+
+## Pages
+
+- [Accueil](https://lenexux.com/welcome) : le problème, le fonctionnement, le produit, les secteurs, la FAQ.
+- [Documentation](https://lenexux.com/docs) : guides, API, sécurité, sonde de collecte.
+- [Blog](https://lenexux.com/blog) : méthodes de cartographie, de chiffrage d'impact et de décision.
+- [Solutions SplitsPay](https://lenexux.com/solutions) : Lenexux, GoldArmy Guard, GoldArmy AI, SplitsPay, Gold Army Agence.
+- [Vidéos de démonstration](https://lenexux.com/videos)
+- [Démo interactive](https://lenexux.com/demo) : jeu de données complet, sans création de compte.
+- [Mentions légales et confidentialité](https://lenexux.com/legal)
+
+## À savoir
+
+Lenexux est un produit récent, en phase de premiers pilotes. Aucun chiffre de clientèle ni référence client n'est publié à ce jour.

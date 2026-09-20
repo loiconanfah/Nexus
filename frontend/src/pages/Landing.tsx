@@ -24,7 +24,7 @@ export function Landing() {
     return () => clearTimeout(id)
   }, [hash])
   usePageMeta(
-    'Lenexux — Intelligence des dépendances et d’impact opérationnel',
+    'Lenexux | Intelligence des dépendances et d’impact opérationnel',
     'Cartographiez vos systèmes, fournisseurs, personnes et IA en un graphe de dépendances, révélez les points uniques de défaillance, simulez pannes et cyberattaques, et chiffrez l’impact financier.',
     '/',
   )
@@ -61,12 +61,12 @@ export function Landing() {
         <Label>{t('Le problème', 'The problem')}</Label>
         <SectionH>{t('Chaque outil voit son silo. Personne ne voit l’ensemble.', 'Each tool sees its silo. No one sees the whole.')}</SectionH>
         <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.65 }}>
-          {t('Votre ERP connaît les fournisseurs, l’ITSM les serveurs, le RH les personnes, votre plateforme IA les modèles et agents. Mais quand un fournisseur tombe, qu’un employé clé part ou qu’un service cloud est compromis, la question — « qu’est-ce qui casse, jusqu’où, et combien ça coûte ? » — traverse tous ces silos. Aucun outil, seul, n’y répond.',
-                'Your ERP knows suppliers, your ITSM knows servers, HR knows people, your AI platform knows models and agents. But when a supplier fails, a key person leaves or a cloud service is compromised, the question — “what breaks, how far, and how much does it cost?” — cuts across all those silos. No single tool answers it.')}
+          {t('Votre ERP connaît les fournisseurs, l’ITSM les serveurs, le RH les personnes, votre plateforme IA les modèles et agents. Mais quand un fournisseur tombe, qu’un employé clé part ou qu’un service cloud est compromis, la question, « qu’est-ce qui casse, jusqu’où, et combien ça coûte ? », traverse tous ces silos. Aucun outil, seul, n’y répond.',
+                'Your ERP knows suppliers, your ITSM knows servers, HR knows people, your AI platform knows models and agents. But when a supplier fails, a key person leaves or a cloud service is compromised, the question, “what breaks, how far, and how much does it cost?”, cuts across all those silos. No single tool answers it.')}
         </p>
         <div className="mt-12 grid gap-px sm:grid-cols-3" style={{ background: '#1c1c22' }}>
           <Persona icon={EyeOff} role={t('Angles morts', 'Blind spots')} body={t('Les dépendances transversales (systèmes ↔ fournisseurs ↔ personnes ↔ IA) ne vivent dans aucun outil.', 'Cross-cutting dependencies (systems ↔ suppliers ↔ people ↔ AI) live in no single tool.')} />
-          <Persona icon={AlertTriangle} role={t('Surprises coûteuses', 'Costly surprises')} body={t('On découvre un point unique de défaillance le jour où il tombe — pas avant.', 'You discover a single point of failure the day it fails — not before.')} />
+          <Persona icon={AlertTriangle} role={t('Surprises coûteuses', 'Costly surprises')} body={t('On découvre un point unique de défaillance le jour où il tombe, pas avant.', 'You discover a single point of failure the day it fails, not before.')} />
           <Persona icon={LineChart} role={t('Décisions à l’aveugle', 'Decisions in the dark')} body={t('Impossible de chiffrer l’impact d’une panne ou d’une décision sans un modèle relié au réel.', 'Impossible to quantify the impact of an outage or a decision without a model tied to reality.')} />
         </div>
       </Section>
@@ -81,8 +81,8 @@ export function Landing() {
         </p>
         <div className="mt-10 flex flex-col gap-px" style={{ background: '#1c1c22' }}>
           <Beat time="09:02" t={t}
-            fr="Votre fournisseur d’identité — celui qui laisse entrer vos employés dans leurs outils — tombe. Personne ne sait encore jusqu’où ça va."
-            en="Your identity provider — the one that lets employees into their tools — goes down. Nobody yet knows how far this goes." />
+            fr="Votre fournisseur d’identité, celui qui laisse entrer vos employés dans leurs outils, tombe. Personne ne sait encore jusqu’où ça va."
+            en="Your identity provider, the one that lets employees into their tools, goes down. Nobody yet knows how far this goes." />
           <Beat time="09:04" t={t}
             fr="Vous ouvrez Lenexux et tapez la question telle quelle : « et si nous perdons notre fournisseur d’identité ? »"
             en="You open Lenexux and type the question as-is: “what if we lose our identity provider?”" />
@@ -93,8 +93,8 @@ export function Landing() {
             fr="Lenexux vous dit aussi sur quoi il s’avance : 21 dépendances traversées, confiance moyenne 88 %, et le maillon le plus faible est nommé pour que vous alliez le vérifier."
             en="Lenexux also tells you how sure it is: 21 dependencies traversed, 88 % average confidence, and the weakest link is named so you can go check it." />
           <Beat time="09:15" t={t} last
-            fr="Vous arbitrez avec des montants, pas des intuitions — et le rapport pour la direction est déjà écrit."
-            en="You decide with amounts, not hunches — and the report for leadership is already written." />
+            fr="Vous arbitrez avec des montants, pas des intuitions, et le rapport pour la direction est déjà écrit."
+            en="You decide with amounts, not hunches, and the report for leadership is already written." />
         </div>
       </Section>
 
@@ -121,7 +121,7 @@ export function Landing() {
           <Step n="2" icon={Network} title={t('Cartographier', 'Map')} body={t('Systèmes, fournisseurs, personnes et IA deviennent un graphe unique et navigable.', 'Systems, suppliers, people and AI become a single, navigable graph.')} />
           <Step n="3" icon={Radar} title={t('Révéler', 'Reveal')} body={t('Points uniques de défaillance, concentration et rayon d’impact, avec un score expliqué.', 'Single points of failure, concentration and blast radius, with an explained score.')} />
           <Step n="4" icon={Activity} title={t('Simuler', 'Simulate')} body={t('Rejouez une panne, une cyberattaque ou une décision ; l’impact se propage et se chiffre.', 'Replay an outage, a cyberattack or a decision; the impact propagates and is quantified.')} />
-          <Step n="5" icon={LineChart} title={t('Décider', 'Decide')} body={t('Mitigations priorisées et rapport exécutif — des chiffres déterministes, jamais inventés.', 'Prioritized mitigations and an executive report — deterministic figures, never invented.')} />
+          <Step n="5" icon={LineChart} title={t('Décider', 'Decide')} body={t('Mitigations priorisées et rapport exécutif, des chiffres déterministes, jamais inventés.', 'Prioritized mitigations and an executive report, deterministic figures, never invented.')} />
         </div>
         <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
           <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>
@@ -131,8 +131,8 @@ export function Landing() {
             {t('« Que se passe-t-il si nous perdons le fournisseur d’identité ? »', '“What happens if we lose the identity provider?”')}
           </p>
           <p className="mt-2 max-w-3xl" style={{ color: '#a2a2b0', fontSize: 15, lineHeight: 1.6 }}>
-            {t('Lenexux résout la cible dans le graphe, suit la cascade sur plusieurs niveaux, identifie les 8 actifs qui en dépendent sans redondance, chiffre l’impact à 1,70 M$ avec une reprise de 4,9 h, puis propose les mitigations — et l’IA explique le tout en langage clair.',
-                'Lenexux resolves the target in the graph, follows the multi-level cascade, identifies the 8 assets that depend on it without redundancy, quantifies impact at $1.70M with a 4.9 h recovery, then proposes mitigations — and the AI explains it all in plain language.')}
+            {t('Lenexux résout la cible dans le graphe, suit la cascade sur plusieurs niveaux, identifie les 8 actifs qui en dépendent sans redondance, chiffre l’impact à 1,70 M$ avec une reprise de 4,9 h, puis propose les mitigations, et l’IA explique le tout en langage clair.',
+                'Lenexux resolves the target in the graph, follows the multi-level cascade, identifies the 8 assets that depend on it without redundancy, quantifies impact at $1.70M with a 4.9 h recovery, then proposes mitigations, and the AI explains it all in plain language.')}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {['8 actifs exposés', '1,70 M$', 'RTO 4,9 h', '0 redondance'].map((c) => <Chip key={c}>{c}</Chip>)}
@@ -145,8 +145,8 @@ export function Landing() {
         <Label>{t('Voir le produit', 'See the product')}</Label>
         <SectionH>{t('Ce à quoi ça ressemble, vraiment.', 'What it actually looks like.')}</SectionH>
         <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
-          {t('Captures réelles de la plateforme sur le jeu de démo — aucune maquette.',
-             'Real screenshots of the platform on the demo dataset — no mockups.')}
+          {t('Captures réelles de la plateforme sur le jeu de démo, aucune maquette.',
+             'Real screenshots of the platform on the demo dataset, no mockups.')}
         </p>
         <Showcase t={t} />
       </Section>
@@ -155,8 +155,8 @@ export function Landing() {
       <Section id="detail">
         <DeepRow tag="01 · " kicker={t('Sous le capot', 'Under the hood')}
           title={t('Un moteur de risque explicable.', 'An explainable risk engine.')}
-          body={t('Chaque actif reçoit un score de 0 à 100, décomposé en six facteurs mesurables. Aucune boîte noire : vous voyez exactement pourquoi un élément est critique — et pouvez le justifier en comité.',
-                  'Every asset gets a 0–100 score, broken into six measurable factors. No black box: you see exactly why an element is critical — and can justify it in committee.')}
+          body={t('Chaque actif reçoit un score de 0 à 100, décomposé en six facteurs mesurables. Aucune boîte noire : vous voyez exactement pourquoi un élément est critique, et pouvez le justifier en comité.',
+                  'Every asset gets a 0, 100 score, broken into six measurable factors. No black box: you see exactly why an element is critical, and can justify it in committee.')}
           points={[t('Six facteurs mesurables', 'Six measurable factors'), t('Indice de confiance des données', 'Data confidence index'), t('Zéro chiffre inventé', 'Zero invented numbers')]}
           visual={<RiskBars />} />
       </Section>
@@ -177,7 +177,7 @@ export function Landing() {
       {/* ══════════ 03 · CYBER & IA ══════════ */}
       <Section alt>
         <DeepRow tag="03 · " kicker={t('Cyberattaque & IA', 'Cyberattack & AI')}
-          title={t('Suivez une attaque — et vos dépendances à l’IA.', 'Trace an attack — and your AI dependencies.')}
+          title={t('Suivez une attaque, et vos dépendances à l’IA.', 'Trace an attack, and your AI dependencies.')}
           body={t('Rejouez une intrusion qui se propage d’un employé ou d’un outil externe jusqu’à vos agents IA : Lenexux révèle la chaîne de compromission, chiffre l’impact par nœud et évalue chaque contre-mesure. Modèles, agents et fournisseurs d’IA sont des dépendances de premier plan.',
                   'Replay an intrusion spreading from an employee or external tool to your AI agents: Lenexux reveals the compromise chain, quantifies impact per node and scores each countermeasure. AI models, agents and providers are first-class dependencies.')}
           points={[t('Kill-chain expliquée par l’IA', 'AI-explained kill-chain'), t('Impact et contre-mesure par nœud', 'Per-node impact and countermeasure'), t('« OpenAI tombe » → cascade chiffrée', '“OpenAI goes down” → quantified cascade')]}
@@ -189,8 +189,8 @@ export function Landing() {
         <Label>{t('La plateforme', 'The platform')}</Label>
         <SectionH>{t('Tout ce que Lenexux fait, en un seul endroit.', 'Everything Lenexux does, in one place.')}</SectionH>
         <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
-          {t('Une couche d’intelligence au-dessus de vos systèmes — pas un remplaçant. Voici les capacités, du graphe à la décision.',
-              'An intelligence layer above your systems — not a replacement. Here are the capabilities, from graph to decision.')}
+          {t('Une couche d’intelligence au-dessus de vos systèmes, pas un remplaçant. Voici les capacités, du graphe à la décision.',
+              'An intelligence layer above your systems, not a replacement. Here are the capabilities, from graph to decision.')}
         </p>
         <div className="mt-12 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <CapCard icon={Network} title={t('Cartographie & graphe', 'Mapping & graph')} items={[
@@ -199,13 +199,13 @@ export function Landing() {
             t('Résolution d’entités entre sources', 'Cross-source entity resolution'),
           ]} />
           <CapCard icon={AlertTriangle} title={t('Analyse de risque', 'Risk analysis')} items={[
-            t('Score de risque 0–100 en six facteurs', '0–100 risk score across six factors'),
+            t('Score de risque 0, 100 en six facteurs', '0, 100 risk score across six factors'),
             t('Points uniques de défaillance (SPOF)', 'Single points of failure (SPOF)'),
             t('Alerte anticipée & impact de changement', 'Early warning & change impact'),
           ]} />
           <CapCard icon={Activity} title={t('Impact & simulation', 'Impact & simulation')} items={[
             t('Impact transversal en langage naturel', 'Cross-cutting impact in natural language'),
-            t('Simulation holographique — 10 types de panne', 'Holographic simulation — 10 outage types'),
+            t('Simulation holographique, 10 types de panne', 'Holographic simulation, 10 outage types'),
             t('Cyberattaque : kill-chain & contre-mesures', 'Cyberattack: kill-chain & countermeasures'),
           ]} />
           <CapCard icon={Building2} title={t('Décision & finance', 'Decision & finance')} items={[
@@ -235,7 +235,7 @@ export function Landing() {
           ]} />
           <CapCard icon={Workflow} title={t('Déterministe + IA', 'Deterministic + AI')} items={[
             t('Tous les chiffres calculés, traçables', 'All figures computed, traceable'),
-            t('L’IA résout, reformule, explique — jamais n’invente', 'AI resolves, rephrases, explains — never invents'),
+            t('L’IA résout, reformule, explique, jamais n’invente', 'AI resolves, rephrases, explains, never invents'),
             t('Sans clé IA, tout reste fonctionnel', 'Without an AI key, everything still works'),
           ]} />
         </div>
@@ -260,14 +260,14 @@ export function Landing() {
             def={['Un élément dont plusieurs choses dépendent, et qui n’a aucun remplaçant. S’il tombe, tout ce qui est derrière tombe avec lui.',
                   'An element several things depend on, with no stand-in. If it fails, everything behind it fails with it.']} />
           <Term t={t} term={['Rayon d’impact', 'Blast radius']}
-            def={['Le nombre de choses qui s’arrêtent quand un élément tombe — pas seulement ses voisins directs, mais toute la chaîne derrière.',
-                  'How many things stop when one element fails — not just its direct neighbours, but the whole chain behind it.']} />
+            def={['Le nombre de choses qui s’arrêtent quand un élément tombe, pas seulement ses voisins directs, mais toute la chaîne derrière.',
+                  'How many things stop when one element fails, not just its direct neighbours, but the whole chain behind it.']} />
           <Term t={t} term={['Temps de reprise (RTO)', 'Recovery time (RTO)']}
             def={['Combien de temps il faut pour tout remettre en service. C’est ce délai, multiplié par ce que vous perdez chaque heure, qui donne le coût.',
                   'How long it takes to bring everything back. That delay, times what you lose per hour, is what gives the cost.']} />
           <Term t={t} term={['Confiance', 'Confidence']}
-            def={['À quel point on est sûr qu’une dépendance existe vraiment. Une information validée par un humain vaut plus qu’une supposition — et toute information vieillit.',
-                  'How sure we are a dependency really exists. Information validated by a human is worth more than a guess — and all information ages.']} />
+            def={['À quel point on est sûr qu’une dépendance existe vraiment. Une information validée par un humain vaut plus qu’une supposition, et toute information vieillit.',
+                  'How sure we are a dependency really exists. Information validated by a human is worth more than a guess, and all information ages.']} />
           <Term t={t} term={['Preuve', 'Evidence']}
             def={['D’où vient l’information : un fichier importé, une interrogation en direct d’un système, une déduction, ou quelqu’un qui l’a confirmée. Chaque preuve est conservée.',
                   'Where the information came from: an imported file, a live query to a system, a deduction, or someone who confirmed it. Every piece of evidence is kept.']} />
@@ -306,8 +306,8 @@ export function Landing() {
           </div>
           <ul className="mt-4 flex flex-col gap-2">
             {[
-              t('Il ne surveille pas vos systèmes en temps réel — ce n’est pas un outil de supervision, et il ne remplacera pas celui que vous avez.',
-                'It does not monitor your systems in real time — it is not a monitoring tool, and it will not replace the one you have.'),
+              t('Il ne surveille pas vos systèmes en temps réel, ce n’est pas un outil de supervision, et il ne remplacera pas celui que vous avez.',
+                'It does not monitor your systems in real time, it is not a monitoring tool, and it will not replace the one you have.'),
               t('Il n’agit pas sur vos systèmes : il lit ce que vous lui donnez, il ne redémarre ni ne reconfigure rien.',
                 'It does not act on your systems: it reads what you give it, it restarts and reconfigures nothing.'),
               t('Il n’invente aucun montant. Sans données sur votre activité, il vous le dit au lieu de produire un chiffre rassurant.',
@@ -331,16 +331,16 @@ export function Landing() {
         </p>
         <div className="mt-12 grid gap-px md:grid-cols-3" style={{ background: '#1c1c22' }}>
           <Phase t={t} when={['Le premier jour', 'Day one']}
-            what={['Vous créez un espace et chargez un jeu de démonstration, ou un premier export de votre inventaire — un simple CSV suffit.',
-                   'You create a workspace and load a demo dataset, or a first export of your inventory — a plain CSV is enough.']}
+            what={['Vous créez un espace et chargez un jeu de démonstration, ou un premier export de votre inventaire, un simple CSV suffit.',
+                   'You create a workspace and load a demo dataset, or a first export of your inventory, a plain CSV is enough.']}
             who={['Une personne. Aucune installation.', 'One person. Nothing to install.']} />
           <Phase t={t} when={['La première semaine', 'Week one']}
             what={['Vous complétez avec vos fournisseurs et vos personnes clés, puis vous validez les dépendances que vous savez justes. Le graphe devient le vôtre.',
                    'You add your suppliers and key people, then validate the dependencies you know are right. The graph becomes yours.']}
             who={['Celles et ceux qui connaissent le terrain : IT, achats, continuité.', 'The people who know the ground: IT, procurement, continuity.']} />
           <Phase t={t} when={['Le premier mois', 'Month one']}
-            what={['Vous branchez vos sources vivantes en lecture seule pour que la carte se rafraîchisse toute seule — et vous passez vos premiers scénarios en comité.',
-                   'You connect your live sources read-only so the map refreshes itself — and you take your first scenarios to committee.']}
+            what={['Vous branchez vos sources vivantes en lecture seule pour que la carte se rafraîchisse toute seule, et vous passez vos premiers scénarios en comité.',
+                   'You connect your live sources read-only so the map refreshes itself, and you take your first scenarios to committee.']}
             who={['Une sonde installée chez vous si vos systèmes ne sont pas exposés sur Internet.',
                   'A probe installed on your side if your systems are not exposed to the internet.']} />
         </div>
@@ -374,7 +374,7 @@ export function Landing() {
       {/* ══════════ SÉCURITÉ (remplace blog) ══════════ */}
       <Section id="secteurs">
         <Label>{t('Secteurs & sécurité', 'Industries & security')}</Label>
-        <SectionH>{t('Partout où une panne coûte cher — et vos données restent chez vous.', 'Wherever downtime is costly — and your data stays yours.')}</SectionH>
+        <SectionH>{t('Partout où une panne coûte cher, et vos données restent chez vous.', 'Wherever downtime is costly, and your data stays yours.')}</SectionH>
         <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Sector icon={Briefcase} label={t('Services professionnels & TI', 'Professional & IT services')} />
           <Sector icon={Landmark} label={t('Finance & assurance', 'Finance & insurance')} />
@@ -471,7 +471,7 @@ function Versus({ t, tool, has, lacks, last }: { t: T; tool: [string, string]; h
       </div>
       <div>
         <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: last ? '#22d3ee' : '#7fe8f7' }}>
-          {t('Ce qui manque — et que Lenexux apporte', 'What’s missing — and Lenexux brings')}
+          {t('Ce qui manque, et que Lenexux apporte', 'What’s missing, and Lenexux brings')}
         </p>
         <p className="mt-1.5" style={{ fontSize: 13.5, color: '#c8c8d2', lineHeight: 1.55 }}>{t(...lacks)}</p>
       </div>
@@ -517,7 +517,7 @@ const SHOTS: Shot[] = [
     title: ['Le classement par risque', 'The risk ranking'],
     body: [
       'Tous les actifs classés de 0 à 100, avec criticité effective, nombre de dépendants, rayon d’impact et présence ou non de redondance. Chaque score est décomposable.',
-      'Every asset ranked 0–100, with effective criticality, dependents, blast radius and whether redundancy exists. Every score is decomposable.',
+      'Every asset ranked 0, 100, with effective criticality, dependents, blast radius and whether redundancy exists. Every score is decomposable.',
     ],
   },
   {
@@ -534,8 +534,8 @@ const SHOTS: Shot[] = [
     tab: ['Impact', 'Impact'],
     title: ['L’impact transversal', 'Cross-cutting impact'],
     body: [
-      'Posez la question en langage naturel — « et si nous perdons ce fournisseur ? ». Le moteur chiffre, l’IA explique, et rien n’est inventé.',
-      'Ask in plain language — “what if we lose this supplier?”. The engine quantifies, the AI explains, and nothing is invented.',
+      'Posez la question en langage naturel, « et si nous perdons ce fournisseur ? ». Le moteur chiffre, l’IA explique, et rien n’est inventé.',
+      'Ask in plain language, “what if we lose this supplier?”. The engine quantifies, the AI explains, and nothing is invented.',
     ],
   },
   {
@@ -543,8 +543,8 @@ const SHOTS: Shot[] = [
     tab: ['Confiance', 'Trust'],
     title: ['Confiance & audit', 'Trust & audit'],
     body: [
-      'Chaque dépendance expose « pourquoi ce score » : preuve par preuve, fiabilité × fraîcheur. Une validation humaine s’ajoute aux sources — elle ne les efface jamais.',
-      'Every dependency exposes “why this score”: evidence by evidence, reliability × freshness. A human validation is added to the sources — it never erases them.',
+      'Chaque dépendance expose « pourquoi ce score » : preuve par preuve, fiabilité × fraîcheur. Une validation humaine s’ajoute aux sources, elle ne les efface jamais.',
+      'Every dependency exposes “why this score”: evidence by evidence, reliability × freshness. A human validation is added to the sources, it never erases them.',
     ],
   },
   {
@@ -552,8 +552,8 @@ const SHOTS: Shot[] = [
     tab: ['Entreprise', 'Enterprise'],
     title: ['Le modèle d’entreprise', 'The enterprise model'],
     body: [
-      'P&L, trésorerie, effectifs, sites et structure de coûts — entièrement éditables et versionnés. C’est ce modèle qui convertit une panne technique en dollars.',
-      'P&L, cash, headcount, sites and cost structure — fully editable and versioned. This model is what turns a technical outage into dollars.',
+      'P&L, trésorerie, effectifs, sites et structure de coûts, entièrement éditables et versionnés. C’est ce modèle qui convertit une panne technique en dollars.',
+      'P&L, cash, headcount, sites and cost structure, fully editable and versioned. This model is what turns a technical outage into dollars.',
     ],
   },
 ]
