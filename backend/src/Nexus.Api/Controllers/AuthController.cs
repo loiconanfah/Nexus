@@ -59,7 +59,7 @@ public sealed class AuthController(
         // Contrôlé APRÈS le mot de passe : un tiers ne peut pas savoir si une
         // adresse est inscrite en attente de vérification.
         var state = await users.VerificationStateAsync(user.Email, ct);
-        if (state is { Verified: false })
+        if (state is { Verified: false } && verification.Required)
         {
             var wait = await verification.CooldownAsync(user.Email, ct);
             if (wait == 0) await verification.SendCodeAsync(user.Email, state.Value.FirstName, state.Value.Lang, ct);
@@ -79,7 +79,6 @@ public sealed class AuthController(
     public async Task<IActionResult> Register([FromBody] RegisterRequest req, CancellationToken ct)
     {
         if (!_auth.AllowSelfRegistration) return StatusCode(403, new { error = "registration_disabled" });
-        if (!verification.CanSend) return StatusCode(503, new { error = "email_unavailable" });
         if (req is null) return BadRequest(new { error = "credentials_required" });
 
         var error = Validate(req);
@@ -95,7 +94,8 @@ public sealed class AuthController(
         var user = new NexusUser(email, PasswordHasher.Hash(req.Password), tenant, "admin");
         var profile = new SignupProfile(
             req.FirstName!.Trim(), req.LastName!.Trim(), Clean(req.JobTitle, 120), Clean(req.Phone, 40), lang, req.MarketingOptIn);
-        if (!await users.AddPendingAsync(user, profile, ct)) return Conflict(new { error = "email_taken" });
+        var mustVerify = verification.Required;
+        if (!await users.AddPendingAsync(user, profile, ct, verified: !mustVerify)) return Conflict(new { error = "email_taken" });
 
         // Profil d'organisation pré-rempli : l'assistant de démarrage reprend ces
         // réponses. Il reste « non terminé » tant que les chiffres ne sont pas saisis.
@@ -103,6 +103,13 @@ public sealed class AuthController(
         await organizations.SaveAsync(tenant, new OrganizationProfile(
             req.Organization!.Trim(), req.Sector!, country, Currencies.ForCountry(country), req.SizeBand!,
             0, 0, "business", null, DateTime.UtcNow), ct);
+
+        // Sans service d'envoi, le compte est actif tout de suite : session ouverte.
+        if (!mustVerify)
+        {
+            var (tok, exp) = tokens.Issue(user);
+            return Ok(new { token = tok, expiresAt = exp, email = user.Email, role = user.Role, tenantId = user.TenantId });
+        }
 
         try
         {
@@ -203,8 +210,8 @@ public sealed class AuthController(
     [HttpGet("config")]
     public IActionResult Config() => Ok(new
     {
-        // Ouverte seulement si un code de vérification peut réellement partir.
-        registrationEnabled = _auth.AllowSelfRegistration && verification.CanSend,
+        registrationEnabled = _auth.AllowSelfRegistration,
+        emailVerification = verification.Required,
         minPasswordLength = MinPasswordLength,
         entraEnabled = _entra.Enabled,
         entraClientId = _entra.Enabled ? _entra.ClientId : null,

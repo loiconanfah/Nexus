@@ -68,12 +68,13 @@ export function Login() {
   const [view, setView] = useState<View>(searchParams.get('signup') === '1' ? 'signup' : 'signin')
   const [entraEnabled, setEntraEnabled] = useState(false)
   const [registrationEnabled, setRegistrationEnabled] = useState<boolean | null>(null)
+  const [emailVerification, setEmailVerification] = useState(false)
   const [pending, setPending] = useState<{ email: string; resendAfter: number } | null>(null)
   const [signup, setSignup] = useState<SignupInput>(EMPTY)
 
   useEffect(() => {
     getAuthConfig()
-      .then((c) => { setEntraEnabled(c.entraEnabled); setRegistrationEnabled(c.registrationEnabled) })
+      .then((c) => { setEntraEnabled(c.entraEnabled); setRegistrationEnabled(c.registrationEnabled); setEmailVerification(!!c.emailVerification) })
       .catch(() => setRegistrationEnabled(false))
   }, [])
 
@@ -101,8 +102,8 @@ export function Login() {
               onSignup={() => setView('signup')} onUnverified={toVerify} onDone={() => navigate('/')} />
           )}
           {view === 'signup' && (
-            <SignUp t={t} lang={lang} value={signup} onChange={setSignup} registrationEnabled={registrationEnabled}
-              onSignin={() => setView('signin')} onCreated={toVerify} />
+            <SignUp t={t} lang={lang} value={signup} onChange={setSignup} registrationEnabled={registrationEnabled} emailVerification={emailVerification}
+              onSignin={() => setView('signin')} onCreated={toVerify} onDone={() => navigate('/')} />
           )}
           {view === 'verify' && pending && (
             <Verify t={t} lang={lang} email={pending.email} initialWait={pending.resendAfter}
@@ -262,9 +263,9 @@ function SignIn({ t, entraEnabled, registrationEnabled, onSignup, onUnverified, 
 
 /* ─────────────────────────────── Inscription ─────────────────────────────── */
 
-function SignUp({ t, lang, value, onChange, registrationEnabled, onSignin, onCreated }: {
-  t: T; lang: 'fr' | 'en'; value: SignupInput; onChange: (v: SignupInput) => void; registrationEnabled: boolean | null
-  onSignin: () => void; onCreated: (email: string, wait: number) => void
+function SignUp({ t, lang, value, onChange, registrationEnabled, emailVerification, onSignin, onCreated, onDone }: {
+  t: T; lang: 'fr' | 'en'; value: SignupInput; onChange: (v: SignupInput) => void; registrationEnabled: boolean | null; emailVerification: boolean
+  onSignin: () => void; onCreated: (email: string, wait: number) => void; onDone: () => void
 }) {
   const [step, setStep] = useState<1 | 2>(1)
   const [show, setShow] = useState(false)
@@ -317,7 +318,8 @@ function SignUp({ t, lang, value, onChange, registrationEnabled, onSignin, onCre
     setError(null); setBusy(true)
     try {
       const r = await register({ ...v, email: v.email.trim(), lang })
-      onCreated(r.email, r.resendAfter)
+      if (r.kind === 'session') onDone()
+      else onCreated(r.email, r.resendAfter)
     } catch (e) {
       const code = e instanceof Error ? e.message : ''
       // Une erreur qui concerne l'étape 1 y ramène directement.
@@ -335,9 +337,11 @@ function SignUp({ t, lang, value, onChange, registrationEnabled, onSignin, onCre
       <Header title={t('Créer votre compte', 'Create your account')}
         sub={t('Un espace de travail privé pour votre organisation. Deux minutes suffisent.', 'A private workspace for your organisation. It takes two minutes.')} />
 
-      <Stepper step={step} labels={[t('Vous', 'You'), t('Votre organisation', 'Your organisation'), t('Vérification', 'Verification')]} />
+      <Stepper step={step} labels={emailVerification
+        ? [t('Vous', 'You'), t('Votre organisation', 'Your organisation'), t('Vérification', 'Verification')]
+        : [t('Vous', 'You'), t('Votre organisation', 'Your organisation')]} />
 
-      {registrationEnabled === false && <Alert>{authMessage('email_unavailable', t)}</Alert>}
+      {registrationEnabled === false && <Alert>{authMessage('registration_disabled', t)}</Alert>}
       {error && <Alert>{error}{error === authMessage('email_taken', t) && <> <button type="button" onClick={onSignin} className="underline">{t('Se connecter', 'Sign in')}</button></>}</Alert>}
 
       {step === 1 ? (
@@ -351,7 +355,7 @@ function SignUp({ t, lang, value, onChange, registrationEnabled, onSignin, onCre
             </Field>
           </div>
           <Field label={t('Courriel professionnel', 'Work email')} htmlFor="su-em" required error={show1('email')}
-            hint={t('Le code de vérification sera envoyé à cette adresse.', 'The verification code will be sent to this address.')}>
+            hint={emailVerification ? t('Le code de vérification sera envoyé à cette adresse.', 'The verification code will be sent to this address.') : t('Elle servira d’identifiant de connexion.', 'You will use it to sign in.')}>
             <input id="su-em" type="email" autoComplete="email" value={v.email} onChange={(e) => set('email', e.target.value)} onBlur={() => touch('email')}
               placeholder={t('prenom@entreprise.com', 'name@company.com')} className="nx-field" maxLength={254} />
           </Field>

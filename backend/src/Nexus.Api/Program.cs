@@ -143,8 +143,8 @@ builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<PgUserStore>();
 
 // --- Courriel (vérification des comptes) : SMTP si NEXUS_SMTP_HOST est défini. ---
-// Sans SMTP en production, l'inscription reste fermée (AuthController.Config) :
-// ouvrir des comptes impossibles à vérifier n'aurait aucun sens.
+// Sans SMTP, l'inscription reste possible mais sans vérification du courriel
+// (EmailVerificationService.Required) ; elle se réactive dès que le SMTP existe.
 var emailCfg = new EmailConfig
 {
     Host = Environment.GetEnvironmentVariable("NEXUS_SMTP_HOST") ?? "",
@@ -159,7 +159,7 @@ else
 {
     builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
     if (builder.Environment.IsProduction() && authCfg.AllowSelfRegistration)
-        Log.Warning("NEXUS_SMTP_HOST absent : l'inscription libre reste fermée tant qu'aucun courriel de vérification ne peut partir.");
+        Log.Warning("NEXUS_SMTP_HOST absent : les comptes créés par inscription sont actifs sans vérification du courriel.");
 }
 builder.Services.AddScoped<EmailVerificationService>();
 

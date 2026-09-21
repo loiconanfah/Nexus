@@ -145,19 +145,25 @@ export interface SignupInput {
 }
 
 /**
- * Inscription : crée le compte (non vérifié) et son espace de travail, puis le
- * serveur envoie un code par courriel. Aucune session n'est ouverte avant la
- * vérification.
+ * Inscription : crée le compte et son espace de travail. Si la vérification du
+ * courriel est active, le serveur envoie un code et aucune session n'est ouverte
+ * avant sa saisie ; sinon la session est ouverte immédiatement.
  */
-export async function register(input: SignupInput): Promise<{ email: string; resendAfter: number }> {
+export type RegisterResult =
+  | { kind: 'session'; session: Session }
+  | { kind: 'verify'; email: string; resendAfter: number }
+
+export async function register(input: SignupInput): Promise<RegisterResult> {
   const res = await fetch('/api/v1/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
   if (!res.ok) throw await failure(res, `register_failed_${res.status}`)
-  const data = (await res.json()) as { email: string; resendAfter: number }
-  return { email: data.email, resendAfter: data.resendAfter ?? 60 }
+  const data = (await res.json()) as { token?: string; email: string; role?: string; tenantId?: string; resendAfter?: number }
+  // Sans vérification du courriel (aucun service d'envoi), la session est ouverte tout de suite.
+  if (data.token) return { kind: 'session', session: store(data as { token: string; email: string; role: string; tenantId: string }) }
+  return { kind: 'verify', email: data.email, resendAfter: data.resendAfter ?? 60 }
 }
 
 /** Confirme l'adresse avec le code reçu ; ouvre la session en cas de succès. */

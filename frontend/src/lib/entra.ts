@@ -7,6 +7,7 @@ import { PublicClientApplication } from '@azure/msal-browser'
 
 export interface AuthConfig {
   registrationEnabled: boolean
+  emailVerification?: boolean
   entraEnabled: boolean
   entraClientId: string | null
   entraTenantId: string | null

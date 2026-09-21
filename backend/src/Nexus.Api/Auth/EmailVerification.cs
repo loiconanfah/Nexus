@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using System.Net;
 using System.Security.Cryptography;
@@ -32,6 +32,16 @@ public sealed class EmailVerificationService(
 
     /// <summary>Un envoi est-il possible ? En production, uniquement avec un vrai SMTP.</summary>
     public bool CanSend => mail.CanDeliver || !env.IsProduction();
+
+    /// <summary>
+    /// La vérification est-elle exigée ? Seulement si un courriel peut réellement
+    /// partir (SMTP configuré) et qu'elle n'a pas été coupée explicitement
+    /// (NEXUS_REQUIRE_EMAIL_VERIFICATION=false). Sans SMTP, les comptes sont actifs
+    /// dès leur création : la vérification se réactive d'elle-même le jour où le
+    /// SMTP est renseigné.
+    /// </summary>
+    public bool Required => mail.CanDeliver
+        && Environment.GetEnvironmentVariable("NEXUS_REQUIRE_EMAIL_VERIFICATION") is not ("false" or "0");
 
     private async Task<DbConnection> OpenAsync(CancellationToken ct)
     {

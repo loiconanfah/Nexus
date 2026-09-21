@@ -138,27 +138,27 @@ public sealed class PgUserStore(NexusDbContext db)
     /// pourrait bloquer une adresse qui ne lui appartient pas en s'inscrivant le
     /// premier. Un compte vérifié n'est jamais touché (retourne false).
     /// </summary>
-    public async Task<bool> AddPendingAsync(NexusUser user, SignupProfile profile, CancellationToken ct)
+    public async Task<bool> AddPendingAsync(NexusUser user, SignupProfile profile, CancellationToken ct, bool verified = false)
     {
         var conn = await OpenAsync(ct);
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO app_users (email, password_hash, tenant_id, role, email_verified,
                                    first_name, last_name, job_title, phone, lang, terms_accepted_at, marketing_opt_in)
-            VALUES (@e, @h, @t, @r, false, @fn, @ln, @jt, @ph, @lg, now(), @mk)
+            VALUES (@e, @h, @t, @r, @v, @fn, @ln, @jt, @ph, @lg, now(), @mk)
             ON CONFLICT (email) DO UPDATE SET
                 password_hash = EXCLUDED.password_hash, tenant_id = EXCLUDED.tenant_id,
                 first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
                 job_title = EXCLUDED.job_title, phone = EXCLUDED.phone, lang = EXCLUDED.lang,
                 terms_accepted_at = now(), marketing_opt_in = EXCLUDED.marketing_opt_in,
-                created_at = now()
+                email_verified = EXCLUDED.email_verified, created_at = now()
             WHERE app_users.email_verified = false;
             """;
         P(cmd, "@e", user.Email.Trim()); P(cmd, "@h", user.PasswordHash);
         P(cmd, "@t", user.TenantId); P(cmd, "@r", user.Role);
         P(cmd, "@fn", profile.FirstName); P(cmd, "@ln", profile.LastName);
         P(cmd, "@jt", profile.JobTitle); P(cmd, "@ph", profile.Phone);
-        P(cmd, "@lg", profile.Lang); P(cmd, "@mk", profile.MarketingOptIn);
+        P(cmd, "@lg", profile.Lang); P(cmd, "@mk", profile.MarketingOptIn); P(cmd, "@v", verified);
         return await cmd.ExecuteNonQueryAsync(ct) > 0;
     }
 

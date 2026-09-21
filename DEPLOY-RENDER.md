@@ -54,9 +54,10 @@ Render demande alors les valeurs des secrets marqués `sync: false`.
 
 - `NEXUS_JWT_KEY` est **généré automatiquement** par Render (ne pas y toucher).
 - `NEXUS_ADMIN_EMAIL` vaut `admin@cgi.demo` par défaut (modifiable).
-- Inscription libre : `NEXUS_ALLOW_REGISTRATION=true` **et** un SMTP configuré. Chaque compte
-  doit confirmer son adresse par un code à six chiffres envoyé par courriel ; sans SMTP,
-  l'inscription reste fermée automatiquement.
+- Inscription libre : `NEXUS_ALLOW_REGISTRATION=true`. Sans SMTP, les comptes sont actifs dès
+  leur création, **sans vérification du courriel**. Dès que `NEXUS_SMTP_HOST` est renseigné,
+  chaque nouveau compte doit confirmer son adresse par un code à six chiffres (aucun changement
+  de code). `NEXUS_REQUIRE_EMAIL_VERIFICATION=false` coupe la vérification même avec un SMTP.
 
 #### Courriel (vérification des comptes)
 
@@ -146,4 +147,4 @@ et suivre les instructions DNS. Render émet le certificat TLS automatiquement.
 ### Rappel sécurité
 - Aucun secret dans Git : tout passe par les variables Render (`sync: false`).
 - `NEXUS_JWT_KEY` généré par Render : **stable** — le changer invaliderait toutes les sessions.
-- Inscription : ouverte seulement avec un SMTP fonctionnel ; chaque compte vérifie son adresse avant d'accéder à son espace.
+- Inscription : sans SMTP, aucune vérification du courriel ; configurer le SMTP dès que possible pour l'activer.

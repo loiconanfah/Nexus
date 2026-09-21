@@ -21,9 +21,9 @@ travaux restants avant la mise en marché générale (GA).
 - JWT signé (clé via `NEXUS_JWT_KEY` en production ; clé de dev sinon, avec
   avertissement au démarrage).
 - SSO Microsoft Entra ID optionnel.
-- Auto-inscription désactivable (`NEXUS_ALLOW_REGISTRATION=false`), et fermée d'office en
-  production sans SMTP.
-- Vérification de l'adresse par code à six chiffres : empreinte HMAC seule stockée, validité
+- Auto-inscription désactivable (`NEXUS_ALLOW_REGISTRATION=false`).
+- Vérification de l'adresse, active dès qu'un SMTP est configuré (sinon désactivée : les
+  comptes sont actifs à la création), par code à six chiffres : empreinte HMAC seule stockée, validité
   15 minutes, 5 essais, renvoi limité à un par minute. Un compte non vérifié ne peut pas se
   connecter ; le refus n'est donné qu'après un mot de passe correct, et le renvoi répond de la
   même façon qu'une adresse existe ou non (pas d'énumération des comptes).
