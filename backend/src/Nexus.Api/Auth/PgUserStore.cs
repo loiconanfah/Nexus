@@ -24,6 +24,18 @@ public sealed class PgUserStore(NexusDbContext db)
                 tenant_id uuid NOT NULL,
                 role text NOT NULL,
                 created_at timestamptz NOT NULL DEFAULT now());
+            -- Profil et vérification (ajoutés après coup : colonnes idempotentes).
+            -- Les comptes existants (amorçage, ajout par un administrateur, SSO)
+            -- sont considérés vérifiés ; seule l'inscription libre crée un compte
+            -- non vérifié.
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS email_verified boolean NOT NULL DEFAULT true;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS first_name text;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS last_name text;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS job_title text;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS phone text;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS lang text;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS terms_accepted_at timestamptz;
+            ALTER TABLE app_users ADD COLUMN IF NOT EXISTS marketing_opt_in boolean NOT NULL DEFAULT false;
             """;
         await cmd.ExecuteNonQueryAsync(ct);
         return conn;
@@ -120,6 +132,57 @@ public sealed class PgUserStore(NexusDbContext db)
         return rows > 0;
     }
 
+    /// <summary>
+    /// Inscription libre : crée un compte NON vérifié. Si l'adresse appartient à
+    /// un compte encore non vérifié, il est remplacé : sans cela, n'importe qui
+    /// pourrait bloquer une adresse qui ne lui appartient pas en s'inscrivant le
+    /// premier. Un compte vérifié n'est jamais touché (retourne false).
+    /// </summary>
+    public async Task<bool> AddPendingAsync(NexusUser user, SignupProfile profile, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO app_users (email, password_hash, tenant_id, role, email_verified,
+                                   first_name, last_name, job_title, phone, lang, terms_accepted_at, marketing_opt_in)
+            VALUES (@e, @h, @t, @r, false, @fn, @ln, @jt, @ph, @lg, now(), @mk)
+            ON CONFLICT (email) DO UPDATE SET
+                password_hash = EXCLUDED.password_hash, tenant_id = EXCLUDED.tenant_id,
+                first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name,
+                job_title = EXCLUDED.job_title, phone = EXCLUDED.phone, lang = EXCLUDED.lang,
+                terms_accepted_at = now(), marketing_opt_in = EXCLUDED.marketing_opt_in,
+                created_at = now()
+            WHERE app_users.email_verified = false;
+            """;
+        P(cmd, "@e", user.Email.Trim()); P(cmd, "@h", user.PasswordHash);
+        P(cmd, "@t", user.TenantId); P(cmd, "@r", user.Role);
+        P(cmd, "@fn", profile.FirstName); P(cmd, "@ln", profile.LastName);
+        P(cmd, "@jt", profile.JobTitle); P(cmd, "@ph", profile.Phone);
+        P(cmd, "@lg", profile.Lang); P(cmd, "@mk", profile.MarketingOptIn);
+        return await cmd.ExecuteNonQueryAsync(ct) > 0;
+    }
+
+    /// <summary>État de vérification et prénom (pour personnaliser le courriel). Null si inconnu.</summary>
+    public async Task<(bool Verified, string FirstName, string Lang)?> VerificationStateAsync(string email, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT email_verified, coalesce(first_name, ''), coalesce(lang, 'fr') FROM app_users WHERE lower(email) = lower(@e);";
+        P(cmd, "@e", email.Trim());
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return null;
+        return (r.GetBoolean(0), r.GetString(1), r.GetString(2));
+    }
+
+    public async Task MarkVerifiedAsync(string email, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE app_users SET email_verified = true WHERE lower(email) = lower(@e);";
+        P(cmd, "@e", email.Trim());
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
     /// <summary>Amorce l'admin d'amorçage et réaligne son mot de passe / rôle sur la
     /// valeur configurée (NEXUS_ADMIN_PASSWORD). Le tenant existant est préservé.
     /// Idempotent : permet de piloter le mot de passe admin par l'environnement.</summary>
@@ -138,3 +201,6 @@ public sealed class PgUserStore(NexusDbContext db)
         await cmd.ExecuteNonQueryAsync(ct);
     }
 }
+
+/// <summary>Informations saisies à l'inscription, en plus de l'adresse et du mot de passe.</summary>
+public sealed record SignupProfile(string FirstName, string LastName, string? JobTitle, string? Phone, string Lang, bool MarketingOptIn);

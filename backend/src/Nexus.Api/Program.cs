@@ -142,6 +142,27 @@ builder.Services.AddSingleton<EntraTokenValidator>();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<PgUserStore>();
 
+// --- Courriel (vérification des comptes) : SMTP si NEXUS_SMTP_HOST est défini. ---
+// Sans SMTP en production, l'inscription reste fermée (AuthController.Config) :
+// ouvrir des comptes impossibles à vérifier n'aurait aucun sens.
+var emailCfg = new EmailConfig
+{
+    Host = Environment.GetEnvironmentVariable("NEXUS_SMTP_HOST") ?? "",
+    User = Environment.GetEnvironmentVariable("NEXUS_SMTP_USER") ?? "",
+    Password = Environment.GetEnvironmentVariable("NEXUS_SMTP_PASSWORD") ?? "",
+    From = Environment.GetEnvironmentVariable("NEXUS_MAIL_FROM") is { Length: > 0 } from ? from : "Lenexux <no-reply@lenexux.com>",
+};
+if (int.TryParse(Environment.GetEnvironmentVariable("NEXUS_SMTP_PORT"), out var smtpPort)) emailCfg.Port = smtpPort;
+builder.Services.AddSingleton(emailCfg);
+if (emailCfg.IsConfigured) builder.Services.AddSingleton<IEmailSender, SmtpEmailSender>();
+else
+{
+    builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
+    if (builder.Environment.IsProduction() && authCfg.AllowSelfRegistration)
+        Log.Warning("NEXUS_SMTP_HOST absent : l'inscription libre reste fermée tant qu'aucun courriel de vérification ne peut partir.");
+}
+builder.Services.AddScoped<EmailVerificationService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {

@@ -90,7 +90,19 @@ services:
       - key: NEXUS_ADMIN_PASSWORD
         sync: false          # choisir un mot de passe admin fort
       - key: NEXUS_ALLOW_REGISTRATION
-        value: "false"       # prod : inscriptions fermées par défaut. Démo ouverte : mettre "true".
+        value: "true"        # inscription libre, avec vérification du courriel. Reste FERMÉE
+                             # tant que NEXUS_SMTP_HOST n'est pas renseigné (aucun code ne pourrait partir).
+      # --- Courriel (codes de vérification des comptes) ---
+      - key: NEXUS_SMTP_HOST
+        sync: false          # ex. smtp.office365.com, smtp.gmail.com, smtp.zoho.com, smtp.resend.com
+      - key: NEXUS_SMTP_PORT
+        value: "587"         # 587 (STARTTLS) ou 465 (TLS implicite)
+      - key: NEXUS_SMTP_USER
+        sync: false
+      - key: NEXUS_SMTP_PASSWORD
+        sync: false          # mot de passe d'application ou clé du fournisseur (jamais dans Git)
+      - key: NEXUS_MAIL_FROM
+        value: "Lenexux <no-reply@lenexux.com>"
       # --- IA (Gemini) : clé persistante, survit aux redéploiements ---
       - key: GEMINI_API_KEY
         sync: false          # coller la clé Gemini (jamais dans Git)

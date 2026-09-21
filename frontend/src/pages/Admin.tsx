@@ -10,7 +10,7 @@ import { CollectorsPanel } from '../components/CollectorsPanel'
 import { UsersPanel } from '../components/UsersPanel'
 import type { ImpactTuning } from '../lib/types'
 import { useMoney, useOrganization } from '../lib/money'
-import { SECTOR_LABELS } from './Setup'
+import { SECTOR_LABELS } from '../lib/orgLists'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'

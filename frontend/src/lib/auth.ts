@@ -6,6 +6,33 @@
 const TOKEN_KEY = 'nexus.jwt'
 const CGI_DEMO_TENANT = 'c6100000-cf1c-4000-8000-000000000001'
 
+/** Erreur d'authentification : `message` est le code serveur, `data` le reste de la réponse. */
+export class AuthError extends Error {
+  data: Record<string, unknown>
+  constructor(code: string, data: Record<string, unknown> = {}) {
+    super(code)
+    this.data = data
+  }
+}
+
+async function failure(res: Response, fallback: string): Promise<AuthError> {
+  try {
+    const body = (await res.json()) as Record<string, unknown>
+    return new AuthError(typeof body.error === 'string' ? body.error : fallback, body)
+  } catch {
+    return new AuthError(fallback)
+  }
+}
+
+function store(data: { token: string; email: string; role: string; tenantId: string }): Session {
+  try {
+    localStorage.setItem(TOKEN_KEY, data.token)
+  } catch {
+    /* ignore */
+  }
+  return { email: data.email, role: data.role, tenantId: data.tenantId }
+}
+
 export interface Session {
   email: string
   role: string
@@ -72,16 +99,11 @@ export async function login(email: string, password: string): Promise<Session> {
     body: JSON.stringify({ email, password }),
   })
   if (!res.ok) {
-    if (res.status === 401) throw new Error('invalid_credentials')
-    throw new Error(`login_failed_${res.status}`)
+    if (res.status === 401) throw new AuthError('invalid_credentials')
+    // 403 email_not_verified : le serveur a (re)envoyé un code, on passe à la vérification.
+    throw await failure(res, `login_failed_${res.status}`)
   }
-  const data = (await res.json()) as { token: string; email: string; role: string; tenantId: string }
-  try {
-    localStorage.setItem(TOKEN_KEY, data.token)
-  } catch {
-    /* ignore */
-  }
-  return { email: data.email, role: data.role, tenantId: data.tenantId }
+  return store(await res.json())
 }
 
 /** Échange un jeton d'identité Microsoft (MSAL) contre un jeton Lenexux. */
@@ -105,30 +127,60 @@ export async function loginWithEntra(msToken: string): Promise<Session> {
   return { email: data.email, role: data.role, tenantId: data.tenantId }
 }
 
-/** Inscription libre : crée un compte + un espace de travail vierge, puis connecte. */
-export async function register(email: string, password: string): Promise<Session> {
+export interface SignupInput {
+  firstName: string
+  lastName: string
+  email: string
+  jobTitle: string
+  phone: string
+  organization: string
+  sector: string
+  country: string
+  sizeBand: string
+  password: string
+  confirmPassword: string
+  acceptTerms: boolean
+  marketingOptIn: boolean
+  lang: 'fr' | 'en'
+}
+
+/**
+ * Inscription : crée le compte (non vérifié) et son espace de travail, puis le
+ * serveur envoie un code par courriel. Aucune session n'est ouverte avant la
+ * vérification.
+ */
+export async function register(input: SignupInput): Promise<{ email: string; resendAfter: number }> {
   const res = await fetch('/api/v1/auth/register', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(input),
   })
-  if (!res.ok) {
-    let code = `register_failed_${res.status}`
-    try {
-      const body = (await res.json()) as { error?: string }
-      if (body.error) code = body.error
-    } catch {
-      /* ignore */
-    }
-    throw new Error(code)
-  }
-  const data = (await res.json()) as { token: string; email: string; role: string; tenantId: string }
-  try {
-    localStorage.setItem(TOKEN_KEY, data.token)
-  } catch {
-    /* ignore */
-  }
-  return { email: data.email, role: data.role, tenantId: data.tenantId }
+  if (!res.ok) throw await failure(res, `register_failed_${res.status}`)
+  const data = (await res.json()) as { email: string; resendAfter: number }
+  return { email: data.email, resendAfter: data.resendAfter ?? 60 }
+}
+
+/** Confirme l'adresse avec le code reçu ; ouvre la session en cas de succès. */
+export async function verifyEmail(email: string, code: string): Promise<Session> {
+  const res = await fetch('/api/v1/auth/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  })
+  if (!res.ok) throw await failure(res, `verify_failed_${res.status}`)
+  return store(await res.json())
+}
+
+/** Demande un nouveau code. Retourne le délai (secondes) avant le prochain renvoi possible. */
+export async function resendCode(email: string, lang: 'fr' | 'en'): Promise<number> {
+  const res = await fetch('/api/v1/auth/resend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, lang }),
+  })
+  if (!res.ok) throw await failure(res, `resend_failed_${res.status}`)
+  const data = (await res.json()) as { resendAfter?: number }
+  return data.resendAfter ?? 60
 }
 
 export function logout(): void {

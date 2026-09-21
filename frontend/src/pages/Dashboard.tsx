@@ -12,7 +12,7 @@ import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphData, Overview, PriorityItem, RiskRow } from '../lib/types'
 import { useOrganization } from '../lib/money'
-import { SECTOR_LABELS } from './Setup'
+import { SECTOR_LABELS } from '../lib/orgLists'
 
 function priorityText(it: PriorityItem, t: (fr: string, en: string) => string): string {
   const type = entityTypeLabel(it.entityType, t)
