@@ -11,34 +11,36 @@ namespace Nexus.Ingestion.Normalization;
 /// </summary>
 public static class OntologyResolver
 {
-    private static string Norm(string s) => new(s.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
+    // Minuscules, sans accents ni séparateurs : « Base de données » devient « basededonnees ».
+    private static string Norm(string s) => new(TextFold.RemoveDiacritics(s).Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
 
     // --- Types d'entités : forme normalisée -> nom canonique du registre ---
     private static readonly Dictionary<string, string> EntitySynonyms = Build(new()
     {
-        ["Server"] = "server srv vm virtualmachine host node compute machine baremetal hypervisor cacheserver webserver appserver",
-        ["Database"] = "db database rdbms sqlserver oracledb postgres postgresql mysql mariadb mongodb nosql dbinstance",
+        ["Server"] = "server srv vm virtualmachine host node compute machine baremetal hypervisor cacheserver webserver appserver serveur serveurs machinevirtuelle",
+        ["Database"] = "db database rdbms sqlserver oracledb postgres postgresql mysql mariadb mongodb nosql dbinstance basededonnees bdd sgbd",
         ["DataStore"] = "datastore objectstore blobstore warehouse datalake",
-        ["Application"] = "app application webapp webapplication software program erp crm frontend backend",
+        ["Application"] = "app application webapp webapplication software program erp crm frontend backend logiciel progiciel applicatif",
         ["Service"] = "service microservice api webservice endpoint function lambda",
-        ["System"] = "system platform middleware mainframe legacy",
-        ["BusinessProcess"] = "process businessprocess workflow businessfunction procedure operation",
-        ["BusinessService"] = "businessservice capability offering",
-        ["Supplier"] = "supplier vendor provider saas thirdparty partner externalprovider",
-        ["Contract"] = "contract sla agreement license subscription",
-        ["Person"] = "person people employee user staff member individual contact human",
-        ["Role"] = "role position title",
-        ["Team"] = "team squad group department unit crew",
-        ["Network"] = "network lan wan vlan subnet sdwan mpls circuit link",
-        ["Device"] = "device appliance hardware iot sensor router switch firewall",
+        ["System"] = "system platform middleware mainframe legacy systeme plateforme",
+        ["BusinessProcess"] = "process businessprocess workflow businessfunction procedure operation processus processusmetier activite activitemetier fonctionmetier",
+        ["BusinessService"] = "businessservice capability offering servicemetier serviceclient offre produit",
+        ["Supplier"] = "supplier vendor provider saas thirdparty partner externalprovider fournisseur prestataire partenaire soustraitant operateur editeur tiers",
+        ["Contract"] = "contract sla agreement license subscription contrat convention accord licence abonnement",
+        ["Person"] = "person people employee user staff member individual contact human personne employe collaborateur agent salarie utilisateur",
+        ["Role"] = "role position title poste fonction",
+        ["BusinessUnit"] = "businessunit direction departement division unite",
+        ["Team"] = "team squad group department unit crew equipe cellule",
+        ["Network"] = "network lan wan vlan subnet sdwan mpls circuit link reseau liaison lienreseau vsat fibre",
+        ["Device"] = "device appliance hardware iot sensor router switch firewall equipement appareil terminal routeur commutateur parefeu tpe gab dab",
         ["CloudResource"] = "cloud cloudresource aws azure gcp s3 bucket ec2 vmss functionapp",
-        ["Infrastructure"] = "infrastructure infra facility",
-        ["Location"] = "location site datacenter datacentre region office building campus rack zone",
-        ["Control"] = "control safeguard countermeasure",
-        ["Policy"] = "policy standard guideline",
-        ["Document"] = "document doc runbook procedure wiki page",
-        ["Incident"] = "incident outage ticket",
-        ["Risk"] = "risk threat",
+        ["Infrastructure"] = "infrastructure infra facility groupeelectrogene onduleur energie climatisation",
+        ["Location"] = "location site datacenter datacentre region office building campus rack zone agence siege lieu bureau entrepot succursale centrededonnees",
+        ["Control"] = "control safeguard countermeasure controle mesure mesuredesecurite",
+        ["Policy"] = "policy standard guideline politique norme directive",
+        ["Document"] = "document doc runbook procedure wiki page procedure manuel",
+        ["Incident"] = "incident outage ticket panne interruption sinistre",
+        ["Risk"] = "risk threat risque menace",
         ["Vulnerability"] = "vulnerability cve weakness",
     });
 
@@ -52,6 +54,9 @@ public static class OntologyResolver
         ("vendor", "Supplier"), ("person", "Person"), ("employee", "Person"),
         ("team", "Team"), ("process", "BusinessProcess"), ("location", "Location"),
         ("site", "Location"), ("device", "Device"), ("system", "System"), ("contract", "Contract"),
+        ("serveur", "Server"), ("basede", "Database"), ("fournisseur", "Supplier"), ("prestataire", "Supplier"),
+        ("agence", "Location"), ("reseau", "Network"), ("processus", "BusinessProcess"), ("logiciel", "Application"),
+        ("equipe", "Team"), ("personne", "Person"), ("systeme", "System"), ("contrat", "Contract"),
     };
 
     public static EntityType ResolveEntityType(string? raw)
@@ -69,19 +74,25 @@ public static class OntologyResolver
     // --- Types de relations : forme normalisée -> nom canonique ---
     private static readonly Dictionary<string, string> RelationSynonyms = Build(new()
     {
-        ["DEPENDS_ON"] = "dependson depends dependsupon requires needs relieson",
-        ["RUNS_ON"] = "runson runs executeson deployedon hostedon",
-        ["HOSTS"] = "hosts hostedby",
-        ["USES"] = "uses consumes calls invokes reads readsfrom integrateswith",
-        ["SUPPLIED_BY"] = "suppliedby vendor providedby sourcedfrom",
-        ["AUTHENTICATES"] = "authenticates auth authenticateswith authvia",
-        ["KNOWS"] = "knows knowledgeof expertise skilledin",
-        ["MAINTAINS"] = "maintains owns ownedby responsiblefor manages managedby operatedby",
-        ["CONNECTS_TO"] = "connectsto connects connectedto communicateswith peers",
-        ["STORES"] = "stores persists writesto writes savesto",
-        ["PROTECTS"] = "protects secures defends",
-        ["PART_OF"] = "partof belongsto memberof componentof",
-        ["LOCATED_IN"] = "locatedin hostedin residesin situatedin",
+        ["DEPENDS_ON"] = "dependson depends dependsupon requires needs relieson dependde depend abesoinde necessite reposesur sappuiesur",
+        ["RUNS_ON"] = "runson runs executeson deployedon hostedon tournesur fonctionnesur hebergesur deployesur executesur",
+        ["HOSTS"] = "hosts hostedby heberge accueille",
+        ["USES"] = "uses consumes calls invokes reads readsfrom integrateswith utilise consomme appelle integre sinterfaceavec",
+        ["SUPPLIED_BY"] = "suppliedby vendor providedby sourcedfrom fournipar fourniepar livrepar assurepar",
+        ["AUTHENTICATES"] = "authenticates auth authenticateswith authvia authentifie",
+        ["KNOWS"] = "knows knowledgeof expertise skilledin connait maitrise",
+        ["MAINTAINS"] = "maintains owns ownedby responsiblefor manages managedby operatedby maintient administre",
+        ["CONNECTS_TO"] = "connectsto connects connectedto communicateswith peers connectea reliea communiqueavec",
+        ["STORES"] = "stores persists writesto writes savesto stocke conserve enregistre",
+        ["PROTECTS"] = "protects secures defends protege securise",
+        ["PART_OF"] = "partof belongsto memberof componentof faitpartiede appartienta composantde",
+        ["LOCATED_IN"] = "locatedin hostedin residesin situatedin situea situedans localisea installea basea implantea",
+        ["MANAGED_BY"] = "gerepar pilotepar",
+        ["OPERATED_BY"] = "exploitepar operepar",
+        ["RESPONSIBLE_FOR"] = "responsablede enchargede",
+        ["BACKED_UP_BY"] = "backedupby secourupar sauvegardepar doublepar",
+        ["REPLACED_BY"] = "replacedby remplacepar",
+        ["IMPACTS"] = "impacts affects impacte affecte atouche perturbe",
     });
 
     public static RelationType ResolveRelationType(string? raw)

@@ -257,7 +257,8 @@ export function Docs() {
           </Sec>
 
           <Sec id="documents" title="Documents (extraction)">
-            <P>Extrait un graphe de dépendances depuis un document (texte). L’IA propose entités et relations, que vous ingérez après validation.</P>
+            <P>Importez un document <b>Word (.docx)</b>, <b>PDF</b> ou texte, ou collez-le. Les tableaux sont lus ligne par ligne, chaque ligne devenant une phrase complète. Le document est découpé en sections : l’IA relève d’abord les éléments et les risques de chaque section, puis cherche les liens en connaissant <b>tous</b> les éléments du document, pour relier une phrase d’une section à un élément nommé dans une autre.</P>
+            <P>Lenexux fusionne ensuite les doublons (casse, accents, alias, nom court et nom complet), <b>recoupe chaque élément avec votre graphe</b> et <b>calcule</b> lui-même les constats : points de concentration sans secours, éléments reposant sur une seule personne, criticités qui divergent de votre graphe. Vous cochez ce qui entre dans le graphe ; un élément déjà présent n’est jamais recréé, un lien déjà connu n’est jamais dupliqué, et les liens ajoutés restent « suggéré par IA » jusqu’à validation. Les images d’un document et les PDF numérisés sans texte ne sont pas lus.</P>
             <Figure src="documents.png" caption="Document Intelligence." />
           </Sec>
 
@@ -339,6 +340,7 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
               ['Collector', 'POST/GET/DELETE /collectors · POST /collectors/{id}/jobs · GET /collectors/jobs'],
               ['Preuves', 'GET /audit/relations/{id}/confidence · POST /audit/relations/{id}/verify'],
               ['Entreprise', 'GET/PUT /enterprise/model · GET /enterprise/model/history · POST /enterprise/model/restore/{id} · POST /enterprise/decision · /enterprise/scenarios'],
+              ['Documents', 'POST /documents/parse · /documents/plan · /documents/extract-section · /documents/link-section · /documents/consolidate · /documents/ingest · /documents/extract'],
               ['IA', 'GET/PUT /ai/config · GET /ai/usage'],
               ['Santé', 'GET /health · GET /health/ready'],
             ]} />

@@ -1,58 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type {
-  ActionBoard,
-  ActionStatus,
-  AiAnswer,
-  DecisionResponse,
-  EnterpriseModel,
-  ImpactAnalysis,
-  ImpactConfig,
-  ImpactTuning,
-  ModelVersion,
-  InferenceResult,
-  ProposedRelation,
-  RestSource,
-  RestPreview,
-  ScenarioSummary,
-  AuditData,
-  Collector,
-  CollectorCreated,
-  CollectorJob,
-  ConfidenceExplain,
-  VerifyResult,
-  WorkspaceUsers,
-  WorkspaceRole,
-  EntityRisk,
-  ExecutiveReport,
-  ExtractedEntity,
-  ExtractedRelation,
-  GraphData,
-  GraphEntityRecord,
-  HistoryData,
-  HumanDependencies,
-  ImportResult,
-  IncidentBoard,
-  Snapshot,
-  Overview,
-  PropagationResult,
-  RiskRow,
-  ScenarioType,
-  SimExplain,
-  SimExplainPayload,
-  AttackExplain,
-  AttackExplainPayload,
-  SupplierIntel,
-  OrganizationState,
-  OrganizationInput,
-  OrganizationProfile,
-  CalibrationPreview,
-  SetupProgress,
-  Notice,
-  DecisionSpec,
-  DecisionReport,
-  DecisionDraft,
-} from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis } from './types'
 
 const BASE = '/api/v1'
 
@@ -289,7 +237,34 @@ export const api = {
 
   ingestDocument: (body: { entities: ExtractedEntity[]; relations: ExtractedRelation[] }) =>
     fetch(`${BASE}/documents/ingest`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
-      .then(handle<{ entitiesCreated: number; relationsCreated: number; unresolved: number }>),
+      .then(handle<{ entitiesCreated: number; entitiesLinked?: number; relationsCreated: number; relationsExisting?: number; unresolved: number }>),
+
+  /** Lit un fichier (Word, PDF, texte). En cas de refus, l'erreur porte le code serveur (unsupported_format, legacy_doc…). */
+  parseDocument: async (file: File): Promise<ParsedDocument> => {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${BASE}/documents/parse`, { method: 'POST', headers: headers(false), body: form })
+    if (res.status === 401) { handleUnauthorized(); throw new Error('unauthorized') }
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error((body as { error?: string }).error ?? `http_${res.status}`)
+    return body as ParsedDocument
+  },
+
+  planDocument: (text: string) =>
+    fetch(`${BASE}/documents/plan`, { method: 'POST', headers: headers(), body: JSON.stringify({ text }) })
+      .then(handle<DocumentPlan>),
+
+  extractSection: (body: { index: number; total: number; section: string; text: string; knownNames: string[]; lang: string }, signal?: AbortSignal) =>
+    fetch(`${BASE}/documents/extract-section`, { method: 'POST', headers: headers(), body: JSON.stringify(body), signal })
+      .then(handle<{ ok: boolean; message?: string; extraction?: ChunkExtraction }>),
+
+  linkSection: (body: { index: number; section: string; text: string; entities: { name: string; type: string }[]; lang: string }, signal?: AbortSignal) =>
+    fetch(`${BASE}/documents/link-section`, { method: 'POST', headers: headers(), body: JSON.stringify(body), signal })
+      .then(handle<{ ok: boolean; message?: string; relations: ExtractedRelation[] }>),
+
+  consolidateDocument: (body: { parts: ChunkExtraction[]; sections: number; analyzed: number; warnings: string[]; lang: string }, signal?: AbortSignal) =>
+    fetch(`${BASE}/documents/consolidate`, { method: 'POST', headers: headers(), body: JSON.stringify(body), signal })
+      .then(handle<DocumentAnalysis>),
 
   analyzeImport: (sample: string) =>
     fetch(`${BASE}/imports/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ sample }) })

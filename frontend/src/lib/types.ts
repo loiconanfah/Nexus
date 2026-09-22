@@ -221,8 +221,27 @@ export interface Snapshot {
 }
 export interface HistoryData { count: number; snapshots: Snapshot[] }
 
-export interface ExtractedEntity { name: string; type: string; criticality: number }
-export interface ExtractedRelation { source: string; sourceType: string; target: string; targetType: string; relationType: string; confidence: number; evidence?: string }
+export interface ExtractedEntity { name: string; type: string; criticality: number; aliases?: string[]; description?: string | null; matchId?: string | null }
+export interface ExtractedRelation { source: string; sourceType: string; target: string; targetType: string; relationType: string; confidence: number; evidence?: string | null }
+
+// Intelligence documentaire : lecture, analyse par sections, consolidation.
+export interface ParsedDocument { fileName: string; format: 'docx' | 'pdf' | 'html' | 'text'; text: string; characters: number; tables: number; pages: number; sections: number; warnings: string[] }
+export interface DocumentSection { index: number; section: string; text: string; characters: number }
+export interface DocumentPlan { aiAvailable: boolean; total: number; truncated: boolean; sections: DocumentSection[] }
+export interface RawEntity { name: string; type: string; criticality: number; aliases: string[]; description?: string | null }
+export interface DocumentRisk { title: string; severity: 'high' | 'medium' | 'low'; detail: string; entities: string[]; evidence?: string | null }
+export interface ChunkExtraction { entities: RawEntity[]; relations: ExtractedRelation[]; risks: DocumentRisk[] }
+export interface CandidateEntity { name: string; type: string; criticality: number; aliases: string[]; description?: string | null; status: 'new' | 'existing'; matchId?: string | null; matchName?: string | null; graphCriticality?: number | null; mentions: number }
+export interface CandidateRelation extends ExtractedRelation { status: 'new' | 'existing' }
+export interface DocumentFinding { kind: 'concentration' | 'key-person' | 'criticality-gap'; severity: 'high' | 'medium' | 'low'; title: string; detail: string; entities: string[] }
+export interface DocumentAnalysis {
+  stats: { sections: number; sectionsAnalyzed: number; entities: number; newEntities: number; existingEntities: number; relations: number; newRelations: number; existingRelations: number; risks: number }
+  entities: CandidateEntity[]
+  relations: CandidateRelation[]
+  risks: DocumentRisk[]
+  findings: DocumentFinding[]
+  warnings: string[]
+}
 
 export type ActionStatus = 'Open' | 'InProgress' | 'Done'
 export interface RemediationAction {
