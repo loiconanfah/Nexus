@@ -38,8 +38,10 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
         };
 
         // Le label générique :Entity + le label de type (contrôlé) sont posés au MERGE.
+        // Le tenant fait partie de la clé : même avec un identifiant venu d'ailleurs,
+        // l'écriture ne peut jamais atteindre (ni réattribuer) le nœud d'un autre espace.
         var cypher = $$"""
-            MERGE (n:Entity { id: $props.id })
+            MERGE (n:Entity { id: $props.id, tenantId: $props.tenantId })
             SET n += $props
             SET n:`{{label}}`
             """;
