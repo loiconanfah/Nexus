@@ -205,7 +205,7 @@ export const api = {
 
   aiConfig: () =>
     fetch(`${BASE}/ai/config`, { headers: headers(false) })
-      .then(handle<{ providers: string[]; provider: string; configured: boolean; model: string; endpointHost: string | null }>),
+      .then(handle<{ providers: string[]; provider: string; configured: boolean; model: string; endpointHost: string | null; source?: 'own' | 'shared' | 'none' }>),
 
   setAiKey: (body: { provider: string; apiKey: string; endpoint?: string; model?: string }) =>
     fetch(`${BASE}/ai/config`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) })

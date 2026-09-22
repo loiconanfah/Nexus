@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Nexus.AI;
 
 namespace Nexus.Api.Controllers;
@@ -60,6 +60,8 @@ public sealed class AiConfigController(
             configured,
             model,
             endpointHost = host,
+            // « shared » : l'espace n'a pas de cle propre et utilise celle de Lenexux.
+            source = config.Source(),
         });
     }
 
@@ -100,6 +102,8 @@ public sealed class AiConfigController(
     [HttpPatch("model")]
     public IActionResult SetModel([FromBody] SetModelRequest req)
     {
+        if (!RequireAdmin(out var forbidden)) return forbidden;
+        if (config.Source() == "shared") return Conflict(new { error = "shared_key" });
         if (req is null || string.IsNullOrWhiteSpace(req.Model)) return BadRequest(new { error = "model_required" });
         if (!config.SetModel(req.Model)) return BadRequest(new { error = "no_key_configured" });
         var (provider, configured, model, host) = config.Status();
@@ -111,7 +115,9 @@ public sealed class AiConfigController(
     {
         if (!RequireAdmin(out var forbidden)) return forbidden;
         config.Clear();
-        return Ok(new { configured = false });
+        // Apres effacement, la cle partagee peut encore s'appliquer : on renvoie l'etat reel.
+        var (_, configured, _, _) = config.Status();
+        return Ok(new { configured, source = config.Source() });
     }
 
     [HttpPost("test")]
@@ -125,6 +131,8 @@ public sealed class AiConfigController(
     [HttpPost("autopick")]
     public async Task<IActionResult> AutoPick(CancellationToken ct)
     {
+        if (!RequireAdmin(out var forbidden)) return forbidden;
+        if (config.Source() == "shared") return Conflict(new { error = "shared_key" });
         var picked = await chat.PickWorkingModelAsync(ct);
         if (string.IsNullOrWhiteSpace(picked)) return Ok(new { ok = false, message = "Aucun modèle utilisable trouvé." });
         config.SetModel(picked!);

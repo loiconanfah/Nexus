@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
 namespace Nexus.AI;
 
@@ -39,26 +39,42 @@ public sealed class AiRuntimeConfig
         return e.Provider is "anthropic" or "openai" or "gemini";
     }
 
-    // Resout l'entree du tenant courant : cache -> Postgres -> repli global (env).
-    private Entry Resolve()
+    // Entree PROPRE au tenant courant (sans repli) : cache -> Postgres.
+    private Entry Own()
     {
         var key = TenantKey();
-        if (_cache.TryGetValue(key, out var cached) && Configured(cached)) return cached;
+        if (_cache.TryGetValue(key, out var cached)) return cached;
+        if (key == Global || _store is null) return new Entry();
 
-        if (key != Global && _store is not null && !_cache.ContainsKey(key))
-        {
-            AiStored? loaded = null;
-            try { loaded = _store.Load(key); } catch { /* best-effort */ }
-            var e = loaded is null
-                ? new Entry()
-                : new Entry { Provider = loaded.Provider, ApiKey = loaded.ApiKey, Endpoint = loaded.Endpoint, Model = loaded.Model };
-            _cache[key] = e;
-            if (Configured(e)) return e;
-        }
+        AiStored? loaded = null;
+        try { loaded = _store.Load(key); } catch { /* best-effort */ }
+        var e = loaded is null
+            ? new Entry()
+            : new Entry { Provider = loaded.Provider, ApiKey = loaded.ApiKey, Endpoint = loaded.Endpoint, Model = loaded.Model };
+        _cache[key] = e;
+        return e;
+    }
 
-        // Repli sur la cle globale de l'operateur (variable d'environnement).
+    // Resout l'entree du tenant courant : sa propre cle, sinon la cle globale de
+    // l'operateur (variable d'environnement). Tout espace sans cle, y compris un
+    // compte tout juste cree, beneficie ainsi de l'IA.
+    private Entry Resolve()
+    {
+        var own = Own();
+        if (Configured(own)) return own;
         if (_cache.TryGetValue(Global, out var g) && Configured(g)) return g;
-        return _cache.TryGetValue(key, out var self) ? self : new Entry();
+        return own;
+    }
+
+    /// <summary>
+    /// Origine de la cle utilisee : « own » (cle propre a l'espace), « shared »
+    /// (cle globale de l'operateur, en repli) ou « none ».
+    /// </summary>
+    public string Source()
+    {
+        if (TenantKey() != Global && Configured(Own())) return "own";
+        if (_cache.TryGetValue(Global, out var g) && Configured(g)) return TenantKey() == Global ? "own" : "shared";
+        return "none";
     }
 
     public bool IsConfigured => Configured(Resolve());
@@ -93,12 +109,17 @@ public sealed class AiRuntimeConfig
         if (key != Global) Save(key, e);
     }
 
-    /// <summary>Met a jour uniquement le modele (sans re-saisir la cle).</summary>
+    /// <summary>
+    /// Met a jour uniquement le modele (sans re-saisir la cle). Refuse pour un
+    /// espace qui utilise la cle partagee : l'enregistrer reviendrait a COPIER la
+    /// cle de l'operateur dans la ligne du tenant (fuite, et plus de rotation
+    /// possible depuis l'environnement).
+    /// </summary>
     public bool SetModel(string model)
     {
-        var e = Resolve();
-        if (string.IsNullOrWhiteSpace(e.ApiKey) || string.IsNullOrWhiteSpace(model)) return false;
         var key = TenantKey();
+        var e = key == Global ? Resolve() : Own();
+        if (!Configured(e) || string.IsNullOrWhiteSpace(model)) return false;
         var ne = new Entry { Provider = e.Provider, ApiKey = e.ApiKey, Endpoint = e.Endpoint, Model = model.Trim() };
         _cache[key] = ne;
         if (key != Global) Save(key, ne);

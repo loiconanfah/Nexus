@@ -219,7 +219,10 @@ function AiIntegration() {
   const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); setModels([]); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
 
   const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p
-  const configured = cfg?.configured
+  // « shared » : l'espace n'a pas de clé propre et utilise celle de Lenexux.
+  const shared = cfg?.source === 'shared'
+  // Réglages propres (modèle, effacement) : seulement avec une clé de l'espace.
+  const configured = cfg?.configured && !shared
 
   // Charge automatiquement la liste des modèles dès qu'une clé est configurée :
   // on peut ainsi CHANGER de modèle via le menu déroulant, sans re-saisir la clé.
@@ -235,14 +238,23 @@ function AiIntegration() {
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
         <KeyRound size={15} style={{ color: 'var(--nx-violet)' }} />
         <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Intégrations IA', 'AI Integrations')}</h3>
-        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: configured ? 'var(--nx-success)' : 'var(--nx-text-muted)', background: configured ? 'color-mix(in srgb, var(--nx-success) 12%, transparent)' : 'var(--nx-surface)' }}>
-          {configured ? `${t('Configuré', 'Configured')} · ${providerLabel(cfg!.provider)}` : t('Non configuré', 'Not configured')}
+        <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: configured || shared ? 'var(--nx-success)' : 'var(--nx-text-muted)', background: configured || shared ? 'color-mix(in srgb, var(--nx-success) 12%, transparent)' : 'var(--nx-surface)' }}>
+          {shared ? `${t('Active', 'Active')} · ${t('clé Lenexux', 'Lenexux key')}` : configured ? `${t('Configuré', 'Configured')} · ${providerLabel(cfg!.provider)}` : t('Non configuré', 'Not configured')}
         </span>
       </div>
 
       <div className="flex flex-col gap-3 p-4">
+        {shared && (
+          <div className="flex items-start gap-2 rounded-sm p-3" style={{ background: 'color-mix(in srgb, var(--nx-success) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-success) 30%, transparent)' }}>
+            <Check size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--nx-success)' }} />
+            <span style={{ fontSize: 12.5, color: 'var(--nx-text)', lineHeight: 1.5 }}>
+              {t('L’IA est déjà active pour votre espace, avec la clé fournie par Lenexux : rien à configurer. Vous pouvez ajouter votre propre clé si vous voulez choisir le fournisseur et le modèle, ou ne pas dépendre du quota mensuel de la clé partagée.',
+                'AI is already active for your workspace, using the key provided by Lenexux: nothing to set up. You can add your own key to choose the provider and model, or to avoid depending on the shared key’s monthly quota.')}
+            </span>
+          </div>
+        )}
         <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>
-          {t('Ajoutez votre clé pour activer la naturalisation des réponses de l’Analyste IA et le mapping assisté. Elle est enregistrée côté serveur, propre à votre espace de travail — elle persiste entre les sessions et les redéploiements, n’est jamais renvoyée au navigateur ni partagée avec les autres tenants.', 'Add your key to enable AI Analyst naturalization and assisted mapping. It is stored server-side, scoped to your workspace — it persists across sessions and redeploys, is never returned to the browser and never shared with other tenants.')}
+          {shared ? t('Clé propre (facultatif) : enregistrée côté serveur, rattachée à votre espace, jamais renvoyée au navigateur ni partagée avec d’autres espaces.', 'Own key (optional): stored server-side, scoped to your workspace, never returned to the browser nor shared with other workspaces.') : t('Ajoutez votre clé pour activer la naturalisation des réponses de l’Analyste IA et le mapping assisté. Elle est enregistrée côté serveur, propre à votre espace de travail — elle persiste entre les sessions et les redéploiements, n’est jamais renvoyée au navigateur ni partagée avec les autres tenants.', 'Add your key to enable AI Analyst naturalization and assisted mapping. It is stored server-side, scoped to your workspace — it persists across sessions and redeploys, is never returned to the browser and never shared with other tenants.')}
         </p>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -300,7 +312,7 @@ function AiIntegration() {
           <button onClick={() => save.mutate()} disabled={!apiKey.trim() || save.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: apiKey.trim() ? 'var(--nx-violet)' : 'var(--nx-surface-high)', color: apiKey.trim() ? '#1a0a2e' : 'var(--nx-text-muted)', fontFamily: mono, fontSize: 12, fontWeight: 600, cursor: apiKey.trim() ? 'pointer' : 'not-allowed' }}>
             {save.isPending ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} {t('Enregistrer la clé', 'Save key')}
           </button>
-          <button onClick={() => test.mutate()} disabled={!configured || test.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
+          <button onClick={() => test.mutate()} disabled={!(configured || shared) || test.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12, cursor: configured || shared ? 'pointer' : 'not-allowed', opacity: configured || shared ? 1 : 0.5 }}>
             {test.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} {t('Tester la connexion', 'Test connection')}
           </button>
           <button onClick={() => clear.mutate()} disabled={!configured || clear.isPending} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-danger)', fontFamily: mono, fontSize: 12, cursor: configured ? 'pointer' : 'not-allowed', opacity: configured ? 1 : 0.5 }}>
