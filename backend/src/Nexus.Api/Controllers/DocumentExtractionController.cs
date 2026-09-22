@@ -10,7 +10,7 @@ using Nexus.Ingestion.Normalization;
 namespace Nexus.Api.Controllers;
 
 /// <summary>
-/// Intelligence documentaire (article 12 / P5). Un document (Word, PDF, texte)
+/// Intelligence documentaire (article 12 / P5). Un document (Word, Excel, PDF, texte)
 /// est lu, découpé en sections, analysé section par section par l'IA, puis
 /// consolidé et recoupé avec le graphe en direct. L'utilisateur choisit ce qui
 /// entre dans le graphe : rien n'est écrit sans confirmation, et les liens
@@ -31,7 +31,6 @@ public sealed class DocumentExtractionController(
 
     public sealed record TextRequest(string Text, string? Lang);
     public sealed record SectionRequest(int Index, int Total, string? Section, string Text, List<string>? KnownNames, string? Lang);
-    public sealed record NamedEntity(string Name, string Type);
     public sealed record LinkRequest(int Index, string? Section, string Text, List<NamedEntity> Entities, string? Lang);
     public sealed record ConsolidateRequest(List<ChunkExtraction> Parts, int Sections, int? Analyzed, List<string>? Warnings, string? Lang);
     public sealed record IngestEntity(string Name, string Type, int Criticality, List<string>? Aliases, string? Description, string? MatchId);
@@ -43,7 +42,7 @@ public sealed class DocumentExtractionController(
         ? "No AI model is available for this workspace (see Admin, AI integrations)."
         : "Aucun modèle IA n'est disponible pour cet espace (voir Admin, Intégrations IA).";
 
-    /// <summary>Lit un fichier (Word, PDF, texte) et renvoie son texte, tableaux mis en phrases.</summary>
+    /// <summary>Lit un fichier (Word, Excel, PDF, CSV, texte) et renvoie son texte, tableaux mis en phrases.</summary>
     [HttpPost("parse")]
     [RequestSizeLimit(DocumentTextExtractor.MaxFileBytes + 1024 * 1024)]
     public IActionResult Parse(IFormFile? file)
@@ -52,7 +51,15 @@ public sealed class DocumentExtractionController(
         if (file is null || file.Length == 0) return BadRequest(new { error = "file_required" });
         if (file.Length > DocumentTextExtractor.MaxFileBytes) return BadRequest(new { error = "file_too_large", maxBytes = DocumentTextExtractor.MaxFileBytes });
         if (!DocumentTextExtractor.IsSupported(file.FileName))
-            return BadRequest(new { error = Path.GetExtension(file.FileName).Equals(".doc", StringComparison.OrdinalIgnoreCase) ? "legacy_doc" : "unsupported_format" });
+            return BadRequest(new
+            {
+                error = Path.GetExtension(file.FileName).ToLowerInvariant() switch
+                {
+                    ".doc" => "legacy_doc",
+                    ".xls" => "legacy_xls",
+                    _ => "unsupported_format",
+                },
+            });
 
         try
         {
@@ -138,7 +145,7 @@ public sealed class DocumentExtractionController(
         if (string.IsNullOrWhiteSpace(req?.Text) || req.Entities is null) return BadRequest(new { error = "text_required" });
         if (!chat.IsConfigured) return Ok(new { ok = false, message = NoAi(Lang(req.Lang)), relations = Array.Empty<object>() });
         var chunk = new DocumentChunk(req.Index, req.Section ?? "", req.Text.Length > 12_000 ? req.Text[..12_000] : req.Text);
-        var entities = req.Entities.Where(e => !string.IsNullOrWhiteSpace(e.Name)).Take(400).Select(e => (e.Name, e.Type)).ToList();
+        var entities = req.Entities.Where(e => !string.IsNullOrWhiteSpace(e.Name)).Take(400).ToList();
         var relations = await DocumentAnalyzer.ExtractLinksAsync(chunk, entities, (s, u, t) => chat.CompleteAsync(s, u, t), ct);
         return Ok(new { ok = true, relations });
     }

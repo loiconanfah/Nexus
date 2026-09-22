@@ -258,7 +258,7 @@ export const api = {
     fetch(`${BASE}/documents/extract-section`, { method: 'POST', headers: headers(), body: JSON.stringify(body), signal })
       .then(handle<{ ok: boolean; message?: string; extraction?: ChunkExtraction }>),
 
-  linkSection: (body: { index: number; section: string; text: string; entities: { name: string; type: string }[]; lang: string }, signal?: AbortSignal) =>
+  linkSection: (body: { index: number; section: string; text: string; entities: { name: string; type: string; aliases?: string[] }[]; lang: string }, signal?: AbortSignal) =>
     fetch(`${BASE}/documents/link-section`, { method: 'POST', headers: headers(), body: JSON.stringify(body), signal })
       .then(handle<{ ok: boolean; message?: string; relations: ExtractedRelation[] }>),
 

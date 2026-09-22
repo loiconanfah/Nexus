@@ -225,7 +225,7 @@ export interface ExtractedEntity { name: string; type: string; criticality: numb
 export interface ExtractedRelation { source: string; sourceType: string; target: string; targetType: string; relationType: string; confidence: number; evidence?: string | null }
 
 // Intelligence documentaire : lecture, analyse par sections, consolidation.
-export interface ParsedDocument { fileName: string; format: 'docx' | 'pdf' | 'html' | 'text'; text: string; characters: number; tables: number; pages: number; sections: number; warnings: string[] }
+export interface ParsedDocument { fileName: string; format: 'docx' | 'xlsx' | 'csv' | 'pdf' | 'html' | 'text'; text: string; characters: number; tables: number; pages: number; sections: number; warnings: string[] }
 export interface DocumentSection { index: number; section: string; text: string; characters: number }
 export interface DocumentPlan { aiAvailable: boolean; total: number; truncated: boolean; sections: DocumentSection[] }
 export interface RawEntity { name: string; type: string; criticality: number; aliases: string[]; description?: string | null }

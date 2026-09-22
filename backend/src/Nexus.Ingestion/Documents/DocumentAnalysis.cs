@@ -15,6 +15,9 @@ public sealed record RawEntity(string Name, string Type, int Criticality, IReadO
 public sealed record RawRelation(string Source, string SourceType, string Target, string TargetType, string RelationType, double Confidence, string? Evidence);
 public sealed record RawRisk(string Title, string Severity, string Detail, IReadOnlyList<string> Entities, string? Evidence);
 
+/// <summary>Élément déjà relevé, transmis à la passe de liens (avec ses identifiants et sigles).</summary>
+public sealed record NamedEntity(string Name, string Type, IReadOnlyList<string>? Aliases = null);
+
 /// <summary>Ce que le modèle a trouvé dans UNE section.</summary>
 public sealed record ChunkExtraction(IReadOnlyList<RawEntity> Entities, IReadOnlyList<RawRelation> Relations, IReadOnlyList<RawRisk> Risks);
 
@@ -90,6 +93,11 @@ public static class DocumentAnalyzer
     private static readonly HashSet<string> AssetToHolder = new(StringComparer.OrdinalIgnoreCase)
         { "OPERATED_BY", "MANAGED_BY" };
     private static readonly HashSet<string> PeopleTypes = new(StringComparer.OrdinalIgnoreCase) { "Person", "Role" };
+    // La dépendance à une personne vise ce qu'elle seule sait faire tourner
+    // (systèmes, processus, services). Qu'un chef d'agence dirige son agence
+    // relève de l'organigramme, pas d'une fragilité de savoir-faire.
+    private static readonly HashSet<string> NotKnowledgeAssets = new(StringComparer.OrdinalIgnoreCase)
+        { "Person", "Role", "Team", "Location", "Organization", "BusinessUnit", "Supplier", "Contract", "Incident", "Risk", "Event" };
     private static readonly HashSet<string> GenericTypes = new(StringComparer.OrdinalIgnoreCase) { "Asset", "System", "Service", "Infrastructure" };
 
     // ───────────────────────────── Découpage ─────────────────────────────
@@ -177,6 +185,7 @@ public static class DocumentAnalyzer
             "6. Noms : reprends le nom exact et le plus complet du document. Si l'élément figure dans « Noms connus », réutilise EXACTEMENT ce nom. Mets les sigles et variantes dans aliases.\n" +
             "7. Les tableaux sont donnés ligne par ligne, sous la forme « En-tête : valeur ; … » : chaque ligne décrit un élément. Relie-le à ce que ses colonnes indiquent (site, responsable, fournisseur, système, rôle, usage). Exemple : un fournisseur dont le rôle est « Éditeur du Core Banking System » donne le lien Core Banking System SUPPLIED_BY ce fournisseur.\n" +
             "7 bis. Relie chaque élément aux autres éléments nommés dans le document chaque fois que le texte ou une colonne l'indique : un élément sans aucun lien est rarement utile. Ne relie jamais sans appui dans le texte.\n" +
+            "7 quater. Un tableau de relations qui relie des identifiants (ID Source, Relation, ID Cible) donne un lien par ligne : écris source et target avec les identifiants tels quels ; ils seront rapprochés des éléments ensuite. N'en fais pas des éléments.\n" +
             "8. Les personnes sont des Person, les postes des Role. Un incident passé est un Incident relié par IMPACTS à ce qu'il a touché.\n" +
             "9. risks : les risques, fragilités ou incidents que le texte décrit ou rend évidents (dépendance unique, absence de secours, personne seule à savoir, fournisseur sans alternative…). Chaque ligne d'un tableau de risques est un risque à reporter (title = son libellé, severity d'après sa criticité). severity : high, medium ou low. Un risque n'est pas une entité.\n" +
             $"10. Rédige description, title et detail en {language}. Garde les noms propres tels quels.\n" +
@@ -193,7 +202,7 @@ public static class DocumentAnalyzer
         "Tu relies des éléments déjà identifiés dans un extrait de document d'entreprise. " +
         "Renvoie STRICTEMENT du JSON : {\"relations\":[{\"source\":\"\",\"sourceType\":\"\",\"target\":\"\",\"targetType\":\"\",\"relationType\":\"\",\"confidence\":0.5,\"evidence\":\"\"}]}.\n" +
         "Règles :\n" +
-        "1. source et target sont recopiés EXACTEMENT depuis la liste des éléments fournie ; jamais d'autre nom.\n" +
+        "1. source et target sont recopiés EXACTEMENT depuis la liste des éléments fournie ; jamais d'autre nom. Si l'extrait désigne un élément par un identifiant (APP-001, SRV-002…) figurant entre crochets, écris le nom exact de cet élément.\n" +
         "2. Chaque lien est appuyé par l'extrait : evidence est une citation exacte et courte (moins de 160 caractères).\n" +
         $"3. Types de liens autorisés : {string.Join(", ", RelationTypeHints)}.\n" +
         "4. Cherche d'abord les liens opérationnels, ce sont eux qui révèlent les fragilités : pour chaque activité, processus ou service, les systèmes, fournisseurs et sites dont il a besoin (DEPENDS_ON) ; " +
@@ -203,10 +212,15 @@ public static class DocumentAnalyzer
         "6. confidence : 0.9 si le texte l'affirme, 0.6 s'il le suggère fortement, 0.4 pour une déduction raisonnable.\n" +
         "7. Les mentions « fictif » ou « test » n'empêchent rien. Liste vide si aucun lien n'est appuyé par le texte.";
 
-    public static string LinksUserPrompt(DocumentChunk chunk, IEnumerable<(string Name, string Type)> entities)
+    public static string LinksUserPrompt(DocumentChunk chunk, IEnumerable<NamedEntity> entities)
     {
-        var sb = new StringBuilder("Éléments du document :\n");
-        foreach (var e in entities.Take(400)) sb.Append("- ").Append(e.Name).Append(" (").Append(e.Type).AppendLine(")");
+        var sb = new StringBuilder("Éléments du document (nom exact, type, puis identifiants ou sigles entre crochets) :\n");
+        foreach (var e in entities.Take(400))
+        {
+            sb.Append("- ").Append(e.Name).Append(" (").Append(e.Type).Append(')');
+            if (e.Aliases is { Count: > 0 }) sb.Append(" [").Append(string.Join(", ", e.Aliases.Take(4))).Append(']');
+            sb.AppendLine();
+        }
         sb.AppendLine().AppendLine("Extrait :").AppendLine("\"\"\"").AppendLine(chunk.Text).AppendLine("\"\"\"");
         return sb.ToString();
     }
@@ -288,7 +302,7 @@ public static class DocumentAnalyzer
             var relations = Array(root, "relations").Select(x => new RawRelation(
                     Str(x, "source"), OntologyResolver.ResolveEntityType(Str(x, "sourceType")).Name,
                     Str(x, "target"), OntologyResolver.ResolveEntityType(Str(x, "targetType")).Name,
-                    OntologyResolver.ResolveRelationType(Str(x, "relationType")).Name,
+                    (OntologyResolver.TryResolveRelationType(Str(x, "relationType")) ?? Nexus.Domain.Ontology.RelationType.FromName("RELATED_TO").Value).Name,
                     Math.Clamp(Dbl(x, "confidence", 0.5), 0.05, 0.95), Clip(NullIfEmpty(Str(x, "evidence")), 240)))
                 .Where(x => x.Source.Length > 0 && x.Target.Length > 0).ToList();
             var risks = Array(root, "risks").Select(x => new RawRisk(
@@ -381,6 +395,9 @@ public static class DocumentAnalyzer
         foreach (var p in parts)
             foreach (var r in p.Relations)
             {
+                // Un identifiant de tableau (« APP-001 ») que rien ne définit ne devient
+                // pas un élément fantôme : le lien est écarté.
+                if ((Find(r.Source) is null && IsBareId(r.Source)) || (Find(r.Target) is null && IsBareId(r.Target))) continue;
                 var s = Find(r.Source) ?? Upsert(r.Source, r.SourceType, 0, [], null);
                 var t = Find(r.Target) ?? Upsert(r.Target, r.TargetType, 0, [], null);
                 if (ReferenceEquals(s, t)) continue;
@@ -480,12 +497,23 @@ public static class DocumentAnalyzer
             if (AssetToHolder.Contains(rel) && PeopleTypes.Contains(type.GetValueOrDefault(t, ""))) Add(holders, s, t);
         }
 
+        // Ce dont chaque élément dépend. Un élément qui dépend de PLUSIEURS éléments
+        // du même type (un produit offert dans neuf agences) a des alternatives :
+        // aucun d'eux n'est, pour lui, un point de concentration.
+        var dependsOn = new Dictionary<string, HashSet<string>>();
+        foreach (var (target, set) in dependents) foreach (var d in set) Add(dependsOn, d, target);
+        bool HasAlternative(string dependent, string provider)
+            => dependsOn.TryGetValue(dependent, out var ps)
+               && ps.Any(p => p != provider && type.GetValueOrDefault(p, "") == type.GetValueOrDefault(provider, ""));
+
         var touched = doc.Select(Node).ToHashSet();
         var findings = new List<DocumentFinding>();
 
         foreach (var n in touched)
         {
-            if (!dependents.TryGetValue(n, out var deps) || deps.Count < 3 || backedUp.Contains(n)) continue;
+            if (!dependents.TryGetValue(n, out var all) || backedUp.Contains(n)) continue;
+            var deps = all.Where(d => !HasAlternative(d, n)).ToHashSet();
+            if (deps.Count < 3) continue;
             var names = deps.Select(d => name.GetValueOrDefault(d, "?")).OrderBy(x => x).ToList();
             var list = string.Join(", ", names.Take(5)) + (names.Count > 5 ? (en ? $" and {names.Count - 5} more" : $" et {names.Count - 5} autre(s)") : "");
             findings.Add(new DocumentFinding("concentration", deps.Count >= 5 ? "high" : "medium",
@@ -498,13 +526,26 @@ public static class DocumentAnalyzer
         // Un élément dont une seule personne (ou fonction) est dépositaire ; regroupé
         // par personne pour qu'une même fragilité n'apparaisse qu'une fois.
         var soleHolder = touched
-            .Where(n => holders.TryGetValue(n, out var hs) && hs.Count == 1 && !PeopleTypes.Contains(type.GetValueOrDefault(n, "")))
+            .Where(n => holders.TryGetValue(n, out var hs) && hs.Count == 1 && !NotKnowledgeAssets.Contains(type.GetValueOrDefault(n, "")))
             .GroupBy(n => holders[n].First());
         foreach (var g in soleHolder)
         {
             var who = name.GetValueOrDefault(g.Key, "?");
             var assets = g.Select(n => name[n]).OrderBy(x => x).ToList();
             var list = string.Join(", ", assets);
+            // Un poste (« Chef d'agence ») peut être tenu par plusieurs personnes :
+            // la fragilité est réelle mais moindre, et la formulation doit le dire.
+            if (type.GetValueOrDefault(g.Key, "") == "Role")
+            {
+                findings.Add(new DocumentFinding("key-person", "medium",
+                    assets.Count == 1
+                        ? (en ? $"{Q(assets[0])} relies on a single role" : $"{Q(assets[0])} repose sur une seule fonction")
+                        : (en ? $"{assets.Count} elements rely on the {Q(who)} role alone" : $"{assets.Count} éléments reposent sur la seule fonction {Q(who)}"),
+                    en ? $"Only the {Q(who)} role is documented as knowing, maintaining or being responsible for: {list}. Check that several people hold it or are trained for it."
+                       : $"Seule la fonction {Q(who)} est documentée comme sachant, maintenant ou étant responsable de : {list}. Vérifiez que plusieurs personnes l'occupent ou y sont formées.",
+                    [who, .. assets]));
+                continue;
+            }
             findings.Add(new DocumentFinding("key-person", "high",
                 assets.Count == 1
                     ? (en ? $"{Q(assets[0])} relies on a single person" : $"{Q(assets[0])} repose sur une seule personne")
@@ -538,6 +579,10 @@ public static class DocumentAnalyzer
         DocumentChunk chunk, int total, IEnumerable<string> knownNames, string lang,
         Func<string, string, CancellationToken, Task<string?>> complete, CancellationToken ct = default)
     {
+        // Lignes de tableau structurées : lues exactement, sans IA.
+        var facts = DocumentTables.Read(chunk.Text);
+        if (DocumentTables.IsMostlyStructured(chunk.Text, facts)) return facts;
+
         var system = SystemPrompt(lang);
         var user = UserPrompt(chunk, total, knownNames);
         ChunkExtraction? best = null;
@@ -547,7 +592,8 @@ public static class DocumentAnalyzer
             if (parsed is not null && (best is null || Size(parsed) > Size(best))) best = parsed;
             if (best is not null && (Size(best) > 0 || chunk.Text.Length < 800)) break;
         }
-        return best;
+        if (best is null && Size(facts) == 0) return null;
+        return DocumentTables.Merge(best, facts);
     }
 
     /// <summary>
@@ -558,25 +604,39 @@ public static class DocumentAnalyzer
     /// la liste sont écartés : cette passe ne peut rien inventer.
     /// </summary>
     public static async Task<IReadOnlyList<RawRelation>> ExtractLinksAsync(
-        DocumentChunk chunk, IReadOnlyList<(string Name, string Type)> entities,
+        DocumentChunk chunk, IReadOnlyList<NamedEntity> entities,
         Func<string, string, CancellationToken, Task<string?>> complete, CancellationToken ct = default)
     {
         if (entities.Count < 2) return [];
+        // Une section faite de lignes structurées a déjà livré ses liens exacts.
+        if (DocumentTables.IsMostlyStructured(chunk.Text, DocumentTables.Read(chunk.Text))) return [];
         var parsed = ParseChunk(await complete(LinksSystemPrompt(), LinksUserPrompt(chunk, entities), ct));
         if (parsed is null) return [];
-        var known = new Dictionary<string, (string Name, string Type)>();
+
+        // Un lien peut viser un élément par son nom OU par un alias (identifiant de
+        // tableau comme APP-001, sigle) : il est ramené au nom complet.
+        var known = new Dictionary<string, NamedEntity>();
         foreach (var e in entities) known.TryAdd(Key(e.Name), e);
-        return parsed.Relations
-            .Where(r => known.ContainsKey(Key(r.Source)) && known.ContainsKey(Key(r.Target)) && Key(r.Source) != Key(r.Target))
+        foreach (var e in entities) foreach (var a in e.Aliases ?? []) known.TryAdd(Key(a), e);
+        foreach (var e in entities) foreach (var k in AltKeys(e.Name)) known.TryAdd(k, e);
+
+        var result = new List<RawRelation>();
+        foreach (var r in parsed.Relations)
+        {
+            if (!known.TryGetValue(Key(r.Source), out var s) || !known.TryGetValue(Key(r.Target), out var t) || ReferenceEquals(s, t)) continue;
             // Un dépositaire « responsable de l'organisation entière » n'apprend rien sur les fragilités.
-            .Where(r => !(HolderToAsset.Contains(r.RelationType) && known[Key(r.Target)].Type == "Organization"))
-            .Select(r => r with { SourceType = known[Key(r.Source)].Type, TargetType = known[Key(r.Target)].Type })
-            .ToList();
+            if (HolderToAsset.Contains(r.RelationType) && t.Type == "Organization") continue;
+            result.Add(r with { Source = s.Name, SourceType = s.Type, Target = t.Name, TargetType = t.Type });
+        }
+        return result;
     }
 
     /// <summary>Liste dédoublonnée des éléments relevés dans toutes les sections.</summary>
-    public static IReadOnlyList<(string Name, string Type)> AllEntities(IEnumerable<ChunkExtraction> parts)
-        => parts.SelectMany(p => p.Entities).Select(e => (e.Name, e.Type)).DistinctBy(e => Key(e.Name)).ToList();
+    public static IReadOnlyList<NamedEntity> AllEntities(IEnumerable<ChunkExtraction> parts)
+        => parts.SelectMany(p => p.Entities)
+            .GroupBy(e => Key(e.Name))
+            .Select(g => new NamedEntity(g.First().Name, g.First().Type, g.SelectMany(e => e.Aliases).Distinct(StringComparer.OrdinalIgnoreCase).ToList()))
+            .ToList();
 
     private static int Size(ChunkExtraction x) => x.Entities.Count + x.Relations.Count + x.Risks.Count;
 
@@ -680,6 +740,9 @@ public static class DocumentAnalyzer
         foreach (var c in d) sb.Append(char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : ' ');
         return Regex.Replace(sb.ToString(), @"\s+", " ").Trim();
     }
+
+    /// <summary>Identifiant de tableau seul (APP-001, SRV_002, RSK12…), sans nom lisible.</summary>
+    public static bool IsBareId(string? s) => s is not null && Regex.IsMatch(s.Trim(), @"^[A-Za-z]{2,6}[-_ ]?\d{1,5}$");
 
     private static string StripParens(string s) => Regex.Replace(s, @"\([^)]*\)", " ").Trim();
 

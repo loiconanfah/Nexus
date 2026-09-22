@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using ClosedXML.Excel;
 using System.Text;
 using Nexus.Graph;
 using Nexus.Ingestion.Documents;
@@ -53,6 +54,57 @@ public class DocumentAnalyzerTests
         Assert.True(DocumentTextExtractor.IsSupported("profil.DOCX"));
         Assert.True(DocumentTextExtractor.IsSupported("rapport.pdf"));
         Assert.Throws<NotSupportedException>(() => DocumentTextExtractor.Extract(new MemoryStream([1, 2]), "vieux.doc"));
+    }
+
+    [Fact]
+    public void Excel_sheets_become_sections_and_rows_become_sentences()
+    {
+        var ms = new MemoryStream();
+        using (var wb = new XLWorkbook())
+        {
+            var apps = wb.AddWorksheet("Applications");
+            apps.Cell(1, 1).Value = "ID"; apps.Cell(1, 2).Value = "Système"; apps.Cell(1, 3).Value = "Criticité";
+            apps.Cell(2, 1).Value = "APP-001"; apps.Cell(2, 2).Value = "OPTIMA-CBS"; apps.Cell(2, 3).Value = "Critique";
+            apps.Cell(3, 1).Value = "APP-002"; apps.Cell(3, 2).Value = "Mobile Money"; apps.Cell(3, 3).Value = 90;
+            var rel = wb.AddWorksheet("Relations");
+            rel.Cell(1, 1).Value = "Source"; rel.Cell(1, 2).Value = "Relation"; rel.Cell(1, 3).Value = "Cible";
+            rel.Cell(2, 1).Value = "OPTIMA-CBS"; rel.Cell(2, 2).Value = "DEPENDS_ON"; rel.Cell(2, 3).Value = "SRV-001";
+            var secret = wb.AddWorksheet("Brouillon");
+            secret.Cell(1, 1).Value = "ne pas lire";
+            secret.Visibility = XLWorksheetVisibility.Hidden;
+            wb.SaveAs(ms);
+        }
+        ms.Position = 0;
+
+        var doc = DocumentTextExtractor.Extract(ms, "jeu.xlsx");
+
+        Assert.Equal("xlsx", doc.Format);
+        Assert.Equal(2, doc.Tables);
+        Assert.Contains("## Feuille : Applications", doc.Text);
+        Assert.Contains("ID : APP-001 ; Système : OPTIMA-CBS ; Criticité : Critique", doc.Text);
+        Assert.Contains("Criticité : 90", doc.Text);
+        Assert.Contains("Source : OPTIMA-CBS ; Relation : DEPENDS_ON ; Cible : SRV-001", doc.Text);
+        Assert.DoesNotContain("ne pas lire", doc.Text);
+        Assert.Contains(doc.Warnings, w => w.Contains("masquée"));
+    }
+
+    [Fact]
+    public void Csv_rows_become_sentences_with_quoted_delimiters_kept()
+    {
+        var csv = "Site;Ville;Criticité\nAgence Akwa;\"Douala; Littoral\";Élevée\nAgence Kribi;Kribi;Faible\n";
+        var doc = DocumentTextExtractor.Extract(new MemoryStream(Encoding.UTF8.GetBytes(csv)), "sites.csv");
+
+        Assert.Contains("Site : Agence Akwa ; Ville : Douala; Littoral ; Criticité : Élevée", doc.Text);
+        Assert.Contains("Site : Agence Kribi ; Ville : Kribi ; Criticité : Faible", doc.Text);
+    }
+
+    [Fact]
+    public void Legacy_excel_is_refused_clearly()
+    {
+        Assert.False(DocumentTextExtractor.IsSupported("vieux.xls"));
+        Assert.True(DocumentTextExtractor.IsSupported("jeu.xlsx"));
+        var e = Assert.Throws<NotSupportedException>(() => DocumentTextExtractor.Extract(new MemoryStream([1]), "vieux.xls"));
+        Assert.Contains(".xlsx", e.Message);
     }
 
     // ───────────── Découpage ─────────────
@@ -190,6 +242,23 @@ public class DocumentAnalyzerTests
     }
 
     [Fact]
+    public void Elements_with_alternatives_do_not_make_a_concentration_point()
+    {
+        // Trois produits offerts dans trois agences : aucune agence n'est un point
+        // de concentration. Trois applications sur un seul serveur : lui l'est.
+        var rels = new List<RawRelation>();
+        foreach (var p in new[] { "Épargne", "Crédit", "Tontine" })
+            foreach (var a in new[] { "Agence A", "Agence B", "Agence C" })
+                rels.Add(R(a, "Location", p, "BusinessService", "SUPPORTS"));
+        foreach (var app in new[] { "CBS", "LMS", "USSD" }) rels.Add(R(app, "Application", "Serveur central", "Server", "RUNS_ON"));
+
+        var r = DocumentAnalyzer.Consolidate([new ChunkExtraction([], rels, [])], [], [], "fr", 1);
+
+        var f = Assert.Single(r.Findings, x => x.Kind == "concentration");
+        Assert.Contains("Serveur central", f.Title);
+    }
+
+    [Fact]
     public void Diverging_criticality_with_the_graph_is_flagged()
     {
         var graph = new List<GraphEntityRecord> { G("Agence Kribi", "Location", 85) };
@@ -281,6 +350,95 @@ public class DocumentAnalyzerTests
 
         Assert.Equal(2, calls);
         Assert.Single(x!.Entities);
+    }
+
+    [Fact]
+    public async Task Links_given_by_table_ids_are_mapped_back_to_full_names()
+    {
+        var entities = new List<NamedEntity>
+        {
+            new("Core Banking System « OPTIMA-CBS »", "Application", ["APP-001"]),
+            new("Serveur central Core Banking (Siège)", "Server", ["SRV-001"]),
+        };
+        Task<string?> Fake(string s, string u, CancellationToken ct) => Task.FromResult<string?>("""
+            {"relations":[{"source":"APP-001","sourceType":"Asset","target":"SRV-001","targetType":"Asset","relationType":"RUNS_ON","confidence":0.9,"evidence":"APP-001 ; HEBERGE_SUR ; SRV-001"},
+                          {"source":"APP-001","sourceType":"Asset","target":"XYZ-999","targetType":"Asset","relationType":"USES","confidence":0.9}]}
+            """);
+
+        var links = await DocumentAnalyzer.ExtractLinksAsync(new DocumentChunk(0, "", "Selon l architecture actuelle, APP-001 est hébergé sur le serveur SRV-001 au siège."), entities, Fake);
+
+        var l = Assert.Single(links);   // le lien vers un identifiant inconnu est écarté
+        Assert.Equal("Core Banking System « OPTIMA-CBS »", l.Source);
+        Assert.Equal("Serveur central Core Banking (Siège)", l.Target);
+        Assert.Equal("Server", l.TargetType);
+    }
+
+    [Fact]
+    public void An_undefined_table_id_never_becomes_a_ghost_element()
+    {
+        var parts = new List<ChunkExtraction>
+        {
+            new([E("Core Banking System", "Application", 90, "APP-001")],
+                [R("APP-001", "Asset", "ORG-404", "Asset", "PART_OF"), R("APP-001", "Asset", "Serveur central", "Server", "RUNS_ON")], []),
+        };
+        var r = DocumentAnalyzer.Consolidate(parts, [], [], "fr", 1);
+
+        Assert.DoesNotContain(r.Entities, e => e.Name == "ORG-404" || e.Name == "APP-001");
+        var link = Assert.Single(r.Relations);
+        Assert.Equal("Core Banking System", link.Source);
+    }
+
+    // ───────────── Lecture exacte des tableaux structurés ─────────────
+
+    [Fact]
+    public void Structured_rows_are_read_exactly_without_ai()
+    {
+        var text = string.Join("\n",
+            "[Tableau 9 : 08-Applications]",
+            "ID : APP-001 ; Nom : Core Banking System « OPTIMA-CBS » ; Type : Application ; Criticité : Critique",
+            "ID : AGE-006 ; Nom : Agence Garoua (Nord) ; Type : Agence ; Criticité : Élevée",
+            "ID : RSK-001 ; Nom : Risque de crédit ; Type : Risque ; Criticité : Critique ; Description : Défauts de remboursement",
+            "ID Source : APP-001 ; Relation : HEBERGE_SUR ; ID Cible : SRV-001",
+            "ID Source : ORG-001 ; Relation : POSSEDE ; ID Cible : AGE-006",
+            "ID Source : APP-001 ; Relation : VERBE_INCONNU ; ID Cible : AGE-006");
+
+        var x = DocumentTables.Read(text);
+
+        var cbs = x.Entities.Single(e => e.Name.StartsWith("Core Banking"));
+        Assert.Equal("Application", cbs.Type);
+        Assert.Equal(90, cbs.Criticality);
+        Assert.Equal(["APP-001"], cbs.Aliases);
+        Assert.Equal("Location", x.Entities.Single(e => e.Name.StartsWith("Agence")).Type);
+        Assert.Equal(75, x.Entities.Single(e => e.Name.StartsWith("Agence")).Criticality);
+        var risk = Assert.Single(x.Risks);               // un « risque » n'est pas un élément
+        Assert.Equal("high", risk.Severity);
+        Assert.Contains(x.Relations, r => r is { Source: "APP-001", Target: "SRV-001", RelationType: "RUNS_ON" });
+        Assert.Contains(x.Relations, r => r is { Source: "AGE-006", Target: "ORG-001", RelationType: "OWNED_BY" });   // sens inversé
+        Assert.Contains(x.Relations, r => r is { Source: "APP-001", Target: "AGE-006", RelationType: "RELATED_TO" }); // jamais une fausse dépendance
+        Assert.True(DocumentTables.IsMostlyStructured(text, x));
+    }
+
+    [Fact]
+    public async Task A_structured_section_is_not_sent_to_the_model()
+    {
+        var calls = 0;
+        Task<string?> Fake(string s, string u, CancellationToken ct) { calls++; return Task.FromResult<string?>("{}"); }
+        var text = string.Join("\n", Enumerable.Range(1, 40).Select(i => $"ID Source : APP-{i:000} ; Relation : DEPEND_DE ; ID Cible : SRV-001"));
+
+        var x = await DocumentAnalyzer.ExtractSectionAsync(new DocumentChunk(0, "17-Relations", text), 1, [], "fr", Fake);
+
+        Assert.Equal(0, calls);
+        Assert.Equal(40, x!.Relations.Count);
+    }
+
+    [Fact]
+    public void Prose_is_not_mistaken_for_a_structured_table()
+    {
+        var text = "Le Core Banking dépend du serveur central.\nSite : Garoua ; Horaires : 8h à 17h\nLe DSI en est seul responsable.";
+        var x = DocumentTables.Read(text);
+        Assert.Empty(x.Entities);
+        Assert.Empty(x.Relations);
+        Assert.False(DocumentTables.IsMostlyStructured(text, x));
     }
 
     private static MemoryStream Docx(string bodyXml)

@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using ClosedXML.Excel;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor;
 
@@ -17,8 +18,8 @@ public sealed record ExtractedDocument(
     IReadOnlyList<string> Warnings);
 
 /// <summary>
-/// Lit le texte d'un document : Word (.docx), PDF, et formats texte (.txt, .md,
-/// .csv, .json, .html…).
+/// Lit le texte d'un document : Word (.docx), Excel (.xlsx), PDF, CSV, et formats
+/// texte (.txt, .md, .json, .html…).
 ///
 /// Les TABLEAUX sont le point délicat : copiés tels quels, ils deviennent une
 /// suite de cellules isolées (« AGE-006 », « Garoua », « Élevée ») et l'IA ne
@@ -36,12 +37,13 @@ public static class DocumentTextExtractor
 
     private static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     private static readonly string[] TextExtensions =
-        [".txt", ".md", ".markdown", ".log", ".csv", ".tsv", ".json", ".yaml", ".yml", ".xml", ".conf", ".ini", ".html", ".htm"];
+        [".txt", ".md", ".markdown", ".log", ".json", ".yaml", ".yml", ".xml", ".conf", ".ini", ".html", ".htm"];
+    private const int MaxSheetRows = 5000;
 
     public static bool IsSupported(string fileName)
     {
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
-        return ext is ".docx" or ".pdf" || TextExtensions.Contains(ext);
+        return ext is ".docx" or ".pdf" or ".xlsx" or ".xlsm" or ".csv" or ".tsv" || TextExtensions.Contains(ext);
     }
 
     public static ExtractedDocument Extract(Stream content, string fileName)
@@ -55,9 +57,12 @@ public static class DocumentTextExtractor
         {
             ".docx" => FromDocx(buffer),
             ".pdf" => FromPdf(buffer),
+            ".xlsx" or ".xlsm" => FromXlsx(buffer),
+            ".csv" or ".tsv" => FromCsv(ReadText(buffer), ext == ".tsv" ? '\t' : null),
             ".html" or ".htm" => FromHtml(ReadText(buffer)),
             _ when TextExtensions.Contains(ext) => new ExtractedDocument(ReadText(buffer), "text", 0, 0, []),
             ".doc" => throw new NotSupportedException("Ancien format Word (.doc) : enregistrez le fichier au format .docx."),
+            ".xls" => throw new NotSupportedException("Ancien format Excel (.xls) : enregistrez le classeur au format .xlsx."),
             _ => throw new NotSupportedException($"Format non pris en charge : {ext}"),
         };
 
@@ -175,6 +180,110 @@ public static class DocumentTextExtractor
             }
             if (parts.Count > 0) yield return string.Join(" ; ", parts);
         }
+    }
+
+    // ───────────────────────────── Excel (.xlsx) ─────────────────────────────
+
+    /// <summary>
+    /// Chaque feuille visible devient une section titrée, et chacune de ses lignes
+    /// une phrase « En-tête : valeur ; … ». La première ligne non vide sert
+    /// d'en-têtes. Les valeurs sont lues telles qu'affichées (dates, nombres
+    /// formatés, résultats de formules).
+    /// </summary>
+    private static ExtractedDocument FromXlsx(Stream stream)
+    {
+        XLWorkbook wb;
+        try { wb = new XLWorkbook(stream); }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            throw new InvalidDataException("Classeur Excel illisible (protégé par mot de passe ou endommagé ?).", e);
+        }
+
+        using (wb)
+        {
+            var sb = new StringBuilder();
+            var warnings = new List<string>();
+            var tables = 0;
+            var hidden = 0;
+            foreach (var ws in wb.Worksheets)
+            {
+                if (ws.Visibility != XLWorksheetVisibility.Visible) { hidden++; continue; }
+                var range = ws.RangeUsed();
+                if (range is null) continue;
+
+                var rows = new List<IReadOnlyList<string>>();
+                var total = 0;
+                foreach (var row in range.Rows())
+                {
+                    var cells = row.Cells().Select(c => Clean(SafeText(c))).ToList();
+                    if (cells.All(c => c.Length == 0)) continue;
+                    total++;
+                    if (rows.Count <= MaxSheetRows) rows.Add(cells);
+                }
+                if (rows.Count == 0) continue;
+                if (total > MaxSheetRows + 1)
+                    warnings.Add($"Feuille « {ws.Name} » : seules les {MaxSheetRows:N0} premières lignes sur {total - 1:N0} sont lues.");
+
+                tables++;
+                sb.Append("\n## Feuille : ").AppendLine(ws.Name);
+                sb.AppendLine($"[Tableau {tables} : {ws.Name}]");
+                foreach (var line in TableToLines(rows)) sb.AppendLine(line);
+                sb.AppendLine();
+            }
+            if (hidden > 0) warnings.Add($"{hidden} feuille(s) masquée(s) ignorée(s).");
+            return new ExtractedDocument(sb.ToString(), "xlsx", tables, 0, warnings);
+        }
+    }
+
+    private static string SafeText(IXLCell c)
+    {
+        try { return c.GetFormattedString(); }
+        catch { try { return c.Value.ToString(); } catch { return ""; } }
+    }
+
+    private static string Clean(string s) => Regex.Replace(s ?? "", @"\s+", " ").Trim();
+
+    // ───────────────────────────── CSV ─────────────────────────────
+
+    /// <summary>Un CSV est un tableau : ses lignes deviennent des phrases, comme pour Excel.</summary>
+    private static ExtractedDocument FromCsv(string text, char? delimiter)
+    {
+        var lines = text.Replace("\r\n", "\n").Split('\n').Where(l => l.Trim().Length > 0).ToList();
+        if (lines.Count == 0) return new ExtractedDocument("", "csv", 0, 0, []);
+        var sep = delimiter ?? DetectDelimiter(lines[0]);
+        var rows = lines.Take(MaxSheetRows + 1).Select(l => (IReadOnlyList<string>)SplitCsv(l, sep)).ToList();
+        var warnings = new List<string>();
+        if (lines.Count > MaxSheetRows + 1) warnings.Add($"Seules les {MaxSheetRows:N0} premières lignes sur {lines.Count - 1:N0} sont lues.");
+        var sb = new StringBuilder("[Tableau 1]\n");
+        foreach (var line in TableToLines(rows)) sb.AppendLine(line);
+        return new ExtractedDocument(sb.ToString(), "csv", 1, 0, warnings);
+    }
+
+    private static char DetectDelimiter(string header)
+    {
+        var candidates = new[] { ';', ',', '\t', '|' };
+        return candidates.OrderByDescending(c => header.Count(ch => ch == c)).First();
+    }
+
+    /// <summary>Découpe une ligne CSV en respectant les guillemets (« "Douala, Akwa" » reste une cellule).</summary>
+    private static List<string> SplitCsv(string line, char sep)
+    {
+        var cells = new List<string>();
+        var cur = new StringBuilder();
+        var quoted = false;
+        for (var i = 0; i < line.Length; i++)
+        {
+            var ch = line[i];
+            if (ch == '"')
+            {
+                if (quoted && i + 1 < line.Length && line[i + 1] == '"') { cur.Append('"'); i++; }
+                else quoted = !quoted;
+            }
+            else if (ch == sep && !quoted) { cells.Add(Clean(cur.ToString())); cur.Clear(); }
+            else cur.Append(ch);
+        }
+        cells.Add(Clean(cur.ToString()));
+        return cells;
     }
 
     // ───────────────────────────── PDF ─────────────────────────────

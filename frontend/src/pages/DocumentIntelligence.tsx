@@ -13,7 +13,7 @@ const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
 const CYAN_T = 'var(--nx-cyan-text)'
-const ACCEPT = '.docx,.pdf,.txt,.md,.markdown,.log,.csv,.tsv,.json,.yaml,.yml,.html,.htm,.xml,.conf,.ini,text/*'
+const ACCEPT = '.docx,.xlsx,.xlsm,.pdf,.txt,.md,.markdown,.log,.csv,.tsv,.json,.yaml,.yml,.html,.htm,.xml,.conf,.ini,text/*'
 const MAX_BYTES = 15 * 1024 * 1024
 
 type T = (fr: string, en: string) => string
@@ -29,7 +29,8 @@ const SEV: Record<string, { color: string; fr: string; en: string }> = {
 function parseError(code: string, t: T): string {
   switch (code) {
     case 'legacy_doc': return t('Ancien format Word (.doc) : ouvrez-le dans Word et enregistrez-le au format .docx.', 'Legacy Word format (.doc): open it in Word and save it as .docx.')
-    case 'unsupported_format': return t('Format non pris en charge. Formats acceptés : Word (.docx), PDF, texte (.txt, .md, .csv, .json, .html…).', 'Unsupported format. Accepted: Word (.docx), PDF, text (.txt, .md, .csv, .json, .html…).')
+    case 'legacy_xls': return t('Ancien format Excel (.xls) : ouvrez-le dans Excel et enregistrez-le au format .xlsx.', 'Legacy Excel format (.xls): open it in Excel and save it as .xlsx.')
+    case 'unsupported_format': return t('Format non pris en charge. Formats acceptés : Word (.docx), Excel (.xlsx), PDF, CSV, texte (.txt, .md, .json, .html…).', 'Unsupported format. Accepted: Word (.docx), Excel (.xlsx), PDF, CSV, text (.txt, .md, .json, .html…).')
     case 'file_too_large': return t('Fichier trop volumineux (15 Mo au maximum).', 'File too large (15 MB maximum).')
     case 'unreadable_file': return t('Le fichier n’a pas pu être lu : il est peut-être protégé par un mot de passe ou endommagé.', 'The file could not be read: it may be password-protected or damaged.')
     default: return t('Lecture du fichier impossible. Réessayez.', 'Could not read the file. Please retry.')
@@ -54,6 +55,7 @@ export function DocumentIntelligence() {
   const [selRelations, setSelRelations] = useState<Set<string>>(new Set())
   const [filter, setFilter] = useState<'all' | 'new' | 'existing'>('all')
   const [ingesting, setIngesting] = useState(false)
+  const [ingestProgress, setIngestProgress] = useState<{ done: number; total: number } | null>(null)
   const [ingestRes, setIngestRes] = useState<{ entitiesCreated: number; entitiesLinked?: number; relationsCreated: number; relationsExisting?: number; unresolved: number } | null>(null)
 
   const busy = progress.phase !== 'idle' && progress.phase !== 'done'
@@ -102,9 +104,15 @@ export function DocumentIntelligence() {
       if (parts.length === 0) { setRunErr(warnings.at(-1) ?? t('Aucune section n’a pu être analysée.', 'No section could be analyzed.')); return }
 
       // 2. Liens, section par section, avec tous les éléments du document.
-      const seen = new Set<string>()
-      const entities = parts.flatMap((p) => p.entities).filter((e) => { const k = e.name.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true })
-        .map((e) => ({ name: e.name, type: e.type }))
+      // Avec leurs alias : un lien qui cite « APP-001 » est ramené au bon élément.
+      const byName = new Map<string, { name: string; type: string; aliases: string[] }>()
+      for (const e of parts.flatMap((p) => p.entities)) {
+        const k = e.name.toLowerCase()
+        const cur = byName.get(k)
+        if (cur) { for (const a of e.aliases ?? []) if (!cur.aliases.includes(a)) cur.aliases.push(a) }
+        else byName.set(k, { name: e.name, type: e.type, aliases: [...(e.aliases ?? [])] })
+      }
+      const entities = [...byName.values()]
       const linkParts: ChunkExtraction[] = []
       for (const s of plan.sections) {
         if (ctrl.signal.aborted) return
@@ -145,12 +153,34 @@ export function DocumentIntelligence() {
       const entities = analysis.entities.filter((e) => needed.has(e.name)).map((e) => ({
         name: e.name, type: e.type, criticality: e.criticality, aliases: e.aliases, description: e.description ?? null, matchId: e.matchId ?? null,
       }))
-      const r = await api.ingestDocument({ entities, relations })
-      setIngestRes(r)
+      // Par lots : un gros classeur (des centaines de liens) tiendrait une seule
+      // requête trop longtemps derrière le proxy. Les éléments d'abord, puis les
+      // liens, que le serveur rattache aux éléments désormais présents.
+      const BATCH = 100
+      const total = entities.length + relations.length
+      const sum = { entitiesCreated: 0, entitiesLinked: 0, relationsCreated: 0, relationsExisting: 0, unresolved: 0 }
+      const add = (r: { entitiesCreated: number; entitiesLinked?: number; relationsCreated: number; relationsExisting?: number; unresolved: number }) => {
+        sum.entitiesCreated += r.entitiesCreated; sum.entitiesLinked += r.entitiesLinked ?? 0
+        sum.relationsCreated += r.relationsCreated; sum.relationsExisting += r.relationsExisting ?? 0; sum.unresolved += r.unresolved
+      }
+      let done = 0
+      for (let i = 0; i < entities.length; i += BATCH) {
+        setIngestProgress({ done, total })
+        const batch = entities.slice(i, i + BATCH)
+        add(await api.ingestDocument({ entities: batch, relations: [] }))
+        done += batch.length
+      }
+      for (let i = 0; i < relations.length; i += BATCH) {
+        setIngestProgress({ done, total })
+        const batch = relations.slice(i, i + BATCH)
+        add(await api.ingestDocument({ entities: [], relations: batch }))
+        done += batch.length
+      }
+      setIngestRes(sum)
       qc.invalidateQueries()
     } catch (e) {
       setRunErr(t('L’ajout au graphe a échoué.', 'Adding to the graph failed.') + (e instanceof Error ? ` (${e.message.slice(0, 120)})` : ''))
-    } finally { setIngesting(false) }
+    } finally { setIngesting(false); setIngestProgress(null) }
   }
 
   const SAMPLES = lang === 'fr' ? [
@@ -168,8 +198,8 @@ export function DocumentIntelligence() {
           <ScanText size={22} style={{ color: CYAN }} /> {t('Intelligence documentaire', 'Document Intelligence')}
         </h2>
         <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
-          {t('Importez un document Word, PDF ou texte (runbook, note d’incident, profil d’organisation, document d’architecture), ou collez-le. Lenexux en relève les éléments, les liens et les risques, section par section, puis les recoupe avec votre graphe en direct.',
-            'Upload a Word, PDF or text document (runbook, incident note, organisation profile, architecture document), or paste it. Lenexux extracts its elements, links and risks section by section, then cross-references them with your live graph.')}
+          {t('Importez un document Word, Excel, PDF ou texte (runbook, note d’incident, profil d’organisation, inventaire, document d’architecture), ou collez-le. Lenexux en relève les éléments, les liens et les risques, section par section, puis les recoupe avec votre graphe en direct.',
+            'Upload a Word, Excel, PDF or text document (runbook, incident note, organisation profile, inventory, architecture document), or paste it. Lenexux extracts its elements, links and risks section by section, then cross-references them with your live graph.')}
         </p>
       </div>
 
@@ -178,7 +208,7 @@ export function DocumentIntelligence() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}><FileText size={14} /> {t('Document source', 'Source document')}</span>
           <button onClick={() => inputRef.current?.click()} disabled={busy} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5 disabled:opacity-50" style={{ fontFamily: mono, fontSize: 11, borderColor: 'color-mix(in srgb, var(--nx-cyan) 35%, transparent)', color: CYAN_T }}>
-            <Upload size={13} /> {t('Importer un fichier (Word, PDF, texte)', 'Upload a file (Word, PDF, text)')}
+            <Upload size={13} /> {t('Importer un fichier (Word, Excel, PDF, texte)', 'Upload a file (Word, Excel, PDF, text)')}
           </button>
           <input ref={inputRef} type="file" accept={ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = '' }} />
         </div>
@@ -193,9 +223,9 @@ export function DocumentIntelligence() {
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-success)' }}>
             <span className="flex items-center gap-1.5"><FileUp size={12} /> {file.fileName}</span>
             <span style={{ color: 'var(--nx-text-muted)' }}>
-              {({ docx: 'Word', pdf: 'PDF', html: 'HTML', text: t('Texte', 'Text') } as Record<string, string>)[file.format]}
+              {({ docx: 'Word', xlsx: 'Excel', csv: 'CSV', pdf: 'PDF', html: 'HTML', text: t('Texte', 'Text') } as Record<string, string>)[file.format]}
               {' · '}{file.characters.toLocaleString(lang)} {t('caractères', 'characters')}
-              {file.tables > 0 && <> · {file.tables} {t('tableau(x) mis en phrases', 'table(s) turned into sentences')}</>}
+              {file.tables > 0 && <> · {file.tables} {file.format === 'xlsx' ? t('feuille(s) lue(s)', 'sheet(s) read') : t('tableau(x) mis en phrases', 'table(s) turned into sentences')}</>}
               {file.pages > 0 && <> · {file.pages} {t('page(s)', 'page(s)')}</>}
               {' · '}{file.sections} {t('section(s) à analyser', 'section(s) to analyze')}
             </span>
@@ -228,7 +258,7 @@ export function DocumentIntelligence() {
       {analysis && (
         <Results a={analysis} t={t} lang={lang}
           selEntities={selEntities} setSelEntities={setSelEntities} selRelations={selRelations} setSelRelations={setSelRelations}
-          filter={filter} setFilter={setFilter} ingesting={ingesting} ingestRes={ingestRes} onIngest={() => void ingest()} />
+          filter={filter} setFilter={setFilter} ingesting={ingesting} ingestProgress={ingestProgress} ingestRes={ingestRes} onIngest={() => void ingest()} />
       )}
     </div>
   )
@@ -264,7 +294,7 @@ function Results(props: {
   selEntities: Set<string>; setSelEntities: (s: Set<string>) => void
   selRelations: Set<string>; setSelRelations: (s: Set<string>) => void
   filter: 'all' | 'new' | 'existing'; setFilter: (f: 'all' | 'new' | 'existing') => void
-  ingesting: boolean; ingestRes: { entitiesCreated: number; entitiesLinked?: number; relationsCreated: number; relationsExisting?: number; unresolved: number } | null
+  ingesting: boolean; ingestProgress: { done: number; total: number } | null; ingestRes: { entitiesCreated: number; entitiesLinked?: number; relationsCreated: number; relationsExisting?: number; unresolved: number } | null
   onIngest: () => void
 }) {
   const { a, t, lang, selEntities, setSelEntities, selRelations, setSelRelations, filter, setFilter } = props
@@ -361,7 +391,8 @@ function Results(props: {
               {props.ingesting ? <Loader2 size={15} className="animate-spin" /> : <GitMerge size={15} />}
               {t(`Ajouter ${toAdd} élément(s) et ${pickedRelations.length} lien(s) au graphe`, `Add ${toAdd} element(s) and ${pickedRelations.length} link(s) to the graph`)}
             </button>
-            {newEndpoints.size > 0 && <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t(`dont ${newEndpoints.size} ajouté(s) d’office, car un lien coché y mène`, `including ${newEndpoints.size} added because a ticked link leads to them`)}</span>}
+            {props.ingestProgress && <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{props.ingestProgress.done} / {props.ingestProgress.total}</span>}
+            {!props.ingestProgress && newEndpoints.size > 0 && <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t(`dont ${newEndpoints.size} ajouté(s) d’office, car un lien coché y mène`, `including ${newEndpoints.size} added because a ticked link leads to them`)}</span>}
             <span className="ml-auto" style={{ fontSize: 11.5, color: 'var(--nx-text-muted)', fontFamily: mono }}>{lang === 'fr' ? 'Rien n’est écrit sans votre confirmation.' : 'Nothing is written without your confirmation.'}</span>
           </div>
         )}

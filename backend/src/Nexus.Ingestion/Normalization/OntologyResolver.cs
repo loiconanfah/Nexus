@@ -29,6 +29,7 @@ public static class OntologyResolver
         ["Contract"] = "contract sla agreement license subscription contrat convention accord licence abonnement",
         ["Person"] = "person people employee user staff member individual contact human personne employe collaborateur agent salarie utilisateur",
         ["Role"] = "role position title poste fonction",
+        ["Organization"] = "organization organisation entreprise societe institution groupe",
         ["BusinessUnit"] = "businessunit direction departement division unite",
         ["Team"] = "team squad group department unit crew equipe cellule",
         ["Network"] = "network lan wan vlan subnet sdwan mpls circuit link reseau liaison lienreseau vsat fibre",
@@ -38,7 +39,7 @@ public static class OntologyResolver
         ["Location"] = "location site datacenter datacentre region office building campus rack zone agence siege lieu bureau entrepot succursale centrededonnees",
         ["Control"] = "control safeguard countermeasure controle mesure mesuredesecurite",
         ["Policy"] = "policy standard guideline politique norme directive",
-        ["Document"] = "document doc runbook procedure wiki page procedure manuel",
+        ["Document"] = "document doc runbook procedure wiki page procedure manuel continuite continuitepcapra pca pra plandecontinuite",
         ["Incident"] = "incident outage ticket panne interruption sinistre",
         ["Risk"] = "risk threat risque menace",
         ["Vulnerability"] = "vulnerability cve weakness",
@@ -94,6 +95,19 @@ public static class OntologyResolver
         ["REPLACED_BY"] = "replacedby remplacepar",
         ["IMPACTS"] = "impacts affects impacte affecte atouche perturbe",
     });
+
+    /// <summary>
+    /// Comme ResolveRelationType, mais renvoie null pour un type inconnu au lieu de
+    /// « dépend de » : là où un faux lien de dépendance fausserait les calculs
+    /// (analyse de documents), l'appelant choisit un lien neutre.
+    /// </summary>
+    public static RelationType? TryResolveRelationType(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var exact = RelationType.FromName(raw.Trim());
+        if (exact.IsSuccess) return exact.Value;
+        return RelationSynonyms.TryGetValue(Norm(raw), out var canon) ? RelationType.FromName(canon).Value : null;
+    }
 
     public static RelationType ResolveRelationType(string? raw)
     {
