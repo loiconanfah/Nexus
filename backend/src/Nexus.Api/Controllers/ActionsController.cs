@@ -22,10 +22,24 @@ public sealed class ActionsController(
     private const string Source = "Action Plan";
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    public sealed record CreateActionRequest(string Title, string? Detail, string? Priority, string? Kind, Guid? TargetId);
+    public sealed record CreateActionRequest(
+        string Title, string? Detail, string? Priority, string? Kind, Guid? TargetId,
+        List<string>? Steps = null, string? ExpectedGain = null);
     public sealed record UpdateStatusRequest(string Status);
+    public sealed record ToggleStepRequest(int Index, bool Done);
 
-    private sealed record ActionMeta(string? Detail, string Priority, string Status, string Kind, Guid? TargetId, string? TargetName);
+    /// <summary>Une étape de l'action : ce qui la transforme en marche à suivre.</summary>
+    private sealed record ActionStep(string Text, bool Done);
+
+    /// <summary>
+    /// Une action PLATE ne se suit pas : on ne sait ni par où commencer, ni où l'on
+    /// en est. Les étapes et le gain attendu sont donc portés par l'action
+    /// elle-même. Les anciennes actions, sans étapes, restent lisibles : le champ
+    /// est simplement vide.
+    /// </summary>
+    private sealed record ActionMeta(
+        string? Detail, string Priority, string Status, string Kind, Guid? TargetId, string? TargetName,
+        List<ActionStep>? Steps = null, string? ExpectedGain = null);
 
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
@@ -48,6 +62,9 @@ public sealed class ActionsController(
                     kind = meta.Kind,
                     targetId = meta.TargetId,
                     targetName = meta.TargetName ?? "—",
+                    steps = meta.Steps ?? [],
+                    expectedGain = meta.ExpectedGain,
+                    stepsDone = (meta.Steps ?? []).Count(x => x.Done),
                 };
             })
             .OrderByDescending(a => PriorityRank(a.priority))
@@ -81,7 +98,13 @@ public sealed class ActionsController(
 
         var priority = Normalise(req.Priority, "High", "Medium", "Low") ?? "Medium";
         var kind = string.IsNullOrWhiteSpace(req.Kind) ? "remediation" : req.Kind.Trim();
-        var meta = new ActionMeta(req.Detail?.Trim(), priority, "Open", kind, req.TargetId, targetName);
+        var steps = (req.Steps ?? [])
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => new ActionStep(x.Trim(), false))
+            .Take(12)
+            .ToList();
+        var meta = new ActionMeta(req.Detail?.Trim(), priority, "Open", kind, req.TargetId, targetName,
+            steps.Count == 0 ? null : steps, string.IsNullOrWhiteSpace(req.ExpectedGain) ? null : req.ExpectedGain!.Trim());
 
         var crit = Criticality.Create(priority == "High" ? 90 : priority == "Medium" ? 60 : 30);
         var entityResult = GraphEntity.Create(
@@ -104,7 +127,45 @@ public sealed class ActionsController(
             if (rel.IsSuccess) await repository.UpsertRelationAsync(rel.Value, ct);
         }
 
-        return Ok(new { id = entityResult.Value.Id, title = req.Title.Trim(), priority, status = "Open", kind, targetName = targetName ?? "—" });
+        return Ok(new
+        {
+            id = entityResult.Value.Id, title = req.Title.Trim(), priority, status = "Open", kind,
+            targetName = targetName ?? "—", steps = meta.Steps ?? [], expectedGain = meta.ExpectedGain,
+        });
+    }
+
+    /// <summary>
+    /// Coche ou décoche une étape. Quand toutes le sont, l'action passe d'elle-même
+    /// à « terminée » : suivre les étapes ET tenir le statut à jour à la main serait
+    /// deux fois le même travail, donc une des deux informations serait fausse.
+    /// </summary>
+    [HttpPatch("{id:guid}/steps")]
+    public async Task<IActionResult> ToggleStep(Guid id, [FromBody] ToggleStepRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+
+        var existing = await repository.GetEntityAsync(tenant, id, ct);
+        if (existing is null || existing.EntityType != nameof(EntityType.Control)) return NotFound();
+
+        var meta = Parse(existing.Description);
+        var steps = meta.Steps ?? [];
+        if (req.Index < 0 || req.Index >= steps.Count) return BadRequest(new { error = "step_not_found" });
+
+        steps = [.. steps];
+        steps[req.Index] = steps[req.Index] with { Done = req.Done };
+        var status = steps.All(x => x.Done) ? "Done" : steps.Any(x => x.Done) ? "InProgress" : "Open";
+        meta = meta with { Steps = steps, Status = status };
+
+        var crit = Criticality.Create(meta.Priority == "High" ? 90 : meta.Priority == "Medium" ? 60 : 30);
+        var rebuilt = GraphEntity.Create(
+            tenant, EntityType.Control, existing.Name,
+            criticality: crit.IsSuccess ? crit.Value : null,
+            description: JsonSerializer.Serialize(meta, Json),
+            sourceSystem: Source, id: id);
+        if (rebuilt.IsFailure) return BadRequest(new { error = rebuilt.Error.Message });
+
+        await repository.UpsertEntityAsync(rebuilt.Value, ct);
+        return Ok(new { id, steps, status, stepsDone = steps.Count(x => x.Done) });
     }
 
     [HttpPatch("{id:guid}/status")]

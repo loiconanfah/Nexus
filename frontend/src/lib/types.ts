@@ -245,6 +245,9 @@ export interface DocumentAnalysis {
 }
 
 export type ActionStatus = 'Open' | 'InProgress' | 'Done'
+/** Une étape de l'action : ce qui la transforme en marche à suivre. */
+export interface ActionStep { text: string; done: boolean }
+
 export interface RemediationAction {
   id: string
   title: string
@@ -254,6 +257,21 @@ export interface RemediationAction {
   kind: string
   targetId: string | null
   targetName: string
+  steps?: ActionStep[]
+  stepsDone?: number
+  expectedGain?: string | null
+}
+
+/**
+ * Ce qu'il faut faire pour un élément, établi sur ses faits. `source` dit qui a
+ * rédigé les étapes : le modèle, ou les règles quand aucun n'est disponible.
+ */
+export interface ActionRecommendation {
+  title: string
+  why: string
+  steps: string[]
+  expectedGain: string
+  source: 'ai' | 'rules'
 }
 export interface ActionBoard {
   summary: { total: number; open: number; inProgress: number; done: number }

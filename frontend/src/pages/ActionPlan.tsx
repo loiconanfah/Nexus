@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, Plus } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { notify } from '../lib/notify'
 import { actionKindLabel, priorityLabel } from '../lib/labels'
 import { ActionModal } from '../components/ActionModal'
 import type { ActionStatus, RemediationAction } from '../lib/types'
@@ -73,29 +74,93 @@ export function ActionPlan() {
   )
 }
 
+/**
+ * Une action n'est pas une ligne, c'est une marche à suivre.
+ *
+ * Plate, elle ne se suit pas : on ne sait ni par où commencer, ni où l'on en est,
+ * et le statut se tient à la main, donc mal. Avec ses étapes, cocher la dernière
+ * suffit : le statut suit tout seul, et la barre dit l'avancement sans qu'on ait
+ * à le déclarer.
+ */
 function ActionRow({ a, statusLabel, onStatus }: { a: RemediationAction; statusLabel: (s: ActionStatus) => string; onStatus: (s: ActionStatus) => void }) {
   const { t } = useLang()
+  const qc = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const steps = a.steps ?? []
+  const done = steps.filter((x) => x.done).length
+
+  const toggle = useMutation({
+    mutationFn: ({ index, value }: { index: number; value: boolean }) => api.toggleActionStep(a.id, index, value),
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['actions'] })
+      if (r.status === 'Done') {
+        notify({
+          kind: 'success',
+          title: t('Action terminée', 'Action completed'),
+          message: t(`« ${a.title} » : toutes les étapes sont faites.${a.expectedGain ? ' ' + a.expectedGain : ''}`,
+            `“${a.title}”: every step is done.${a.expectedGain ? ' ' + a.expectedGain : ''}`),
+          actions: [{ label: t('Voir l’indice', 'See the index'), to: '/dashboard' }],
+        })
+      }
+    },
+    onError: (e) => notify({ kind: 'error', title: t('Mise à jour impossible', 'Could not update'), message: (e as Error).message.slice(0, 160) }),
+  })
+
   return (
-    <div className="flex flex-col gap-2 rounded-sm border p-4 md:flex-row md:items-center md:justify-between" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', borderLeft: `3px solid ${PRIO[a.priority]}` }}>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: PRIO[a.priority], background: `color-mix(in srgb, ${PRIO[a.priority]} 9%, transparent)` }}>{priorityLabel(a.priority, t)}</span>
-          {a.targetName !== '—' && <span style={{ fontFamily: mono, fontSize: 10, color: CYAN_T }}>→ {a.targetName}</span>}
-          <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{actionKindLabel(a.kind, t)}</span>
+    <div className="flex flex-col gap-2 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', borderLeft: `3px solid ${PRIO[a.priority]}` }}>
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: PRIO[a.priority], background: `color-mix(in srgb, ${PRIO[a.priority]} 9%, transparent)` }}>{priorityLabel(a.priority, t)}</span>
+            {a.targetName !== '—' && <span style={{ fontFamily: mono, fontSize: 10, color: CYAN_T }}>→ {a.targetName}</span>}
+            <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>{actionKindLabel(a.kind, t)}</span>
+            {steps.length > 0 && (
+              <span style={{ fontFamily: mono, fontSize: 10, color: done === steps.length ? 'var(--nx-success)' : 'var(--nx-text-muted)' }}>
+                {done}/{steps.length} {t('étapes', 'steps')}
+              </span>
+            )}
+          </div>
+          <div className="mt-1" style={{ fontSize: 14, color: 'var(--nx-text)' }}>{a.title}</div>
+          {a.detail && <div style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{a.detail}</div>}
         </div>
-        <div className="mt-1" style={{ fontSize: 14, color: 'var(--nx-text)' }}>{a.title}</div>
-        {a.detail && <div style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{a.detail}</div>}
-      </div>
-      <div className="flex shrink-0 gap-1">
-        {STATUS_ORDER.map((s) => {
-          const active = a.status === s
-          return (
-            <button key={s} onClick={() => onStatus(s)} className="rounded-sm border px-2.5 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: active ? CYAN : 'var(--nx-border)', color: active ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', background: active ? CYAN : 'transparent' }}>
-              {statusLabel(s)}
+        <div className="flex shrink-0 items-center gap-1">
+          {steps.length > 0 && (
+            <button onClick={() => setOpen((v) => !v)} className="rounded-sm border px-2 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: 'var(--nx-border)', color: CYAN_T }}>
+              {open ? t('Masquer', 'Hide') : t('Étapes', 'Steps')}
             </button>
-          )
-        })}
+          )}
+          {STATUS_ORDER.map((st) => {
+            const active = a.status === st
+            return (
+              <button key={st} onClick={() => onStatus(st)} className="rounded-sm border px-2.5 py-1" style={{ fontFamily: mono, fontSize: 10, borderColor: active ? CYAN : 'var(--nx-border)', color: active ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)', background: active ? CYAN : 'transparent' }}>
+                {statusLabel(st)}
+              </button>
+            )
+          })}
+        </div>
       </div>
+
+      {steps.length > 0 && (
+        <div className="h-1 overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
+          <div className="h-full rounded-full transition-all" style={{ width: `${(done / steps.length) * 100}%`, background: done === steps.length ? 'var(--nx-success)' : CYAN }} />
+        </div>
+      )}
+
+      {open && steps.length > 0 && (
+        <div className="flex flex-col gap-1.5 border-t pt-2" style={{ borderColor: 'var(--nx-border)' }}>
+          {steps.map((step, i) => (
+            <label key={i} className="flex cursor-pointer items-start gap-2" style={{ fontSize: 13, lineHeight: 1.5, color: step.done ? 'var(--nx-text-muted)' : 'var(--nx-text)' }}>
+              <input type="checkbox" checked={step.done} disabled={toggle.isPending}
+                onChange={(e) => toggle.mutate({ index: i, value: e.target.checked })}
+                className="mt-0.5" style={{ accentColor: CYAN }} />
+              <span style={{ textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
+            </label>
+          ))}
+          {a.expectedGain && (
+            <span className="mt-1" style={{ fontSize: 12, color: 'var(--nx-success)', lineHeight: 1.45 }}>{a.expectedGain}</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport } from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport, ActionRecommendation, ActionStep } from './types'
 
 const BASE = '/api/v1'
 
@@ -177,7 +177,17 @@ export const api = {
 
   actions: () => fetch(`${BASE}/actions`, { headers: headers(false) }).then(handle<ActionBoard>),
 
-  createAction: (body: { title: string; detail?: string; priority?: string; kind?: string; targetId?: string | null }) =>
+  /** Que faire pour cet élément, établi sur ses faits puis mis en forme par le modèle. */
+  recommendAction: (entityId: string, lang: string) =>
+    fetch(`${BASE}/actions/recommend`, { method: 'POST', headers: headers(), body: JSON.stringify({ entityId, lang }) })
+      .then(handle<ActionRecommendation>),
+
+  /** Coche une étape ; le statut de l'action suit tout seul. */
+  toggleActionStep: (id: string, index: number, done: boolean) =>
+    fetch(`${BASE}/actions/${id}/steps`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ index, done }) })
+      .then(handle<{ id: string; steps: ActionStep[]; status: ActionStatus; stepsDone: number }>),
+
+  createAction: (body: { title: string; detail?: string; priority?: string; kind?: string; targetId?: string | null; steps?: string[]; expectedGain?: string }) =>
     fetch(`${BASE}/actions`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
       .then(handle<{ id: string; title: string; priority: string; status: string; kind: string; targetName: string }>),
 

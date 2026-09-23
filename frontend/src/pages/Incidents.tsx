@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { AlertOctagon, Activity, Play, Radar, ShieldAlert } from 'lucide-react'
+import { AlertOctagon, Activity, ListChecks, Loader2, Play, Radar, ShieldAlert } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { notify } from '../lib/notify'
 import { entityTypeLabel } from '../lib/labels'
-import type { Incident } from '../lib/types'
+import type { ActionRecommendation, Incident } from '../lib/types'
 
 type T = (fr: string, en: string) => string
 
@@ -30,14 +31,6 @@ function incidentTrigger(i: Incident, t: T): string {
   if (i.category === 'supplier') return t(`${i.entityName} soutient ${i.dependents} système(s) : ${list}.`, `${i.entityName} supports ${i.dependents} system(s): ${list}.`)
   return t(`${i.entityName} est l’unique détenteur du savoir pour ${list}.`, `${i.entityName} is the sole knowledge holder for ${list}.`)
 }
-function incidentReco(i: Incident, t: T): string {
-  if (i.category === 'spof') return i.hasRedundancy
-    ? t('Valider les chemins de bascule et le RTO.', 'Validate failover paths and RTO.')
-    : t(`Introduire de la redondance pour ${i.entityName} afin d’éliminer ce point unique de défaillance.`, `Introduce redundancy for ${i.entityName} to remove this single point of failure.`)
-  if (i.category === 'supplier') return t(`Identifier un fournisseur alternatif pour ${i.entityName} et formaliser des SLA.`, `Identify an alternative supplier for ${i.entityName} and formalise SLAs.`)
-  return t(`Documenter ${i.systems.join(', ')} et former un expert de secours.`, `Document ${i.systems.join(', ')} and cross-train a backup expert.`)
-}
-
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
@@ -111,10 +104,7 @@ export function Incidents() {
               </div>
 
               <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{incidentTrigger(i, t)}</p>
-              <div className="rounded-sm p-2.5" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)' }}>
-                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-label)', textTransform: 'uppercase' }}>{t('Action recommandée', 'Recommended action')}</span>
-                <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{incidentReco(i, t)}</p>
-              </div>
+              {entityId && <Plan entityId={entityId} name={i.entityName} />}
 
               <button onClick={() => navigate(`/simulations?asset=${entityId}&name=${encodeURIComponent(i.entityName)}`)} className="mt-auto flex items-center justify-center gap-2 self-start rounded-sm px-3 py-1.5" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-label)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 <Play size={13} /> {t('Simuler le scénario', 'Simulate scenario')}
@@ -133,6 +123,91 @@ function Tile({ icon: Icon, label, value, color }: { icon: typeof Radar; label: 
     <div className="rounded-sm border p-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}><Icon size={11} /> {label}</div>
       <div style={{ fontFamily: geist, fontSize: 24, fontWeight: 500, color }}>{value}</div>
+    </div>
+  )
+}
+
+
+/**
+ * Le plan pour CET élément, demandé à la demande.
+ *
+ * L'ancienne carte affichait « Introduire de la redondance pour X » sur chacune
+ * d'elles : une phrase vraie et sans valeur, qui ne disait ni ce qui dépend de X,
+ * ni ce que son arrêt coûte, ni par où commencer. Le plan est demandé au clic et
+ * non au chargement : sinon chaque ouverture de la page paierait autant d'appels
+ * au modèle qu'il y a de cartes.
+ */
+function Plan({ entityId, name }: { entityId: string; name: string }) {
+  const { t, lang } = useLang()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [reco, setReco] = useState<ActionRecommendation | null>(null)
+
+  const ask = useMutation({
+    mutationFn: () => api.recommendAction(entityId, lang),
+    onSuccess: (r) => setReco(r),
+    onError: (e) => notify({ kind: 'error', title: t('Proposition indisponible', 'Proposal unavailable'), message: (e as Error).message.slice(0, 160) }),
+  })
+
+  const follow = useMutation({
+    mutationFn: () => api.createAction({
+      title: reco!.title, detail: reco!.why, priority: 'High', kind: 'remediation',
+      targetId: entityId, steps: reco!.steps, expectedGain: reco!.expectedGain,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['actions'] })
+      notify({
+        kind: 'success',
+        title: t('Ajouté au plan d’action', 'Added to the action plan'),
+        message: t(`« ${reco!.title} » et ses ${reco!.steps.length} étapes attendent d’être cochées.`,
+          `“${reco!.title}” and its ${reco!.steps.length} steps are waiting to be ticked off.`),
+        actions: [{ label: t('Ouvrir le plan d’action', 'Open the action plan'), to: '/actions' }],
+      })
+    },
+    onError: (e) => notify({ kind: 'error', title: t('Ajout impossible', 'Could not add'), message: (e as Error).message.slice(0, 160) }),
+  })
+
+  if (!reco) {
+    return (
+      <button onClick={() => ask.mutate()} disabled={ask.isPending}
+        className="flex items-center gap-2 self-start rounded-sm px-3 py-1.5"
+        style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+        {ask.isPending ? <Loader2 size={13} className="animate-spin" /> : <ListChecks size={13} />}
+        {ask.isPending ? t('Analyse de {x}…'.replace('{x}', name), 'Analysing {x}…'.replace('{x}', name)) : t('Proposer un plan', 'Propose a plan')}
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 rounded-sm p-2.5" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)' }}>
+      <span className="flex items-center justify-between" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-label)', textTransform: 'uppercase' }}>
+        {t('Plan proposé', 'Proposed plan')}
+        <span style={{ color: 'var(--nx-outline)' }}>{reco.source === 'ai' ? t('rédigé par l’IA', 'written by AI') : t('règles', 'rules')}</span>
+      </span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--nx-text)' }}>{reco.title}</span>
+      <span style={{ fontSize: 12, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{reco.why}</span>
+      <ol className="flex flex-col gap-1">
+        {reco.steps.map((step, i) => (
+          <li key={i} className="flex gap-2" style={{ fontSize: 12.5, color: 'var(--nx-text)', lineHeight: 1.45 }}>
+            <span style={{ fontFamily: mono, fontSize: 11, color: CYAN_T }}>{i + 1}</span>{step}
+          </li>
+        ))}
+      </ol>
+      <span style={{ fontSize: 12, color: 'var(--nx-success)', lineHeight: 1.45 }}>{reco.expectedGain}</span>
+      <div className="flex items-center gap-3">
+        <button onClick={() => follow.mutate()} disabled={follow.isPending || follow.isSuccess}
+          className="flex items-center gap-1.5 rounded-sm px-2.5 py-1.5"
+          style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 12, fontWeight: 600 }}>
+          {follow.isPending ? <Loader2 size={12} className="animate-spin" /> : <ListChecks size={12} />}
+          {follow.isSuccess ? t('Ajouté', 'Added') : t('Suivre dans le plan d’action', 'Track in the action plan')}
+        </button>
+        {follow.isSuccess && (
+          <button onClick={() => navigate('/actions')} style={{ fontSize: 12, color: CYAN_T }}>{t('Ouvrir le plan', 'Open the plan')}</button>
+        )}
+        <button onClick={() => ask.mutate()} disabled={ask.isPending} style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t('Reproposer', 'Propose again')}
+        </button>
+      </div>
     </div>
   )
 }
