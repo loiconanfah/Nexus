@@ -199,7 +199,9 @@ function AiIntegration() {
   const { t } = useLang()
   const qc = useQueryClient()
   const { data: cfg } = useQuery({ queryKey: ['aiConfig'], queryFn: api.aiConfig })
-  const [provider, setProvider] = useState('anthropic')
+  // Le fournisseur affiche doit être celui qui est enregistré, sinon l'écran
+  // laisse croire qu'on est déjà sur un autre, et le test porte ailleurs.
+  const [provider, setProvider] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [endpoint, setEndpoint] = useState('')
   const [model, setModel] = useState('')
@@ -214,7 +216,7 @@ function AiIntegration() {
     onSuccess: (r) => { setModels(r.models); if (!r.ok) setTestMsg({ ok: false, message: r.message }) },
   })
   const save = useMutation({
-    mutationFn: () => api.setAiKey({ provider, apiKey, endpoint: endpoint || undefined, model: model || undefined }),
+    mutationFn: () => api.setAiKey({ provider: editing, apiKey, endpoint: endpoint || undefined, model: model || undefined }),
     onSuccess: () => { setApiKey(''); setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }); loadModels.mutate() },
   })
   const test = useMutation({ mutationFn: api.testAiKey, onSuccess: (r) => setTestMsg(r) })
@@ -225,7 +227,14 @@ function AiIntegration() {
   const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p === 'openrouter' ? 'OpenRouter' : p
   // OpenRouter ne reçoit pas UN modèle mais une CHAÎNE : si le premier flanche,
   // il passe au suivant. Le champ se saisit donc à la main, liste à l'appui.
-  const chainProvider = (cfg?.provider ?? provider) === 'openrouter'
+  // Le fournisseur en cours d'édition : celui choisi dans la liste, sinon
+  // l'enregistré. C'est lui qui commande la forme du champ Modèle.
+  const editing = provider || cfg?.provider || 'openrouter'
+  const chainProvider = editing === 'openrouter'
+  // Le test et le modèle affiché portent sur ce qui est ENREGISTRÉ. Tant que la
+  // liste montre autre chose, il faut le dire : c'est ce qui fait croire à une
+  // panne d'OpenRouter alors que l'ancien fournisseur répond encore.
+  const pendingSwitch = Boolean(cfg?.configured && provider && cfg.provider && provider !== cfg.provider)
   // « shared » : l'espace n'a pas de clé propre et utilise celle de Lenexux.
   const shared = cfg?.source === 'shared'
   // Réglages propres (modèle, effacement) : seulement avec une clé de l'espace.
@@ -299,7 +308,7 @@ function AiIntegration() {
         <div className="grid gap-3 md:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Fournisseur', 'Provider')}</span>
-            <select value={provider} onChange={(e) => setProvider(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
+            <select value={editing} onChange={(e) => setProvider(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
               <option value="openrouter">OpenRouter {t('(tous les modèles, une seule clé)', '(every model, one key)')}</option>
               <option value="anthropic">Claude (Anthropic)</option>
               <option value="gemini">Google Gemini {t('(palier gratuit)', '(free tier)')}</option>
@@ -312,9 +321,9 @@ function AiIntegration() {
               {t('Clé API', 'API key')}
               {configured && <span className="flex items-center gap-1" style={{ color: 'var(--nx-success)', textTransform: 'none' }}><Check size={11} /> {t('enregistrée · laissez vide pour la conserver', 'saved · leave blank to keep')}</span>}
             </span>
-            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : provider === 'gemini' ? 'AIza…' : provider === 'openrouter' ? 'sk-or-v1-…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : editing === 'gemini' ? 'AIza…' : editing === 'openrouter' ? 'sk-or-v1-…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
           </label>
-          {provider === 'azure-openai' && (
+          {editing === 'azure-openai' && (
             <label className="flex flex-col gap-1">
               <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Endpoint Azure', 'Azure endpoint')}</span>
               <input value={endpoint} onChange={(e) => setEndpoint(e.target.value)} placeholder="https://xxx.openai.azure.com" className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
@@ -332,7 +341,7 @@ function AiIntegration() {
             </span>
             {chainProvider ? (
               <>
-                <input list="openrouter-models" value={model || (cfg?.model ?? '')} onChange={(e) => setModel(e.target.value)}
+                <input list="openrouter-models" value={model || (pendingSwitch ? '' : cfg?.model ?? '')} onChange={(e) => setModel(e.target.value)}
                   onBlur={() => { if (model.trim() && model.trim() !== cfg?.model) pickModel.mutate(model.trim()) }}
                   placeholder="openai/gpt-4o-mini, google/gemini-2.0-flash-001" className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
                 <datalist id="openrouter-models">{models.map((m) => <option key={m} value={m} />)}</datalist>
@@ -352,6 +361,15 @@ function AiIntegration() {
           </label>
         </div>
 
+        {pendingSwitch && (
+          <div className="flex items-start gap-2 rounded-sm p-2.5" style={{ background: 'color-mix(in srgb, var(--nx-warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-warning) 35%, transparent)' }}>
+            <AlertTriangle size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--nx-warning)' }} />
+            <span style={{ fontSize: 12.5, color: 'var(--nx-text)', lineHeight: 1.5 }}>
+              {t(`Le test et le modèle ci-dessus portent sur la configuration ENREGISTRÉE, encore ${providerLabel(cfg!.provider)}. Collez votre clé puis cliquez « Enregistrer la clé » pour passer à ${providerLabel(editing)}.`,
+                `The test and the model above apply to the SAVED configuration, still ${providerLabel(cfg!.provider)}. Paste your key then click “Save key” to switch to ${providerLabel(editing)}.`)}
+            </span>
+          </div>
+        )}
         {testMsg && (
           <div className="flex items-center gap-2 rounded-sm p-2.5" style={{ background: testMsg.ok ? 'color-mix(in srgb, var(--nx-success) 8%, transparent)' : 'color-mix(in srgb, var(--nx-danger) 8%, transparent)', border: `1px solid ${testMsg.ok ? '#4ade8040' : '#ffb4ab40'}` }}>
             {testMsg.ok ? <Check size={15} style={{ color: 'var(--nx-success)' }} /> : <X size={15} style={{ color: 'var(--nx-danger)' }} />}
