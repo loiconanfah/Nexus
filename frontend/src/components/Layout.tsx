@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  AlertTriangle, Blocks, Boxes, Building2, FileSearch, GitBranch, GitPullRequest,
+  AlertOctagon, AlertTriangle, Blocks, Boxes, Building2, FileSearch, GitBranch, GitPullRequest,
   ClipboardList, HelpCircle, History, LayoutDashboard, Moon, Network, PanelLeftClose, PanelLeftOpen,
   Compass, Home, Radar, Radio, ScanText, ScrollText, Search,
   Settings, Sparkles, Sun, Terminal, Truck, Upload, Users, Waypoints, Zap, ShieldAlert,
@@ -35,6 +35,7 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
     items: [
       { to: '/dependencies', fr: 'Dépendances', en: 'Dependencies', icon: GitBranch },
       { to: '/risks', fr: 'Risques', en: 'Risks', icon: AlertTriangle },
+      { to: '/incident', fr: 'Mode incident', en: 'Incident mode', icon: AlertOctagon },
       { to: '/incidents', fr: 'Alerte anticipée', en: 'Early-Warning', icon: Radar },
       { to: '/attacks', fr: 'Simulation d’attaque', en: 'Attack Simulation', icon: ShieldAlert },
       { to: '/change', fr: 'Impact de changement', en: 'Change Impact', icon: GitPullRequest },

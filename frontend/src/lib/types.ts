@@ -760,3 +760,29 @@ export interface Resilience {
   delta: number | null
   history: { day: string; total: number }[]
 }
+
+/** Ce qu'il faut savoir dans les trois minutes qui suivent une panne. */
+export interface IncidentReport {
+  entity: { id: string; name: string; type: string; criticality: number; description?: string | null }
+  affectedCount: number
+  estimatedHourlyCost: number
+  currency: string
+  top: { id: string; name: string; type: string; criticality: number; depth: number; hourlyCost: number }[]
+  people: { id: string; name: string; type: string; role?: string | null; via: string[]; link: string; backup: string[] }[]
+  alternatives: { id: string; name: string; entityType: string }[]
+  plans: { id: string; name: string; entityType: string; description?: string | null }[]
+  suppliers: { id: string; name: string; description?: string | null }[]
+}
+
+/** Ce qu'il faut savoir dans les trois minutes qui suivent une panne. */
+export interface IncidentReport {
+  entity: { id: string; name: string; type: string; criticality: number; description?: string | null }
+  affectedCount: number
+  estimatedHourlyCost: number
+  currency: string
+  top: { id: string; name: string; type: string; criticality: number; depth: number; hourlyCost: number }[]
+  people: { id: string; name: string; type: string; role?: string | null; via: string[]; link: string; backup: string[] }[]
+  alternatives: { id: string; name: string; entityType: string }[]
+  plans: { id: string; name: string; entityType: string; description?: string | null }[]
+  suppliers: { id: string; name: string; description?: string | null }[]
+}

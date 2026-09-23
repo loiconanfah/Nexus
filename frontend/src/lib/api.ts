@@ -1,6 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience } from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport } from './types'
 
 const BASE = '/api/v1'
 
@@ -153,6 +153,10 @@ export const api = {
   /** Indice de résilience : ce que vaut la cartographie, et ce qui a bougé. */
   resilience: (lang: string) =>
     fetch(`${BASE}/resilience?lang=${lang}`, { headers: headers(false) }).then(handle<Resilience>),
+
+  /** Mode incident : la cascade, le coût, qui appeler, les secours, les plans. */
+  incident: (id: string) =>
+    fetch(`${BASE}/incident/${id}`, { headers: headers(false) }).then(handle<IncidentReport>),
 
   workspaceSummary: () =>
     fetch(`${BASE}/workspace/summary`, { headers: headers(false) }).then(handle<WorkspaceSummary>),

@@ -107,8 +107,17 @@ public sealed record Notice(
 public sealed class NotificationService(
     SetupProgressService progress,
     CollectorStore collectors,
-    IGraphRepository graph)
+    IGraphRepository graph,
+    Nexus.Api.History.ResilienceStore resilience)
 {
+    /// <summary>
+    /// Au-delà de ce délai, une dépendance dont plus rien n'a été observé n'est
+    /// plus un fait mais un souvenir. C'est le seul signal que le produit
+    /// fabrique TOUT SEUL, sans que personne n'ait rien fait : la raison de
+    /// revenir, et elle est honnête puisqu'elle reflète une vraie dégradation.
+    /// </summary>
+    private const int StaleDays = 90;
+
     public async Task<IReadOnlyList<Notice>> ListAsync(Guid tenant, bool isAdmin, CancellationToken ct)
     {
         var list = new List<Notice>();
@@ -161,6 +170,42 @@ public sealed class NotificationService(
         if (weak > 0)
             list.Add(new Notice("data.weak", "task", "warning", "data.weak",
                 new Dictionary<string, object?> { ["count"] = weak }, "/audit", null));
+
+        // 4 bis. Ce qui a VIEILLI. Une preuve ancienne reste une preuve, mais sa
+        // fraîcheur décote : une carte que personne ne rafraîchit finit par décrire
+        // une organisation qui n'existe plus.
+        var stale = relations.Count(r => r.Evidences is { Count: > 0 } ev
+            && ev.Max(e => e.CollectedAt) < now.AddDays(-StaleDays));
+        if (stale > 0)
+            list.Add(new Notice("data.stale", "task", "warning", "data.stale",
+                new Dictionary<string, object?> { ["count"] = stale, ["days"] = StaleDays }, "/audit", null));
+
+        // 4 ter. Actifs isolés : ils n'entrent dans AUCUNE propagation, donc dans
+        // aucun chiffrage d'impact. Les relier est le geste le plus rentable.
+        var entities = await graph.GetEntitiesAsync(tenant, ct: ct);
+        if (entities.Count > 0)
+        {
+            var linked = new HashSet<Guid>();
+            foreach (var r in relations) { linked.Add(r.Source); linked.Add(r.Target); }
+            var isolated = entities.Count(e => !linked.Contains(e.Id));
+            if (isolated > 0)
+                list.Add(new Notice("data.isolated", "task", "info", "data.isolated",
+                    new Dictionary<string, object?> { ["count"] = isolated }, "/inference", null));
+        }
+
+        // 4 quater. L'indice de résilience a-t-il bougé cette semaine ? Une baisse
+        // se signale d'elle-même, une hausse aussi : c'est ce qui donne envie de
+        // recommencer.
+        var series = await resilience.HistoryAsync(tenant, 8, ct);
+        if (series.Count >= 2)
+        {
+            var first = series[0];
+            var last = series[^1];
+            var delta = last.Total - first.Total;
+            if (delta != 0)
+                list.Add(new Notice("index.moved", "operation", delta < 0 ? "warning" : "success", "index.moved",
+                    new Dictionary<string, object?> { ["delta"] = delta, ["total"] = last.Total }, "/dashboard", null));
+        }
 
         // 5. Plan d'action : ce qui reste ouvert.
         var actions = (await graph.GetEntitiesAsync(tenant, ct: ct))

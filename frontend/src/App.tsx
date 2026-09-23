@@ -28,6 +28,7 @@ const HumanDependency = lazy(() => import('./pages/HumanDependency').then((m) =>
 const DependencyIntelligence = lazy(() => import('./pages/DependencyIntelligence').then((m) => ({ default: m.DependencyIntelligence })))
 const SupplierIntelligence = lazy(() => import('./pages/SupplierIntelligence').then((m) => ({ default: m.SupplierIntelligence })))
 const Incidents = lazy(() => import('./pages/Incidents').then((m) => ({ default: m.Incidents })))
+const IncidentResponse = lazy(() => import('./pages/IncidentResponse').then((m) => ({ default: m.IncidentResponse })))
 const Audit = lazy(() => import('./pages/Audit').then((m) => ({ default: m.Audit })))
 const ChangeImpact = lazy(() => import('./pages/ChangeImpact').then((m) => ({ default: m.ChangeImpact })))
 const DigitalTwin = lazy(() => import('./pages/DigitalTwin').then((m) => ({ default: m.DigitalTwin })))
@@ -77,6 +78,7 @@ const TITLES: Record<string, [string, string]> = {
   '/dependencies': ['Dépendances', 'Dependencies'],
   '/risks': ['Centre de risques', 'Risk Center'],
   '/suppliers': ['Fournisseurs', 'Supplier Intelligence'],
+  '/incident': ['Mode incident', 'Incident mode'],
   '/incidents': ['Alerte anticipée', 'Incident Early-Warning'],
   '/change': ['Impact de changement', 'Change Impact'],
   '/audit': ['Confiance & audit', 'Confidence & Audit'],
@@ -197,6 +199,7 @@ function AuthedApp() {
         <Route path="/dependencies" element={<DependencyIntelligence />} />
         <Route path="/suppliers" element={<SupplierIntelligence />} />
         <Route path="/incidents" element={<Incidents />} />
+        <Route path="/incident" element={<IncidentResponse />} />
         <Route path="/change" element={<ChangeImpact />} />
         <Route path="/audit" element={<Audit />} />
         <Route path="/twin" element={<DigitalTwin />} />

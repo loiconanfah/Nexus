@@ -221,6 +221,14 @@ function noticeText(n: Notice, t: T, lang: string): string {
     }
     case 'data.suggested': return t(`${num('count')} dépendance(s) suggérée(s) par l’IA attendent votre validation`, `${num('count')} AI-suggested dependency(ies) await your validation`)
     case 'data.weak': return t(`${num('count')} dépendance(s) reposent sur des preuves faibles`, `${num('count')} dependency(ies) rest on weak evidence`)
+    case 'data.stale': return t(`${num('count')} dépendance(s) n’ont rien observé de neuf depuis plus de ${num('days')} jours : leur fraîcheur décote`, `${num('count')} dependency(ies) have seen nothing new for over ${num('days')} days: their freshness is decaying`)
+    case 'data.isolated': return t(`${num('count')} actif(s) ne sont reliés à rien : ils n’entrent dans aucun chiffrage d’impact`, `${num('count')} asset(s) are connected to nothing: they enter no impact estimate`)
+    case 'index.moved': {
+      const delta = num('delta')
+      return delta > 0
+        ? t(`Votre indice de résilience a gagné ${delta} points cette semaine, il est à ${num('total')}`, `Your resilience index gained ${delta} points this week, it stands at ${num('total')}`)
+        : t(`Votre indice de résilience a perdu ${-delta} points cette semaine, il est à ${num('total')}`, `Your resilience index lost ${-delta} points this week, it stands at ${num('total')}`)
+    }
     case 'actions.open': return t(`${num('count')} action(s) du plan restent ouvertes`, `${num('count')} action plan item(s) remain open`)
     default: return n.code
   }
