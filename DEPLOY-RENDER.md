@@ -50,8 +50,14 @@ Render demande alors les valeurs des secrets marqués `sync: false`.
 | `nexus-neo4j` | `NEO4J_AUTH` | `neo4j/<MOT_DE_PASSE_FORT>` (choisir un mot de passe) |
 | `nexus-api` | `Nexus__Neo4j__Password` | **le même** `<MOT_DE_PASSE_FORT>` (sans le `neo4j/`) |
 | `nexus-api` | `NEXUS_ADMIN_PASSWORD` | mot de passe de l'admin (pour se connecter) |
-| `nexus-api` | `GEMINI_API_KEY` | ta clé Gemini |
+| `nexus-api` | `OPENROUTER_API_KEY` | ta clé OpenRouter (`sk-or-v1-…`), recommandée |
+| `nexus-api` | `GEMINI_API_KEY` | ta clé Gemini (si tu préfères Google en direct) |
 
+- Clé IA de l'opérateur : elle sert de repli à **tout espace sans clé propre**. `OPENROUTER_API_KEY`
+  est prise en premier ; viennent ensuite `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`.
+  Avec OpenRouter, `OPENROUTER_MODEL` accepte **plusieurs modèles séparés par des virgules** : le
+  premier est utilisé, les suivants prennent le relais s'il est en panne ou saturé. Laissée vide,
+  la chaîne par défaut s'applique.
 - `NEXUS_JWT_KEY` est **généré automatiquement** par Render (ne pas y toucher).
 - `NEXUS_ADMIN_EMAIL` vaut `admin@cgi.demo` par défaut (modifiable).
 - Inscription libre : `NEXUS_ALLOW_REGISTRATION=true`. Sans SMTP, les comptes sont actifs dès

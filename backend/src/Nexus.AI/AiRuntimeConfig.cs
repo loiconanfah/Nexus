@@ -36,7 +36,7 @@ public sealed class AiRuntimeConfig
     {
         if (string.IsNullOrWhiteSpace(e.ApiKey)) return false;
         if (e.Provider == "azure-openai") return !string.IsNullOrWhiteSpace(e.Endpoint);
-        return e.Provider is "anthropic" or "openai" or "gemini";
+        return e.Provider is "anthropic" or "openai" or "gemini" or "openrouter";
     }
 
     // Entree PROPRE au tenant courant (sans repli) : cache -> Postgres.
@@ -145,6 +145,10 @@ public sealed class AiRuntimeConfig
         "openai" => "gpt-4o",
         "azure-openai" => "gpt-4o",
         "gemini" => "gemini-1.5-flash",
+        // Une CHAÎNE, pas un modèle : si le premier flanche, OpenRouter passe au
+        // suivant de lui-même. Des modèles rapides et bon marché, l'extraction
+        // documentaire recopiant des faits plutôt qu'elle ne raisonne.
+        "openrouter" => string.Join(", ", OpenRouterChatCompletion.Fallbacks),
         _ => "",
     };
 
@@ -160,6 +164,12 @@ public sealed class AiRuntimeConfig
 
     private static Entry? SeedEntry(AiOptions azure)
     {
+        // OpenRouter d'abord : une seule clé d'opérateur, tous les fournisseurs
+        // derrière, et le repli automatique d'un modèle à l'autre.
+        var openrouter = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+        if (!string.IsNullOrWhiteSpace(openrouter))
+            return Mk("openrouter", openrouter, null, Environment.GetEnvironmentVariable("OPENROUTER_MODEL"));
+
         var anthropic = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
         if (!string.IsNullOrWhiteSpace(anthropic))
             return Mk("anthropic", anthropic, null, Environment.GetEnvironmentVariable("ANTHROPIC_MODEL"));

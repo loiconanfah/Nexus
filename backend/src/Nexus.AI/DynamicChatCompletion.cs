@@ -42,6 +42,8 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
                     return new AnthropicChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, model);
                 case "gemini":
                     return new GeminiChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, model);
+                case "openrouter":
+                    return new OpenRouterChatCompletion(httpFactory.CreateClient("anthropic"), apiKey, model);
                 case "openai":
                     return new OpenAiCompatibleCompletion(new OpenAI.OpenAIClient(new ApiKeyCredential(apiKey)).GetChatClient(model));
                 case "azure-openai":
@@ -108,6 +110,12 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
                 req.Headers.Add("x-goog-api-key", apiKey);
                 return await ReadGeminiModels(http, req, ct);
             }
+            if (provider == "openrouter")
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Get, "https://openrouter.ai/api/v1/models");
+                req.Headers.Add("Authorization", $"Bearer {apiKey}");
+                return await ReadModels(http, req, "data", "id", ct);
+            }
             // Azure : les « modèles » sont des déploiements, non listables via cette API.
             var (_, _, _, model) = config.Snapshot();
             return (true, "Fournisseur Azure : utilisez le nom de votre déploiement.", string.IsNullOrWhiteSpace(model) ? [] : [model]);
@@ -126,6 +134,10 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
     public async Task<string?> PickWorkingModelAsync(CancellationToken ct = default)
     {
         var (provider, apiKey, _, _) = config.Snapshot();
+        // OpenRouter n'a pas UN bon modèle à trouver : il en propose des centaines,
+        // et c'est une chaîne de repli qui fait la continuité de service. On garde
+        // donc la chaîne par défaut plutôt que d'élire un nom au hasard.
+        if (provider == "openrouter") return AiRuntimeConfig.DefaultModel("openrouter");
         var (ok, _, models) = await ListModelsAsync(ct);
         if (!ok || models.Length == 0 || string.IsNullOrWhiteSpace(apiKey)) return null;
 

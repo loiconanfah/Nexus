@@ -222,7 +222,10 @@ function AiIntegration() {
   const autoPick = useMutation({ mutationFn: api.autoPickModel, onSuccess: (r) => { setTestMsg({ ok: r.ok, message: r.ok ? `Modèle auto-sélectionné : ${r.model}` : (r.message ?? 'Aucun modèle utilisable.') }); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
   const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); setModels([]); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
 
-  const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p
+  const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p === 'openrouter' ? 'OpenRouter' : p
+  // OpenRouter ne reçoit pas UN modèle mais une CHAÎNE : si le premier flanche,
+  // il passe au suivant. Le champ se saisit donc à la main, liste à l'appui.
+  const chainProvider = (cfg?.provider ?? provider) === 'openrouter'
   // « shared » : l'espace n'a pas de clé propre et utilise celle de Lenexux.
   const shared = cfg?.source === 'shared'
   // Réglages propres (modèle, effacement) : seulement avec une clé de l'espace.
@@ -288,6 +291,7 @@ function AiIntegration() {
           <label className="flex flex-col gap-1">
             <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Fournisseur', 'Provider')}</span>
             <select value={provider} onChange={(e) => setProvider(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
+              <option value="openrouter">OpenRouter {t('(tous les modèles, une seule clé)', '(every model, one key)')}</option>
               <option value="anthropic">Claude (Anthropic)</option>
               <option value="gemini">Google Gemini {t('(palier gratuit)', '(free tier)')}</option>
               <option value="openai">OpenAI</option>
@@ -299,7 +303,7 @@ function AiIntegration() {
               {t('Clé API', 'API key')}
               {configured && <span className="flex items-center gap-1" style={{ color: 'var(--nx-success)', textTransform: 'none' }}><Check size={11} /> {t('enregistrée · laissez vide pour la conserver', 'saved · leave blank to keep')}</span>}
             </span>
-            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : provider === 'gemini' ? 'AIza…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+            <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" placeholder={configured ? '•••••••• ' + t('(remplacer)', '(replace)') : provider === 'gemini' ? 'AIza…' : provider === 'openrouter' ? 'sk-or-v1-…' : 'sk-…'} className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
           </label>
           {provider === 'azure-openai' && (
             <label className="flex flex-col gap-1">
@@ -317,7 +321,18 @@ function AiIntegration() {
                 </span>
               )}
             </span>
-            {models.length > 0 ? (
+            {chainProvider ? (
+              <>
+                <input list="openrouter-models" value={model || (cfg?.model ?? '')} onChange={(e) => setModel(e.target.value)}
+                  onBlur={() => { if (model.trim() && model.trim() !== cfg?.model) pickModel.mutate(model.trim()) }}
+                  placeholder="openai/gpt-4o-mini, google/gemini-2.0-flash-001" className="rounded-sm px-3 py-2 outline-none" style={inputStyle} />
+                <datalist id="openrouter-models">{models.map((m) => <option key={m} value={m} />)}</datalist>
+                <span style={{ fontSize: 11.5, color: 'var(--nx-text-muted)', textTransform: 'none' }}>
+                  {t('Plusieurs modèles séparés par des virgules : le premier est utilisé, les suivants prennent le relais s’il est en panne ou saturé. Laissez vide pour la chaîne par défaut.',
+                    'Several models separated by commas: the first is used, the others take over if it is down or saturated. Leave blank for the default chain.')}
+                </span>
+              </>
+            ) : models.length > 0 ? (
               <select value={cfg?.model ?? ''} onChange={(e) => pickModel.mutate(e.target.value)} className="rounded-sm px-3 py-2 outline-none" style={inputStyle}>
                 {!cfg?.model && <option value="">—</option>}
                 {models.map((m) => <option key={m} value={m}>{m}</option>)}

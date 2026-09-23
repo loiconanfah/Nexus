@@ -233,12 +233,17 @@ const DOCS: readonly Doc[] = [
       ] },
       { kind: 'ul', items: [
         ['Fonctionne sans clé (réponses ancrées, non « naturalisées »).', 'Works without a key (grounded answers, not “naturalized”).'],
-        ['Avec une clé (Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI), les réponses sont reformulées plus naturellement.', 'With a key (Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI), answers are phrased more naturally.'],
+        ['Avec une clé (OpenRouter, Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI), les réponses sont reformulées plus naturellement.', 'With a key (OpenRouter, Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI), answers are phrased more naturally.'],
         ['Les clés se gèrent dans Admin & système, restent côté serveur, et ne sont jamais renvoyées au navigateur.', 'Keys are managed in Admin & System, stay server-side, and are never returned to the browser.'],
       ] },
       { kind: 'p', text: [
         'Google Gemini propose un palier gratuit, pratique pour activer la naturalisation sans coût. La réponse reste identique dans les chiffres : seule la formulation change.',
         'Google Gemini offers a free tier, handy to enable naturalization at no cost. The answer stays identical in its numbers: only the wording changes.',
+      ] },
+      { kind: 'h', text: ['OpenRouter : une clé, tous les modèles', 'OpenRouter: one key, every model'] },
+      { kind: 'p', text: [
+        'Avec OpenRouter, le champ Modèle accepte plusieurs noms séparés par des virgules. Le premier est utilisé ; si le fournisseur est en panne, saturé ou refuse la requête, le suivant prend le relais sans intervention. Lenexux exclut par ailleurs la réflexion facturée des modèles récents, inutile pour une extraction, et refuse les fournisseurs qui s’autorisent à entraîner sur ce qui transite.',
+        'With OpenRouter, the Model field accepts several names separated by commas. The first one is used; if that provider is down, saturated or refuses the request, the next takes over with no intervention. Lenexux also excludes the billed reasoning of recent models, useless for extraction, and refuses providers that allow themselves to train on what passes through.',
       ] },
     ],
   },
