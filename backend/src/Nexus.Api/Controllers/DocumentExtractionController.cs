@@ -25,7 +25,11 @@ namespace Nexus.Api.Controllers;
 public sealed class DocumentExtractionController(
     ITenantProvider tenantProvider,
     IChatCompletion chat,
-    IGraphRepository repository) : NexusController(tenantProvider)
+    IGraphRepository repository,
+    AiRuntimeConfig aiConfig,
+    ILlmUsageStore usage,
+    LlmQuotaOptions quota,
+    ICurrentTenant currentTenant) : NexusController(tenantProvider)
 {
     private const string Source = "Document Intelligence";
 
@@ -38,6 +42,21 @@ public sealed class DocumentExtractionController(
     public sealed record IngestRequest(List<IngestEntity> Entities, List<IngestRelation> Relations);
 
     private static string Lang(string? l) => l == "en" ? "en" : "fr";
+
+    /// <summary>
+    /// Pourquoi le modèle n'a pas répondu, dit précisément. « Quota ou service
+    /// indisponible » laissait l'utilisateur deviner, alors que le cas le plus
+    /// fréquent est ailleurs : une clé propre à l'espace, devenue invalide, qui
+    /// prime sur celle de l'opérateur.
+    /// </summary>
+    private async Task<string> WhyAsync(string lang, CancellationToken ct)
+    {
+        var tid = currentTenant.TenantId;
+        var period = DateTime.UtcNow.ToString("yyyy-MM");
+        var used = tid is null ? new LlmUsage(0, 0) : await usage.GetAsync(tid.Value, period, ct);
+        var (message, _) = Nexus.Api.AI.AiAvailability.Explain(aiConfig, used, quota, aiConfig.Source() != "own", lang);
+        return message;
+    }
     private string NoAi(string lang) => lang == "en"
         ? "No AI model is available for this workspace (see Admin, AI integrations)."
         : "Aucun modèle IA n'est disponible pour cet espace (voir Admin, Intégrations IA).";
@@ -138,7 +157,7 @@ public sealed class DocumentExtractionController(
             {
                 ok = false,
                 message = !answered
-                    ? (lang == "en" ? "The model did not answer (monthly quota reached or service unavailable)." : "Le modèle n'a pas répondu (quota mensuel atteint ou service indisponible).")
+                    ? await WhyAsync(lang, ct)
                     : (lang == "en" ? "The model's answer could not be used." : "La réponse du modèle n'était pas exploitable."),
             });
         return Ok(new { ok = true, extraction = parsed });

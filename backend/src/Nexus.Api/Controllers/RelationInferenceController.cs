@@ -21,9 +21,22 @@ namespace Nexus.Api.Controllers;
 public sealed class RelationInferenceController(
     ITenantProvider tenantProvider,
     IChatCompletion chat,
-    IGraphRepository repository) : NexusController(tenantProvider)
+    IGraphRepository repository,
+    AiRuntimeConfig aiConfig,
+    ILlmUsageStore usage,
+    LlmQuotaOptions quota,
+    ICurrentTenant currentTenant) : NexusController(tenantProvider)
 {
     private const string Source = "Relation Inference";
+
+    /// <summary>Pourquoi le modèle n'a pas répondu, et où corriger.</summary>
+    private async Task<(string Message, string? Route)> ExplainAsync(CancellationToken ct)
+    {
+        var tid = currentTenant.TenantId;
+        var period = DateTime.UtcNow.ToString("yyyy-MM");
+        var used = tid is null ? new LlmUsage(0, 0) : await usage.GetAsync(tid.Value, period, ct);
+        return Nexus.Api.AI.AiAvailability.Explain(aiConfig, used, quota, aiConfig.Source() != "own", "fr");
+    }
     private const string RelationTypes = "DEPENDS_ON, RUNS_ON, HOSTS, USES, SUPPLIED_BY, AUTHENTICATES, MAINTAINS, CONNECTS_TO, STORES, PROTECTS, PART_OF, LOCATED_IN, USES_MODEL, INVOKES, SERVED_BY, CAN_ACT_ON, SENDS_DATA_TO, ORCHESTRATES";
 
     public sealed record ProposedRelation(
@@ -81,7 +94,13 @@ public sealed class RelationInferenceController(
 
         var completion = await chat.CompleteAsync(system, Truncate(user, 9000), ct, CompletionOptions.Extraction);
         if (string.IsNullOrWhiteSpace(completion))
-            return Ok(new { usedAi = false, message = "Le modèle n'a pas répondu.", proposals = Array.Empty<object>() });
+        {
+            // Dire POURQUOI. Le cas qui trompe le plus : un espace qui a gardé sa
+            // propre clé, devenue invalide ; elle prime sur celle de l'opérateur,
+            // si bien qu'en ajouter une côté serveur ne change rien.
+            var (why, route) = await ExplainAsync(ct);
+            return Ok(new { usedAi = false, message = why, route, proposals = Array.Empty<object>() });
+        }
 
         var json = ExtractJson(completion);
         if (json is null)
