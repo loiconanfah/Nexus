@@ -22,6 +22,30 @@ public class ImpactCalibrationTests
         Assert.Equal(d.CostMinimal, t.CostMinimal);
     }
 
+    [Theory]
+    // Les horaires réels priment : 6 jours de 12 h font 3 744 h par an, pas 2 600.
+    [InlineData("business", 6, 12, 3_744)]
+    [InlineData("business", 5, 8, 2_080)]
+    // Sans horaires saisis, la valeur d'usage reste 2 600 h.
+    [InlineData("business", 0, 0, 2_600)]
+    [InlineData("business", 9, 30, 2_600)]
+    // En continu, les horaires ne changent rien, et 7 × 24 ne dépasse jamais l'année.
+    [InlineData("24x7", 5, 8, 8_760)]
+    [InlineData("business", 7, 24, 8_760)]
+    public void Les_heures_annuelles_suivent_les_horaires_d_ouverture(string mode, int days, int hours, double expected)
+        => Assert.Equal(expected, ImpactCalibration.OperatingHoursPerYear(mode, days, hours));
+
+    [Fact]
+    public void Des_horaires_plus_larges_abaissent_le_cout_horaire()
+    {
+        // Même chiffre d'affaires réparti sur plus d'heures : l'heure vaut moins.
+        var court = ImpactCalibration.FromRevenue(1_000_000_000, "business", 5, 8);
+        var large = ImpactCalibration.FromRevenue(1_000_000_000, "business", 6, 12);
+
+        Assert.True(large.CostVeryHigh < court.CostVeryHigh);
+        Assert.Equal(Math.Round(1_000_000_000 / 2_080.0), Math.Round(ImpactCalibration.HourlyRevenue(1_000_000_000, "business", 5, 8)));
+    }
+
     [Fact]
     public void Les_delais_et_probabilites_ne_sont_pas_touches()
     {

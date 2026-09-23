@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Nexus.Infrastructure.Persistence;
@@ -23,6 +23,8 @@ public sealed record OrganizationProfile(
     double AnnualRevenue,
     int Headcount,
     string OperatingMode,
+    int OpenDaysPerWeek,
+    int OpenHoursPerDay,
     DateTime? CompletedAt,
     DateTime UpdatedAt)
 {
@@ -50,6 +52,10 @@ public sealed class OrganizationStore(NexusDbContext db)
                 operating_mode text NOT NULL DEFAULT 'business',
                 completed_at timestamptz,
                 updated_at timestamptz NOT NULL DEFAULT now());
+            -- Horaires d'ouverture réels et logo (ajoutés après coup : colonnes idempotentes).
+            ALTER TABLE organization_profiles ADD COLUMN IF NOT EXISTS open_days_per_week integer NOT NULL DEFAULT 0;
+            ALTER TABLE organization_profiles ADD COLUMN IF NOT EXISTS open_hours_per_day integer NOT NULL DEFAULT 0;
+            ALTER TABLE organization_profiles ADD COLUMN IF NOT EXISTS logo text;
             CREATE TABLE IF NOT EXISTS onboarding_milestones (
                 tenant_id uuid NOT NULL,
                 key text NOT NULL,
@@ -71,7 +77,7 @@ public sealed class OrganizationStore(NexusDbContext db)
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             SELECT name, sector, country, currency, size_band, annual_revenue, headcount,
-                   operating_mode, completed_at, updated_at
+                   operating_mode, open_days_per_week, open_hours_per_day, completed_at, updated_at
             FROM organization_profiles WHERE tenant_id = @t;
             """;
         P(cmd, "@t", tenant);
@@ -79,8 +85,8 @@ public sealed class OrganizationStore(NexusDbContext db)
         if (!await r.ReadAsync(ct)) return null;
         return new OrganizationProfile(
             r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4),
-            r.GetDouble(5), r.GetInt32(6), r.GetString(7),
-            r.IsDBNull(8) ? null : r.GetDateTime(8), r.GetDateTime(9));
+            r.GetDouble(5), r.GetInt32(6), r.GetString(7), r.GetInt32(8), r.GetInt32(9),
+            r.IsDBNull(10) ? null : r.GetDateTime(10), r.GetDateTime(11));
     }
 
     /// <summary>Enregistre le profil. L'état « terminé » n'est jamais remis à zéro par une mise à jour.</summary>
@@ -90,17 +96,47 @@ public sealed class OrganizationStore(NexusDbContext db)
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             INSERT INTO organization_profiles
-                (tenant_id, name, sector, country, currency, size_band, annual_revenue, headcount, operating_mode, updated_at)
-            VALUES (@t, @n, @s, @c, @cur, @sz, @rev, @hc, @om, now())
+                (tenant_id, name, sector, country, currency, size_band, annual_revenue, headcount,
+                 operating_mode, open_days_per_week, open_hours_per_day, updated_at)
+            VALUES (@t, @n, @s, @c, @cur, @sz, @rev, @hc, @om, @odw, @ohd, now())
             ON CONFLICT (tenant_id) DO UPDATE SET
                 name = EXCLUDED.name, sector = EXCLUDED.sector, country = EXCLUDED.country,
                 currency = EXCLUDED.currency, size_band = EXCLUDED.size_band,
                 annual_revenue = EXCLUDED.annual_revenue, headcount = EXCLUDED.headcount,
-                operating_mode = EXCLUDED.operating_mode, updated_at = now();
+                operating_mode = EXCLUDED.operating_mode,
+                open_days_per_week = EXCLUDED.open_days_per_week,
+                open_hours_per_day = EXCLUDED.open_hours_per_day,
+                updated_at = now();
             """;
         P(cmd, "@t", tenant); P(cmd, "@n", p.Name); P(cmd, "@s", p.Sector); P(cmd, "@c", p.Country);
         P(cmd, "@cur", p.Currency); P(cmd, "@sz", p.SizeBand); P(cmd, "@rev", p.AnnualRevenue);
         P(cmd, "@hc", p.Headcount); P(cmd, "@om", p.OperatingMode);
+        P(cmd, "@odw", p.OpenDaysPerWeek); P(cmd, "@ohd", p.OpenHoursPerDay);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    /// <summary>Logo de l'organisation (image encodée en data URL), ou null.</summary>
+    public async Task<string?> GetLogoAsync(Guid tenant, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT logo FROM organization_profiles WHERE tenant_id = @t;";
+        P(cmd, "@t", tenant);
+        var v = await cmd.ExecuteScalarAsync(ct);
+        return v is string s && s.Length > 0 ? s : null;
+    }
+
+    /// <summary>Enregistre ou retire (null) le logo. Sans profil existant, une ligne minimale est créée.</summary>
+    public async Task SetLogoAsync(Guid tenant, string? dataUrl, CancellationToken ct)
+    {
+        var conn = await OpenAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO organization_profiles (tenant_id, name, sector, country, currency, size_band, logo, updated_at)
+            VALUES (@t, '', '', '', '', '', @l, now())
+            ON CONFLICT (tenant_id) DO UPDATE SET logo = EXCLUDED.logo, updated_at = now();
+            """;
+        P(cmd, "@t", tenant); P(cmd, "@l", dataUrl);
         await cmd.ExecuteNonQueryAsync(ct);
     }
 

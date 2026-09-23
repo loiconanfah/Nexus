@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Impact;
 using Nexus.Api.Organization;
 using Nexus.Api.Tenancy;
@@ -33,7 +33,13 @@ public sealed class OrganizationController(
 
     public sealed record SaveRequest(
         string Name, string Sector, string Country, string Currency, string SizeBand,
-        double AnnualRevenue, int Headcount, string OperatingMode, bool Recalibrate = false);
+        double AnnualRevenue, int Headcount, string OperatingMode,
+        int OpenDaysPerWeek = 0, int OpenHoursPerDay = 0, bool Recalibrate = false);
+
+    /// <summary>Logo de l'organisation, en data URL (image encodée). Null retire le logo.</summary>
+    public sealed record LogoRequest(string? DataUrl);
+
+    private const int MaxLogoChars = 400_000;   // ≈ 300 Ko d'image encodée
 
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
@@ -60,26 +66,28 @@ public sealed class OrganizationController(
             sectors = Sectors,
             sizeBands = SizeBands,
             calibration = profile is { AnnualRevenue: > 0 }
-                ? Preview(profile.AnnualRevenue, profile.OperatingMode)
+                ? Preview(profile.AnnualRevenue, profile.OperatingMode, profile.OpenDaysPerWeek, profile.OpenHoursPerDay)
                 : null,
+            logo = await organization.GetLogoAsync(tenant, ct),
         });
     }
 
     /// <summary>Aperçu de l'étalonnage, pour que l'assistant montre ce que les chiffres saisis impliquent.</summary>
     [HttpGet("calibration")]
-    public IActionResult Calibration([FromQuery] double revenue, [FromQuery] string? mode)
+    public IActionResult Calibration([FromQuery] double revenue, [FromQuery] string? mode,
+        [FromQuery] int? days = null, [FromQuery] int? hours = null)
     {
         if (!TryGetTenant(out _, out var error)) return error;
-        return revenue > 0 ? Ok(Preview(revenue, mode)) : BadRequest(new { error = "revenue_required" });
+        return revenue > 0 ? Ok(Preview(revenue, mode, days, hours)) : BadRequest(new { error = "revenue_required" });
     }
 
-    private static object Preview(double revenue, string? mode)
+    private static object Preview(double revenue, string? mode, int? days = null, int? hours = null)
     {
-        var t = ImpactCalibration.FromRevenue(revenue, mode);
+        var t = ImpactCalibration.FromRevenue(revenue, mode, days, hours);
         return new
         {
-            hourlyRevenue = Math.Round(ImpactCalibration.HourlyRevenue(revenue, mode)),
-            operatingHours = ImpactCalibration.OperatingHoursPerYear(mode),
+            hourlyRevenue = Math.Round(ImpactCalibration.HourlyRevenue(revenue, mode, days, hours)),
+            operatingHours = ImpactCalibration.OperatingHoursPerYear(mode, days, hours),
             costVeryHigh = t.CostVeryHigh,
             costModerate = t.CostModerate,
             costMinimal = t.CostMinimal,
@@ -99,7 +107,7 @@ public sealed class OrganizationController(
         var profile = new OrganizationProfile(
             req.Name.Trim(), req.Sector, req.Country.Trim().ToUpperInvariant(),
             req.Currency.Trim().ToUpperInvariant(), req.SizeBand, req.AnnualRevenue, req.Headcount,
-            req.OperatingMode, existing?.CompletedAt, DateTime.UtcNow);
+            req.OperatingMode, req.OpenDaysPerWeek, req.OpenHoursPerDay, existing?.CompletedAt, DateTime.UtcNow);
         await organization.SaveAsync(tenant, profile, ct);
 
         // Étalonnage du coût d'interruption. Il ne remplace JAMAIS des réglages que
@@ -108,11 +116,48 @@ public sealed class OrganizationController(
         var calibrated = false;
         if (custom is null || req.Recalibrate)
         {
-            await impactConfig.SaveAsync(tenant, ImpactCalibration.FromRevenue(req.AnnualRevenue, req.OperatingMode), ct);
+            await impactConfig.SaveAsync(tenant,
+                ImpactCalibration.FromRevenue(req.AnnualRevenue, req.OperatingMode, req.OpenDaysPerWeek, req.OpenHoursPerDay), ct);
             calibrated = true;
         }
 
         return Ok(new { profile = await organization.GetAsync(tenant, ct), calibrated });
+    }
+
+    /// <summary>
+    /// Logo de l'organisation, affiché à côté du nom de Lenexux. Stocké en data URL
+    /// dans l'espace de travail : aucune image n'est servie depuis un autre domaine,
+    /// et le format est vérifié (image matricielle seulement, pas de SVG qui pourrait
+    /// embarquer du script).
+    /// </summary>
+    [HttpPut("logo")]
+    public async Task<IActionResult> SetLogo([FromBody] LogoRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
+
+        var url = req?.DataUrl?.Trim();
+        if (string.IsNullOrEmpty(url))
+        {
+            await organization.SetLogoAsync(tenant, null, ct);
+            return Ok(new { logo = (string?)null });
+        }
+        if (url.Length > MaxLogoChars) return BadRequest(new { error = "logo_too_large" });
+        var ok = url.StartsWith("data:image/png;base64,", StringComparison.OrdinalIgnoreCase)
+              || url.StartsWith("data:image/jpeg;base64,", StringComparison.OrdinalIgnoreCase)
+              || url.StartsWith("data:image/webp;base64,", StringComparison.OrdinalIgnoreCase);
+        if (!ok) return BadRequest(new { error = "logo_format_invalid" });
+        var payload = url[(url.IndexOf(',') + 1)..];
+        if (payload.Length == 0 || !IsBase64(payload)) return BadRequest(new { error = "logo_format_invalid" });
+
+        await organization.SetLogoAsync(tenant, url, ct);
+        return Ok(new { logo = url });
+    }
+
+    private static bool IsBase64(string s)
+    {
+        Span<byte> buffer = new byte[s.Length];
+        return Convert.TryFromBase64String(s, buffer, out var written) && written > 0;
     }
 
     /// <summary>Termine l'assistant : l'utilisateur accède à la plateforme.</summary>
@@ -138,6 +183,8 @@ public sealed class OrganizationController(
         if (!Currencies.IsSupported(r.Currency)) return "currency_invalid";
         if (!SizeBands.Contains(r.SizeBand)) return "size_invalid";
         if (!OperatingModes.Contains(r.OperatingMode)) return "operating_mode_invalid";
+        // Horaires d'ouverture : exigés hors fonctionnement continu, où ils n'ont pas de sens.
+        if (r.OperatingMode != "24x7" && (r.OpenDaysPerWeek is < 1 or > 7 || r.OpenHoursPerDay is < 1 or > 24)) return "opening_hours_invalid";
         if (r.AnnualRevenue <= 0 || double.IsNaN(r.AnnualRevenue) || r.AnnualRevenue > 1e15) return "revenue_invalid";
         if (r.Headcount is <= 0 or > 5_000_000) return "headcount_invalid";
         return null;

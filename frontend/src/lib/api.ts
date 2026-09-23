@@ -1,6 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis } from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview } from './types'
 
 const BASE = '/api/v1'
 
@@ -155,6 +155,11 @@ export const api = {
     fetch(`${BASE}/ai/config`, { headers: headers(false) })
       .then(handle<{ providers: string[]; provider: string; configured: boolean; model: string; endpointHost: string | null; source?: 'own' | 'shared' | 'none' }>),
 
+  /** Logo de l'organisation (data URL) ; null le retire. Réservé aux administrateurs. */
+  setOrganizationLogo: (dataUrl: string | null) =>
+    fetch(`${BASE}/organization/logo`, { method: 'PUT', headers: headers(), body: JSON.stringify({ dataUrl }) })
+      .then(handle<{ logo: string | null }>),
+
   setAiKey: (body: { provider: string; apiKey: string; endpoint?: string; model?: string }) =>
     fetch(`${BASE}/ai/config`, { method: 'PUT', headers: headers(), body: JSON.stringify(body) })
       .then(handle<{ provider: string; configured: boolean; model: string; endpointHost: string | null }>),
@@ -269,6 +274,24 @@ export const api = {
   analyzeImport: (sample: string) =>
     fetch(`${BASE}/imports/analyze`, { method: 'POST', headers: headers(), body: JSON.stringify({ sample }) })
       .then(handle<{ usedAi: boolean; message: string; mapping: null | { kind: 'entities' | 'relations'; name: string; type: string; crit: string; source: string; sourceType: string; target: string; targetType: string; relation: string; confidence: string; defaultEntityType: string } }>),
+
+  /** Découvre feuilles, colonnes et un échantillon d'un fichier (Excel ou CSV), sans rien écrire. */
+  previewFile: async (file: File): Promise<FilePreview> => {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${BASE}/imports/preview-file`, { method: 'POST', headers: headers(false), body: form })
+    if (res.status === 401) { handleUnauthorized(); throw new Error('unauthorized') }
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error((body as { error?: string }).error ?? `http_${res.status}`)
+    return body as FilePreview
+  },
+
+  importExcel: (file: Blob, filename: string, profile: string) => {
+    const form = new FormData()
+    form.append('file', file, filename)
+    form.append('profile', profile)
+    return fetch(`${BASE}/imports/excel`, { method: 'POST', headers: headers(false), body: form }).then(handle<ImportResult>)
+  },
 
   importCsv: (file: Blob, filename: string, profile: string) => {
     const form = new FormData()

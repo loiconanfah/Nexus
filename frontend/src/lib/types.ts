@@ -539,6 +539,12 @@ export interface ImpactConfig {
 
 // --- Organisation, mise en place et notifications ---------------------------
 
+/** Contenu découvert d'un fichier importable : feuilles Excel, ou jeu unique d'un CSV. */
+export interface FilePreview {
+  format: 'excel' | 'csv'
+  datasets: { name: string; columns: string[]; rows: number; sample: string }[]
+}
+
 export interface OrganizationProfile {
   name: string
   sector: string
@@ -548,6 +554,8 @@ export interface OrganizationProfile {
   annualRevenue: number
   headcount: number
   operatingMode: 'business' | '24x7'
+  openDaysPerWeek: number
+  openHoursPerDay: number
   completedAt: string | null
   updatedAt: string
   completed: boolean
@@ -571,6 +579,8 @@ export interface OrganizationState {
   sectors: string[]
   sizeBands: string[]
   calibration: CalibrationPreview | null
+  /** Logo de l'organisation (data URL), affiché à côté du nom de Lenexux. */
+  logo: string | null
 }
 
 export interface OrganizationInput {
@@ -582,6 +592,8 @@ export interface OrganizationInput {
   annualRevenue: number
   headcount: number
   operatingMode: 'business' | '24x7'
+  openDaysPerWeek: number
+  openHoursPerDay: number
   recalibrate?: boolean
 }
 

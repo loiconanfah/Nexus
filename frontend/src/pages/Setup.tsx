@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, ArrowRight, Building2, Check, Coins, Compass, Database, FileText, Loader2, LogOut, PlugZap, ShieldCheck,
+  ArrowLeft, ArrowRight, Building2, Check,  Compass, Database, FileText, Loader2, LogOut, PlugZap, ShieldCheck,
 } from 'lucide-react'
 import { LogoMark } from '../components/Logo'
 import { deferGuidedTour } from '../components/GuidedTour'
@@ -35,8 +35,15 @@ const DATA_PATHS: { key: DataPath; route: string; icon: typeof Database; fr: [st
 ]
 
 const EMPTY: OrganizationInput = {
-  name: '', sector: '', country: '', currency: '', sizeBand: '', annualRevenue: 0, headcount: 0, operatingMode: 'business',
+  name: '', sector: '', country: '', currency: '', sizeBand: '', annualRevenue: 0, headcount: 0,
+  operatingMode: 'business', openDaysPerWeek: 5, openHoursPerDay: 8,
 }
+
+/** Heures d'ouverture par an : 7 j × 24 h vaut l'année entière. */
+const hoursPerYear = (f: OrganizationInput) =>
+  f.operatingMode === '24x7' || (f.openDaysPerWeek === 7 && f.openHoursPerDay === 24)
+    ? 8760
+    : f.openDaysPerWeek * f.openHoursPerDay * 52
 
 /** Chiffres saisis avec séparateurs : on ne garde que les chiffres. */
 const digits = (s: string) => Number(s.replace(/[^\d]/g, '')) || 0
@@ -62,7 +69,11 @@ export function Setup() {
   // Préremplissage à partir d'un profil existant (assistant repris ou modifié).
   useEffect(() => {
     const p = org.data?.profile
-    if (p) setForm({ name: p.name, sector: p.sector, country: p.country, currency: p.currency, sizeBand: p.sizeBand, annualRevenue: p.annualRevenue, headcount: p.headcount, operatingMode: p.operatingMode })
+    if (p) setForm({
+      name: p.name, sector: p.sector, country: p.country, currency: p.currency, sizeBand: p.sizeBand,
+      annualRevenue: p.annualRevenue, headcount: p.headcount, operatingMode: p.operatingMode,
+      openDaysPerWeek: p.openDaysPerWeek || 5, openHoursPerDay: p.openHoursPerDay || 8,
+    })
   }, [org.data?.profile])
 
   const set = <K extends keyof OrganizationInput>(k: K, v: OrganizationInput[K]) => setForm((f) => ({ ...f, [k]: v }))
@@ -71,17 +82,6 @@ export function Setup() {
   const currency = currencies.find((c) => c.code === form.currency)
   const money = currency ? makeMoney(currency, lang) : null
 
-  // Aperçu d'étalonnage (le serveur fait foi), avec un léger délai de frappe.
-  const [debounced, setDebounced] = useState({ rev: 0, mode: 'business' })
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced({ rev: form.annualRevenue, mode: form.operatingMode }), 350)
-    return () => clearTimeout(id)
-  }, [form.annualRevenue, form.operatingMode])
-  const preview = useQuery({
-    queryKey: ['calibration', debounced.rev, debounced.mode],
-    queryFn: () => api.calibration(debounced.rev, debounced.mode),
-    enabled: debounced.rev > 0,
-  })
 
   const missing = useMemo(() => {
     const m: Record<number, string[]> = { 0: [], 1: [] }
@@ -278,35 +278,42 @@ export function Setup() {
                   <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{currency?.symbol ?? ''}</span>
                 </div>
               </Field>
-              <Field label={t('Vos services fonctionnent…', 'Your services run…')} required>
+              <Field label={t('Horaires d’ouverture', 'Opening hours')} required invalid={invalid('openingHours')}
+                hint={t('Ils servent à répartir le chiffre d’affaires : une heure d’arrêt pèse plus lourd si vous êtes ouvert moins longtemps.',
+                  'They spread the revenue over time: an hour of downtime weighs more if you are open fewer hours.')}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Choice active={form.operatingMode === 'business'} onClick={() => set('operatingMode', 'business')}>
-                    <b>{t('Aux heures d’ouverture', 'During business hours')}</b><br /><span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('≈ 2 600 h par an', '≈ 2,600 h a year')}</span>
+                    <b>{t('Aux heures d’ouverture', 'During opening hours')}</b><br />
+                    <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Agences, bureaux, guichets', 'Branches, offices, counters')}</span>
                   </Choice>
                   <Choice active={form.operatingMode === '24x7'} onClick={() => set('operatingMode', '24x7')}>
-                    <b>{t('En continu, 24 h/24', 'Around the clock, 24/7')}</b><br /><span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Mobile money, guichets automatiques, en ligne', 'Mobile money, ATMs, online')}</span>
+                    <b>{t('En continu, 24 h/24', 'Around the clock, 24/7')}</b><br />
+                    <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Mobile money, guichets automatiques, en ligne', 'Mobile money, ATMs, online')}</span>
                   </Choice>
                 </div>
-              </Field>
-
-              {/* Ce que ces chiffres impliquent */}
-              <div className="rounded-md border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-                <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
-                  <Coins size={14} /> {t('Ce que cela donne', 'What this means')}
-                </div>
-                {preview.data && money ? (
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <Figure value={money.compact(preview.data.hourlyRevenue)} label={t('de revenu par heure d’activité', 'of revenue per operating hour')} />
-                    <Figure value={money.compact(preview.data.costVeryHigh)} label={t('coût horaire d’arrêt d’une activité très critique', 'hourly downtime cost of a very critical activity')} />
-                    <p className="text-xs sm:col-span-2" style={{ color: 'var(--nx-text-muted)', lineHeight: 1.6 }}>
-                      {t('Ces paliers sont une base de départ. Vous les affinerez activité par activité (« Impact transversal ») : un guichet et une plateforme mobile money ne pèsent pas pareil.',
-                        'These tiers are a starting point. You will refine them activity by activity (“Cross-system Impact”): a branch counter and a mobile money platform do not weigh the same.')}
-                    </p>
+                {form.operatingMode === 'business' && (
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col gap-1">
+                      <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('Jours d’ouverture par semaine', 'Opening days per week')}</span>
+                      <select value={form.openDaysPerWeek} onChange={(e) => set('openDaysPerWeek', Number(e.target.value))} className="nx-field">
+                        {[1, 2, 3, 4, 5, 6, 7].map((d) => <option key={d} value={d}>{d} {t(d > 1 ? 'jours' : 'jour', d > 1 ? 'days' : 'day')}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('Heures par jour', 'Hours per day')}</span>
+                      <select value={form.openHoursPerDay} onChange={(e) => set('openHoursPerDay', Number(e.target.value))} className="nx-field">
+                        {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => <option key={h} value={h}>{h} h</option>)}
+                      </select>
+                    </div>
                   </div>
-                ) : (
-                  <p className="mt-2 text-sm" style={{ color: 'var(--nx-text-muted)' }}>{t('Saisissez la devise et le chiffre d’affaires pour voir l’estimation.', 'Enter the currency and revenue to see the estimate.')}</p>
                 )}
-              </div>
+                <p className="mt-2" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+                  {t(`Soit ${hoursPerYear(form).toLocaleString('fr-CA')} heures d’activité par an.`,
+                    `That is ${hoursPerYear(form).toLocaleString('en-CA')} operating hours a year.`)}
+                  {form.operatingMode === 'business' && ' ' + t('Les horaires exacts par agence se précisent ensuite, activité par activité.',
+                    'Exact hours per site are refined later, activity by activity.')}
+                </p>
+              </Field>
             </StepBody>
           )}
 
@@ -417,14 +424,6 @@ function Choice({ active, onClick, children }: { active: boolean; onClick: () =>
   )
 }
 
-function Figure({ value, label }: { value: string; label: string }) {
-  return (
-    <div>
-      <div style={{ fontFamily: geist, fontSize: 24, fontWeight: 600, letterSpacing: '-0.02em' }}>{value}</div>
-      <div className="text-xs" style={{ color: 'var(--nx-text-muted)' }}>{label}</div>
-    </div>
-  )
-}
 
 function Recap({ label, value }: { label: string; value: string }) {
   return (

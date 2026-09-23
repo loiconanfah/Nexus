@@ -52,6 +52,67 @@ public sealed class ImportsController(
     private RestConnector Connector(RestSource s) => new(NewHttp(),
         new RestConnectorConfig(s.Url, s.AuthHeaderName, s.AuthHeaderValue, s.RecordsPath, string.IsNullOrWhiteSpace(s.Dataset) ? "rest" : s.Dataset!));
 
+    /// <summary>
+    /// Découvre le contenu d'un fichier avant tout import : ses feuilles (Excel) ou
+    /// son unique jeu (CSV), leurs colonnes et un échantillon de lignes. N'écrit rien.
+    /// Nécessaire pour Excel, dont les colonnes ne se lisent pas dans le navigateur,
+    /// et dont le jeu de données porte le nom de la FEUILLE, pas celui du fichier.
+    /// </summary>
+    [HttpPost("preview-file")]
+    [RequestSizeLimit(30 * 1024 * 1024)]
+    public async Task<IActionResult> PreviewFile(IFormFile? file, CancellationToken ct)
+    {
+        if (!TryGetTenant(out _, out var error)) return error;
+        if (file is null || file.Length == 0) return BadRequest(new { error = "file_required" });
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (ext is not (".csv" or ".tsv" or ".xlsx" or ".xlsm"))
+            return BadRequest(new { error = ext == ".xls" ? "legacy_xls" : "unsupported_format" });
+
+        var tempPath = Path.Combine(Path.GetTempPath(), $"nexus_preview_{Guid.NewGuid():N}{ext}");
+        try
+        {
+            await using (var stream = System.IO.File.Create(tempPath)) await file.CopyToAsync(stream, ct);
+
+            IConnector connector = ext is ".xlsx" or ".xlsm"
+                ? new ExcelConnector(new ExcelConnectorConfig(tempPath, true))
+                : new CsvConnector(new CsvConnectorConfig(tempPath, ext == ".tsv" ? "\t" : ",", true));
+
+            var valid = await connector.ValidateConnectionAsync(ct);
+            if (valid.IsFailure) return ToProblem(valid.Error);
+
+            var datasets = new List<object>();
+            foreach (var d in (await connector.DiscoverAsync(ct)).Take(20))
+            {
+                var rows = new List<string[]>();
+                await foreach (var record in connector.ExtractAsync(d.Name, ct))
+                {
+                    rows.Add([.. d.Columns.Select(c => record.Values.TryGetValue(c, out var v) ? v?.ToString() ?? "" : "")]);
+                    if (rows.Count >= 12) break;
+                }
+                datasets.Add(new { name = d.Name, columns = d.Columns, rows = d.EstimatedRows, sample = Sample(d.Columns, rows) });
+            }
+            return Ok(new { format = ext is ".xlsx" or ".xlsm" ? "excel" : "csv", datasets });
+        }
+        catch (Exception e)
+        {
+            return BadRequest(new { error = "unreadable_file", message = e.Message });
+        }
+        finally
+        {
+            try { System.IO.File.Delete(tempPath); } catch { /* fichier temporaire */ }
+        }
+    }
+
+    /// <summary>Échantillon au format CSV : ce que l'analyse de mapping sait lire.</summary>
+    private static string Sample(IReadOnlyList<string> columns, List<string[]> rows)
+    {
+        static string Cell(string v) => v.Contains(',') || v.Contains('"') ? $"\"{v.Replace("\"", "\"\"")}\"" : v;
+        var lines = new List<string> { string.Join(",", columns.Select(Cell)) };
+        lines.AddRange(rows.Select(r => string.Join(",", r.Select(Cell))));
+        return string.Join("\n", lines);
+    }
+
     /// <summary>Teste une source REST et découvre ses colonnes (aide à construire le mapping) — n'écrit rien.</summary>
     [HttpPost("rest/preview")]
     public async Task<IActionResult> RestPreview([FromBody] RestSource source, CancellationToken ct)

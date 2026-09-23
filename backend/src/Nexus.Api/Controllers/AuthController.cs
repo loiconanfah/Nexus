@@ -102,7 +102,7 @@ public sealed class AuthController(
         var country = req.Country!.Trim().ToUpperInvariant();
         await organizations.SaveAsync(tenant, new OrganizationProfile(
             req.Organization!.Trim(), req.Sector!, country, Currencies.ForCountry(country), req.SizeBand!,
-            0, 0, "business", null, DateTime.UtcNow), ct);
+            0, 0, "business", 0, 0, null, DateTime.UtcNow), ct);
 
         // Sans service d'envoi, le compte est actif tout de suite : session ouverte.
         if (!mustVerify)

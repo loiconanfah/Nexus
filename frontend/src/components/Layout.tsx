@@ -53,7 +53,6 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
     fr: 'Connaissance', en: 'Knowledge',
     items: [
       { to: '/ai', fr: 'Analyste IA', en: 'AI Analyst', icon: Sparkles },
-      { to: '/documents', fr: 'Documents', en: 'Documents', icon: ScanText },
       { to: '/reports', fr: 'Rapports', en: 'Reports', icon: ScrollText },
     ],
   },
@@ -61,7 +60,8 @@ const NAV: { fr: string; en: string; items: NavItem[] }[] = [
     fr: 'Données', en: 'Data',
     items: [
       { to: '/assets', fr: 'Actifs', en: 'Assets', icon: Boxes },
-      { to: '/onboarding', fr: 'Intégration', en: 'Onboarding', icon: Upload },
+      { to: '/onboarding', fr: 'Import de fichiers', en: 'File Import', icon: Upload },
+      { to: '/documents', fr: 'Documents', en: 'Documents', icon: ScanText },
       { to: '/inference', fr: 'Dépendances inférées', en: 'Inferred Deps', icon: GitBranch },
       { to: '/integrations', fr: 'Connecteurs', en: 'Integrations', icon: Blocks },
     ],
@@ -74,6 +74,10 @@ const geist = 'var(--font-geist)'
 export function Layout({ children, header }: { children: ReactNode; header?: ReactNode }) {
   const { lang, t } = useLang()
   const searchRef = useRef<HTMLInputElement>(null)
+  // Identité de l'espace : logo et nom de l'organisation, à côté de la marque.
+  const { data: org } = useQuery({ queryKey: ['organization'], queryFn: api.organization, staleTime: 60_000 })
+  const orgLogo = org?.logo ?? null
+  const orgName = org?.profile?.name ?? ''
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('nexus.nav.collapsed') === '1' } catch { return false }
   })
@@ -93,13 +97,21 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
         className={`nx-sidebar sticky top-0 hidden h-screen shrink-0 flex-col border-r px-2 py-4 transition-[width] duration-200 ease-in-out md:flex ${collapsed ? 'w-[68px]' : 'w-[280px]'}`}
         style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}
       >
-        {/* Marque + bascule */}
+        {/* Marque + logo de l'organisation + bascule */}
         <div className={`mb-8 mt-2 flex items-center px-3 ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <LogoMark size={collapsed ? 30 : 34} title={collapsed ? 'Lenexux' : ''} />
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="font-bold" style={{ fontFamily: geist, fontSize: 20, lineHeight: 1, letterSpacing: '-0.035em', color: 'var(--nx-text)' }}>Lenexux</div>
-              <div className="mt-1 truncate" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', opacity: 0.8 }}>{t('Intelligence opérationnelle', 'Operational Intel')}</div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold" style={{ fontFamily: geist, fontSize: 20, lineHeight: 1, letterSpacing: '-0.035em', color: 'var(--nx-text)' }}>Lenexux</span>
+                {orgLogo && (
+                  <>
+                    <span aria-hidden style={{ width: 1, height: 18, background: 'var(--nx-border)' }} />
+                    <img src={orgLogo} alt={orgName} title={orgName} style={{ maxHeight: 24, maxWidth: 88, objectFit: 'contain' }} />
+                  </>
+                )}
+              </div>
+              <div className="mt-1 truncate" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--nx-text-muted)', opacity: 0.8 }}>{orgName || t('Intelligence opérationnelle', 'Operational Intel')}</div>
             </div>
           )}
           {!collapsed && (

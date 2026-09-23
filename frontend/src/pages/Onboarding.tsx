@@ -1,12 +1,14 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Database, FileUp, GitBranch, Loader2, Sparkles, Upload, Wand2 } from 'lucide-react'
+import { CheckCircle2, Database, FileUp, GitBranch, Loader2, Sheet, Sparkles, Upload, Wand2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { CONNECTORS } from '../lib/connectors'
 import { RestLiveImport } from '../components/RestLiveImport'
-import type { ImportResult } from '../lib/types'
+import type { FilePreview, ImportResult } from '../lib/types'
+
+const EXCEL = /\.(xlsx|xlsm)$/i
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -92,8 +94,10 @@ export function Onboarding() {
   const [result, setResult] = useState<ImportResult | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
-  // Mode auto : fichier en attente + mapping détecté à confirmer.
-  const [pending, setPending] = useState<{ file: File; headers: string[] } | null>(null)
+  // Fichier en attente : mapping (mode auto) ou choix de feuille (Excel) à confirmer.
+  const [pending, setPending] = useState<{ file: File; headers: string[]; sample: string } | null>(null)
+  const [sheets, setSheets] = useState<FilePreview['datasets'] | null>(null)
+  const [sheet, setSheet] = useState<string | null>(null)
   const [map, setMap] = useState<AutoMap | null>(null)
   const [aiUsed, setAiUsed] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -104,7 +108,10 @@ export function Onboarding() {
   async function runImport(file: File, profileObj: object) {
     setBusy(true); setErr(null); setResult(null); setFileName(file.name)
     try {
-      const res = await api.importCsv(file, file.name, JSON.stringify(profileObj))
+      // Excel et CSV suivent le MÊME pipeline ; seul le lecteur de fichier change.
+      const res = EXCEL.test(file.name)
+        ? await api.importExcel(file, file.name, JSON.stringify(profileObj))
+        : await api.importCsv(file, file.name, JSON.stringify(profileObj))
       setResult(res); setPending(null); setMap(null)
       qc.invalidateQueries()
     } catch (e) {
@@ -114,35 +121,76 @@ export function Onboarding() {
     }
   }
 
+  /** Analyse IA du mapping sur un échantillon (sinon l'heuristique suffit). */
+  async function analyzeSample(sample: string, headers: string[]) {
+    setAnalyzing(true)
+    try {
+      const r = await api.analyzeImport(sample)
+      if (r.usedAi && r.mapping) {
+        const m = r.mapping
+        setMap({ kind: m.kind, name: m.name, type: m.type, crit: m.crit, cost: autoDetect(headers).cost, source: m.source, sourceType: m.sourceType, target: m.target, targetType: m.targetType, relation: m.relation || 'DEPENDS_ON', confidence: m.confidence, defaultType: m.defaultEntityType })
+        setAiUsed(true)
+      }
+    } catch { /* on garde l'heuristique */ } finally { setAnalyzing(false) }
+  }
+
   async function onFile(file: File) {
+    setErr(null); setResult(null); setSheets(null); setSheet(null)
+
+    // Excel : les colonnes ne se lisent pas dans le navigateur, et le jeu de
+    // données porte le nom de la FEUILLE. Le serveur les découvre d'abord.
+    if (EXCEL.test(file.name)) {
+      setBusy(true)
+      try {
+        const preview = await api.previewFile(file)
+        const first = preview.datasets[0]
+        if (!first) { setErr(t('Ce classeur ne contient aucune feuille lisible.', 'This workbook has no readable sheet.')); return }
+        setSheets(preview.datasets); setSheet(first.name)
+        setPending({ file, headers: first.columns, sample: first.sample })
+        setMap(autoDetect(first.columns)); setAiUsed(false)
+        void analyzeSample(first.sample, first.columns)
+      } catch (e) {
+        const code = e instanceof Error ? e.message : ''
+        setErr(code === 'legacy_xls'
+          ? t('Ancien format Excel (.xls) : enregistrez le classeur au format .xlsx.', 'Legacy Excel format (.xls): save the workbook as .xlsx.')
+          : t('Lecture du classeur impossible.', 'Could not read the workbook.'))
+      } finally { setBusy(false) }
+      return
+    }
+
     if (mode === 'auto') {
       // Lit l'entête réel du fichier ; propose un mapping (IA si clé, sinon heuristique).
       const text = await file.text()
       const lines = text.split(/\r?\n/)
       const headers = (lines[0] ?? '').trim().split(',').map((h) => h.trim()).filter(Boolean)
-      setPending({ file, headers }); setResult(null); setErr(null)
+      const sample = lines.slice(0, 15).join('\n')
+      setPending({ file, headers, sample })
       setMap(autoDetect(headers)); setAiUsed(false)   // heuristique immédiate
-      // Tente une analyse IA (classement + mapping) en arrière-plan.
-      setAnalyzing(true)
-      try {
-        const sample = lines.slice(0, 15).join('\n')
-        const r = await api.analyzeImport(sample)
-        if (r.usedAi && r.mapping) {
-          const m = r.mapping
-          setMap({ kind: m.kind, name: m.name, type: m.type, crit: m.crit, cost: autoDetect(pending?.headers ?? []).cost, source: m.source, sourceType: m.sourceType, target: m.target, targetType: m.targetType, relation: m.relation || 'DEPENDS_ON', confidence: m.confidence, defaultType: m.defaultEntityType })
-          setAiUsed(true)
-        }
-      } catch { /* on garde l'heuristique */ } finally { setAnalyzing(false) }
+      void analyzeSample(sample, headers)             // puis l'IA, si une clé existe
       return
     }
     const ds = file.name.replace(/\.[^.]+$/, '')
     runImport(file, PRESETS[mode].build(ds))
   }
 
+  /** Jeu de données : la feuille choisie pour un classeur, le nom du fichier sinon. */
+  function datasetName(file: File) {
+    return sheet ?? file.name.replace(/\.[^.]+$/, '')
+  }
+
   function confirmAuto() {
     if (!pending || !map) return
-    const ds = pending.file.name.replace(/\.[^.]+$/, '')
-    runImport(pending.file, buildAutoProfile(ds, map))
+    runImport(pending.file, buildAutoProfile(datasetName(pending.file), map))
+  }
+
+  /** Changement de feuille : colonnes, mapping et échantillon suivent. */
+  function pickSheet(name: string) {
+    const d = sheets?.find((x) => x.name === name)
+    if (!d || !pending) return
+    setSheet(name)
+    setPending({ ...pending, headers: d.columns, sample: d.sample })
+    setMap(autoDetect(d.columns)); setAiUsed(false)
+    void analyzeSample(d.sample, d.columns)
   }
 
   return (
@@ -177,18 +225,40 @@ export function Onboarding() {
         style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}
       >
         {busy ? <Loader2 size={28} className="animate-spin" style={{ color: CYAN }} /> : mode === 'auto' ? <Wand2 size={28} style={{ color: CYAN }} /> : <FileUp size={28} style={{ color: CYAN }} />}
-        <span style={{ fontSize: 14, color: 'var(--nx-text)' }}>{busy ? t('Ingestion…', 'Ingesting…') : t('Déposez un CSV ici ou cliquez pour parcourir', 'Drop a CSV here or click to browse')}</span>
+        <span style={{ fontSize: 14, color: 'var(--nx-text)' }}>{busy ? t('Ingestion…', 'Ingesting…') : t('Déposez un fichier CSV ou Excel ici, ou cliquez pour parcourir', 'Drop a CSV or Excel file here, or click to browse')}</span>
         <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{t('Mode', 'Mode')}: {modeTitle(mode)}</span>
-        <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f) }} />
+        <input ref={inputRef} type="file" accept=".csv,.tsv,.xlsx,.xlsm,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = '' }} />
       </div>
+
+      {/* Classeur Excel : choix de la feuille */}
+      {sheets && pending && (
+        <div className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
+          <div className="flex flex-wrap items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>
+            <Sheet size={14} /> {pending.file.name} · {sheets.length} {t('feuille(s)', 'sheet(s)')}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {sheets.map((d) => (
+              <button key={d.name} onClick={() => pickSheet(d.name)} className="rounded-sm border px-3 py-1.5 text-left"
+                style={{ borderColor: sheet === d.name ? CYAN : 'var(--nx-border)', background: sheet === d.name ? 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)' : 'var(--nx-panel)' }}>
+                <span style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{d.name}</span>
+                <span className="ml-2" style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>{d.columns.length} {t('col.', 'cols')} · {d.rows} {t('lignes', 'rows')}</span>
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+            {t('Choisissez la feuille à importer : ses colonnes sont reconnues ci-dessous, quel que soit leur intitulé.',
+              'Choose the sheet to import: its columns are recognised below, whatever they are called.')}
+          </p>
+        </div>
+      )}
 
       {/* Mode preset : aperçu du format attendu */}
       {mode !== 'auto' && (
         <pre className="overflow-x-auto rounded-sm border p-3" style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)', fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{PRESETS[mode].sample}</pre>
       )}
 
-      {/* Mode auto : mapping détecté à valider */}
-      {mode === 'auto' && pending && map && (
+      {/* Mapping détecté à valider : mode auto, et tout classeur Excel */}
+      {(mode === 'auto' || sheets) && pending && map && (
         <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
           <div className="mb-3 flex flex-wrap items-center gap-2" style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>
             <Sparkles size={14} /> {t('Mapping détecté', 'Detected mapping')} · {pending.file.name} · {pending.headers.length} {t('colonnes', 'columns')}

@@ -373,7 +373,9 @@ function OrganizationCard() {
           <InfoRow label={t('Devise', 'Currency')} value={`${money.currency.name} (${money.symbol})`} />
           <InfoRow label={t('Chiffre d’affaires', 'Revenue')} value={money.compact(p.annualRevenue)} />
           <InfoRow label={t('Effectif', 'Headcount')} value={String(p.headcount)} />
-          <InfoRow label={t('Fonctionnement', 'Operation')} value={p.operatingMode === '24x7' ? t('En continu 24 h/24', 'Around the clock') : t('Heures d’ouverture', 'Business hours')} />
+          <InfoRow label={t('Fonctionnement', 'Operation')} value={p.operatingMode === '24x7'
+            ? t('En continu 24 h/24', 'Around the clock')
+            : t(`${p.openDaysPerWeek || 5} j/semaine × ${p.openHoursPerDay || 8} h`, `${p.openDaysPerWeek || 5} days/week × ${p.openHoursPerDay || 8} h`)} />
         </div>
       ) : (
         <p className="px-4 py-4 text-sm" style={{ color: 'var(--nx-text-muted)' }}>
@@ -381,6 +383,85 @@ function OrganizationCard() {
             'No profile yet: amounts are shown in Canadian dollars and downtime cost is not calibrated to your organisation.')}
         </p>
       )}
+      <LogoRow />
     </div>
   )
+}
+
+/**
+ * Logo de l'organisation, affiché à côté du nom de Lenexux dans le menu.
+ * L'image est réduite à 256 px dans le navigateur avant l'envoi : le stockage
+ * reste léger et le rendu net sur les écrans à forte densité.
+ */
+function LogoRow() {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const { data } = useOrganization()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [err, setErr] = useState<string | null>(null)
+  const save = useMutation({
+    mutationFn: (dataUrl: string | null) => api.setOrganizationLogo(dataUrl),
+    onSuccess: () => { setErr(null); qc.invalidateQueries({ queryKey: ['organization'] }) },
+    onError: (e: Error) => setErr(e.message),
+  })
+
+  async function onFile(file: File) {
+    setErr(null)
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      setErr(t('Formats acceptés : PNG, JPEG, WebP.', 'Accepted formats: PNG, JPEG, WebP.')); return
+    }
+    if (file.size > 5 * 1024 * 1024) { setErr(t('Image trop lourde (5 Mo au maximum).', 'Image too large (5 MB maximum).')); return }
+    try {
+      save.mutate(await downscale(file, 256))
+    } catch {
+      setErr(t('Image illisible.', 'Unreadable image.'))
+    }
+  }
+
+  const logo = data?.logo ?? null
+  if (!data?.canEdit && !logo) return null
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-t px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
+      <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Logo', 'Logo')}</span>
+      {logo
+        ? <img src={logo} alt={t('Logo de l’organisation', 'Organisation logo')} style={{ maxHeight: 34, maxWidth: 120, objectFit: 'contain' }} />
+        : <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('Aucun logo. Il s’affichera à côté de « Lenexux » dans le menu.', 'No logo yet. It will appear next to “Lenexux” in the menu.')}</span>}
+      {data?.canEdit && (
+        <span className="ml-auto flex items-center gap-2">
+          <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = '' }} />
+          <button onClick={() => inputRef.current?.click()} disabled={save.isPending} className="rounded-sm border px-2.5 py-1 text-xs"
+            style={{ borderColor: 'var(--nx-border)', color: CYAN_T }}>
+            {save.isPending ? t('Envoi…', 'Uploading…') : logo ? t('Remplacer', 'Replace') : t('Ajouter un logo', 'Add a logo')}
+          </button>
+          {logo && (
+            <button onClick={() => save.mutate(null)} disabled={save.isPending} className="rounded-sm border px-2.5 py-1 text-xs"
+              style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-danger)' }}>{t('Retirer', 'Remove')}</button>
+          )}
+        </span>
+      )}
+      {err && <span className="w-full" style={{ fontSize: 12, color: 'var(--nx-danger)' }}>{err}</span>}
+    </div>
+  )
+}
+
+/** Réduit l'image à `max` pixels de côté et renvoie une data URL PNG. */
+function downscale(file: File, max: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const scale = Math.min(1, max / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(img.width * scale))
+      canvas.height = Math.max(1, Math.round(img.height * scale))
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('canvas')); return }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image')) }
+    img.src = url
+  })
 }
