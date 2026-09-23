@@ -26,6 +26,13 @@ public interface IGraphRepository
     /// <summary>Supprime définitivement une entité et ses relations (DETACH DELETE), filtrée par tenant.</summary>
     Task<bool> DeleteEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
+    /// <summary>
+    /// Vide le graphe d'un espace de travail : toutes les entités du tenant et
+    /// leurs relations, y compris celles mises de côté. Renvoie ce qui a été
+    /// retiré, pour pouvoir le dire à l'utilisateur.
+    /// </summary>
+    Task<(int Entities, int Relations)> PurgeTenantAsync(Guid tenantId, CancellationToken ct = default);
+
     /// <summary>Met une entité de côté (« désinstalle ») : exclue des lectures actives, conservée, réactivable.</summary>
     Task<bool> DecommissionEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 

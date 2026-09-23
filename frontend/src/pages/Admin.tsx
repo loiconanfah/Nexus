@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Check, Database, KeyRound, Loader2, LogOut, RotateCcw, Server, Settings, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, Check, Database, Download, KeyRound, Loader2, LogOut, RotateCcw, Server, Settings, ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
 import { api } from '../lib/api'
-import { getTenantId, resetTenant } from '../lib/tenant'
+import { getTenantId } from '../lib/tenant'
 import { logout } from '../lib/auth'
 import { useLang } from '../lib/i18n'
 import { CollectorsPanel } from '../components/CollectorsPanel'
 import { UsersPanel } from '../components/UsersPanel'
-import type { ImpactTuning } from '../lib/types'
+import type { ImpactTuning, WorkspaceSummary } from '../lib/types'
+import { notify } from '../lib/notify'
 import { useMoney, useOrganization } from '../lib/money'
 import { SECTOR_LABELS } from '../lib/orgLists'
 
@@ -79,6 +80,9 @@ export function Admin() {
       {/* Réglages du modèle d'impact */}
       <ImpactTuningPanel />
 
+      {/* Sauvegarde et remise à zéro */}
+      <WorkspaceDataPanel />
+
       {/* Actions */}
       <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
         <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
@@ -87,9 +91,6 @@ export function Admin() {
         <div className="flex flex-wrap gap-3 p-4">
           <button onClick={() => navigate('/onboarding')} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12 }}>
             <Database size={14} /> {t('Ingérer des données', 'Ingest data')}
-          </button>
-          <button onClick={() => { if (confirm(t('Démarrer un espace de travail vierge ? Le tenant de démo actuel sera remplacé localement.', 'Start a fresh, empty workspace? The current demo tenant will be replaced locally.'))) { resetTenant(); window.location.href = '/' } }} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
-            <RotateCcw size={14} /> {t('Nouvel espace vierge', 'New empty workspace')}
           </button>
           <button onClick={() => { logout(); navigate('/login') }} className="flex items-center gap-2 rounded-sm px-3 py-2" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-danger)', fontFamily: mono, fontSize: 12 }}>
             <LogOut size={14} /> {t('Se déconnecter', 'Sign out')}
@@ -464,4 +465,171 @@ function downscale(file: File, max: number): Promise<string> {
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image')) }
     img.src = url
   })
+}
+
+
+// ── Sauvegarde, remise à zéro, restauration ──
+
+/**
+ * Repartir d'une feuille blanche après un import raté ou une phase d'essai.
+ * La sauvegarde vient AVANT l'effacement : le bouton de remise à zéro ne
+ * s'ouvre qu'une fois le fichier téléchargé, et ce fichier se recharge.
+ */
+function WorkspaceDataPanel() {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [saved, setSaved] = useState(false)      // sauvegarde téléchargée dans cette session
+  const [confirming, setConfirming] = useState(false)
+  const [keepProfile, setKeepProfile] = useState(true)
+
+  const summary = useQuery<WorkspaceSummary>({ queryKey: ['workspace-summary'], queryFn: api.workspaceSummary })
+  const s = summary.data
+
+  const backup = useMutation({
+    mutationFn: api.exportWorkspace,
+    onSuccess: (snapshot) => {
+      // Téléchargement côté navigateur : le fichier reste chez l'utilisateur.
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `lenexux-sauvegarde-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setSaved(true)
+      notify({
+        kind: 'success',
+        title: t('Sauvegarde téléchargée', 'Backup downloaded'),
+        message: t('Elle contient vos actifs, vos dépendances, votre profil et votre modèle d’entreprise. Conservez-la avant toute remise à zéro.',
+          'It holds your assets, dependencies, profile and business model. Keep it before any reset.'),
+      })
+    },
+    onError: (e) => notify({ kind: 'error', title: t('Sauvegarde impossible', 'Backup failed'), message: (e as Error).message.slice(0, 160) }),
+  })
+
+  const reset = useMutation({
+    mutationFn: () => api.resetWorkspace(keepProfile),
+    onSuccess: (r) => {
+      setConfirming(false)
+      setSaved(false)
+      qc.invalidateQueries()
+      notify({
+        kind: 'success',
+        title: t('Espace remis à zéro', 'Workspace reset'),
+        message: t(`${r.entitiesRemoved} actif(s) et ${r.relationsRemoved} dépendance(s) retirés. ${r.profileKept ? 'Le profil de l’organisation est conservé.' : 'Le profil a été effacé lui aussi.'} Vous pouvez repartir d’un import.`,
+          `${r.entitiesRemoved} asset(s) and ${r.relationsRemoved} dependency(ies) removed. ${r.profileKept ? 'The organisation profile was kept.' : 'The profile was cleared as well.'} You can start again from an import.`),
+        duration: 0,
+        actions: [{ label: t('Importer des données', 'Import data'), to: '/onboarding' }],
+      })
+    },
+    onError: (e) => notify({
+      kind: 'error',
+      title: t('Remise à zéro impossible', 'Reset failed'),
+      message: (e as Error).message.startsWith('403')
+        ? t('Seul un administrateur peut remettre l’espace à zéro.', 'Only an administrator can reset the workspace.')
+        : (e as Error).message.slice(0, 160),
+    }),
+  })
+
+  const restore = useMutation({
+    mutationFn: async (file: File) => {
+      const snapshot = JSON.parse(await file.text())
+      const empty = (s?.entities ?? 0) === 0
+      return api.restoreWorkspace(snapshot, !empty)
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries()
+      notify({
+        kind: 'success',
+        title: t('Sauvegarde restaurée', 'Backup restored'),
+        message: t(`${r.entitiesRestored} actif(s) et ${r.relationsRestored} dépendance(s) remis en place.`,
+          `${r.entitiesRestored} asset(s) and ${r.relationsRestored} dependency(ies) put back.`),
+      })
+    },
+    onError: (e) => notify({
+      kind: 'error',
+      title: t('Restauration impossible', 'Restore failed'),
+      message: (e as Error).message.includes('JSON')
+        ? t('Ce fichier n’est pas une sauvegarde Lenexux.', 'This file is not a Lenexux backup.')
+        : (e as Error).message.slice(0, 160),
+    }),
+  })
+
+  const busy = backup.isPending || reset.isPending || restore.isPending
+  const empty = (s?.entities ?? 0) === 0 && (s?.relations ?? 0) === 0
+
+  return (
+    <div className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+      <div className="border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
+        <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>
+          {t('Sauvegarde et remise à zéro', 'Backup and reset')}
+        </h3>
+      </div>
+      <div className="flex flex-col gap-3 p-4">
+        <p style={{ fontSize: 13, color: 'var(--nx-text-muted)', lineHeight: 1.6 }}>
+          {t('Téléchargez d’abord une sauvegarde, puis repartez d’un espace vierge. La sauvegarde se recharge à tout moment : rien n’est perdu définitivement tant que vous gardez le fichier.',
+            'Download a backup first, then start from a blank workspace. The backup can be loaded back at any time: nothing is lost for good as long as you keep the file.')}
+        </p>
+
+        <div className="flex flex-wrap gap-4" style={{ fontFamily: mono, fontSize: 11.5, color: 'var(--nx-text-muted)' }}>
+          <span>{t('Actifs', 'Assets')} : <strong style={{ color: 'var(--nx-text)' }}>{s?.entities ?? '—'}</strong></span>
+          <span>{t('Dépendances', 'Dependencies')} : <strong style={{ color: 'var(--nx-text)' }}>{s?.relations ?? '—'}</strong></span>
+          <span>{t('Mis de côté', 'Set aside')} : <strong style={{ color: 'var(--nx-text)' }}>{s?.archivedEntities ?? '—'}</strong></span>
+          <span>{t('Modèle d’entreprise', 'Business model')} : <strong style={{ color: 'var(--nx-text)' }}>{s?.hasBusinessModel ? t('oui', 'yes') : t('non', 'no')}</strong></span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button onClick={() => backup.mutate()} disabled={busy} className="flex items-center gap-2 rounded-sm px-3 py-2 disabled:opacity-60"
+            style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12 }}>
+            {backup.isPending ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {t('Télécharger la sauvegarde', 'Download the backup')}
+          </button>
+
+          <button onClick={() => fileRef.current?.click()} disabled={busy} className="flex items-center gap-2 rounded-sm px-3 py-2 disabled:opacity-60"
+            style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }}>
+            {restore.isPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {t('Restaurer une sauvegarde', 'Restore a backup')}
+          </button>
+          <input ref={fileRef} type="file" accept="application/json,.json" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) restore.mutate(f); e.target.value = '' }} />
+
+          {!confirming && (
+            <button onClick={() => setConfirming(true)} disabled={busy || empty} className="flex items-center gap-2 rounded-sm px-3 py-2 disabled:opacity-50"
+              style={{ background: 'var(--nx-surface)', border: '1px solid color-mix(in srgb, var(--nx-danger) 35%, transparent)', color: 'var(--nx-danger)', fontFamily: mono, fontSize: 12 }}>
+              <RotateCcw size={14} /> {t('Repartir de zéro', 'Start from scratch')}
+            </button>
+          )}
+        </div>
+
+        {confirming && (
+          <div className="flex flex-col gap-2 rounded-sm border p-3"
+            style={{ borderColor: 'color-mix(in srgb, var(--nx-danger) 35%, transparent)', background: 'color-mix(in srgb, var(--nx-danger) 6%, transparent)' }}>
+            <span className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 600, color: 'var(--nx-text)' }}>
+              <AlertTriangle size={15} style={{ color: 'var(--nx-danger)' }} />
+              {t(`Effacer ${s?.entities ?? 0} actif(s) et ${s?.relations ?? 0} dépendance(s) ?`, `Erase ${s?.entities ?? 0} asset(s) and ${s?.relations ?? 0} dependency(ies)?`)}
+            </span>
+            <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.6 }}>
+              {t('Le modèle d’entreprise, les scénarios et l’historique partent aussi. Les comptes, les sondes et votre clé IA restent en place.',
+                'The business model, scenarios and history go too. Accounts, collectors and your AI key stay in place.')}
+            </span>
+            <label className="flex items-center gap-2" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>
+              <input type="checkbox" checked={keepProfile} onChange={(e) => setKeepProfile(e.target.checked)} style={{ accentColor: CYAN }} />
+              {t('Conserver le profil de l’organisation (devise, taille, horaires)', 'Keep the organisation profile (currency, size, opening hours)')}
+            </label>
+            {!saved && (
+              <span style={{ fontSize: 12.5, color: 'var(--nx-warning)' }}>
+                {t('Aucune sauvegarde téléchargée depuis cet écran. Téléchargez-la d’abord.', 'No backup downloaded from this screen yet. Download it first.')}
+              </span>
+            )}
+            <div className="flex items-center gap-3">
+              <button onClick={() => reset.mutate()} disabled={!saved || reset.isPending} className="flex items-center gap-2 rounded-sm px-3 py-1.5 disabled:opacity-50"
+                style={{ background: 'var(--nx-danger)', color: 'var(--nx-on-cyan)', fontSize: 12.5, fontWeight: 600 }}>
+                {reset.isPending ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />} {t('Oui, tout effacer', 'Yes, erase everything')}
+              </button>
+              <button onClick={() => setConfirming(false)} style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }

@@ -706,3 +706,26 @@ export interface DecisionDraft {
   suggestions: FieldSuggestion[]
   blindSpots: BlindSpot[]
 }
+
+/** Ce que contient un espace de travail, annoncé avant une remise à zéro. */
+export interface WorkspaceSummary {
+  entities: number
+  archivedEntities: number
+  relations: number
+  hasProfile: boolean
+  hasBusinessModel: boolean
+}
+
+/** Résultat d'une remise à zéro : ce qui a été retiré. */
+export interface WorkspaceResetResult {
+  entitiesRemoved: number
+  relationsRemoved: number
+  recordsRemoved: number
+  profileKept: boolean
+}
+
+/** Résultat d'une restauration de sauvegarde. */
+export interface WorkspaceRestoreResult {
+  entitiesRestored: number
+  relationsRestored: number
+}

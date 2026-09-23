@@ -1,6 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview } from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult } from './types'
 
 const BASE = '/api/v1'
 
@@ -144,6 +144,25 @@ export const api = {
   verifyRelations: (ids: string[], note?: string) =>
     fetch(`${BASE}/audit/relations/verify`, { method: 'POST', headers: headers(), body: JSON.stringify({ ids, note: note ?? null }) })
       .then(handle<{ verified: number; notFound: number }>),
+
+  // ── Espace de travail : sauvegarder, remettre à zéro, restaurer ──
+
+  workspaceSummary: () =>
+    fetch(`${BASE}/workspace/summary`, { headers: headers(false) }).then(handle<WorkspaceSummary>),
+
+  /** Sauvegarde complète : le JSON brut, tel qu'il sera écrit dans le fichier. */
+  exportWorkspace: () =>
+    fetch(`${BASE}/workspace/export`, { headers: headers(false) }).then(handle<unknown>),
+
+  /** Remise à zéro. La confirmation est exigée côté serveur. */
+  resetWorkspace: (keepProfile: boolean) =>
+    fetch(`${BASE}/workspace/reset`, { method: 'POST', headers: headers(), body: JSON.stringify({ confirm: 'REINITIALISER', keepProfile }) })
+      .then(handle<WorkspaceResetResult>),
+
+  /** Restauration d'une sauvegarde ; `replace` écrase un espace non vide. */
+  restoreWorkspace: (snapshot: unknown, replace: boolean) =>
+    fetch(`${BASE}/workspace/restore`, { method: 'POST', headers: headers(), body: JSON.stringify({ snapshot, replace }) })
+      .then(handle<WorkspaceRestoreResult>),
 
   actions: () => fetch(`${BASE}/actions`, { headers: headers(false) }).then(handle<ActionBoard>),
 

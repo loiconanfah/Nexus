@@ -111,6 +111,26 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
         return res.Count > 0 && res[0]["existed"].As<bool>();
     }
 
+    public async Task<(int Entities, int Relations)> PurgeTenantAsync(Guid tenantId, CancellationToken ct = default)
+    {
+        // Remise à zéro d'un espace : on compte AVANT de détacher, afin de rendre
+        // compte exactement de ce qui a été retiré. Le filtre tenant est la seule
+        // frontière qui compte : aucun autre espace n'est touché.
+        const string cypher = """
+            MATCH (n:Entity { tenantId: $t })
+            OPTIONAL MATCH (n)-[r]-()
+            WITH count(DISTINCT n) AS entities, count(DISTINCT r) AS relations
+            CALL {
+                MATCH (n:Entity { tenantId: $t })
+                DETACH DELETE n
+            }
+            RETURN entities, relations
+            """;
+        var res = await connection.WriteAsync(cypher, new { t = tenantId.ToString() }, ct);
+        if (res.Count == 0) return (0, 0);
+        return (res[0]["entities"].As<int>(), res[0]["relations"].As<int>());
+    }
+
     // ── Mise de côté (« désinstaller ») : réutilise la validité temporelle. Un
     // actif mis de côté (validUntil non nul) disparaît de TOUTES les lectures
     // actives (graphe, propagation, impact) sans être supprimé, et reste

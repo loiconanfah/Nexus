@@ -258,6 +258,11 @@ const DOCS: readonly Doc[] = [
         'Bonnes pratiques : ne partagez jamais vos identifiants, ne collez jamais de clé d’API dans une conversation, et déconnectez-vous sur un poste partagé (bouton « logout »).',
         'Best practices: never share your credentials, never paste an API key into a conversation, and sign out on a shared machine (the “logout” button).',
       ] },
+      { kind: 'h', text: ['Sauvegarde et remise à zéro', 'Backup and reset'] },
+      { kind: 'p', text: [
+        'Dans Administration, « Télécharger la sauvegarde » produit un fichier JSON contenant vos actifs, vos dépendances, votre profil et votre modèle d’entreprise. « Repartir de zéro » vide ensuite l’espace : les comptes, les sondes et votre clé IA restent en place. « Restaurer une sauvegarde » recharge le fichier, ce qui rend l’opération réversible tant que vous le conservez.',
+        'In Administration, “Download the backup” produces a JSON file holding your assets, dependencies, profile and business model. “Start from scratch” then empties the workspace: accounts, collectors and your AI key stay in place. “Restore a backup” loads the file back, which makes the operation reversible as long as you keep it.',
+      ] },
     ],
   },
   {
