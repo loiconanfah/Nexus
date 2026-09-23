@@ -103,9 +103,17 @@ services:
         sync: false          # mot de passe d'application ou clé du fournisseur (jamais dans Git)
       - key: NEXUS_MAIL_FROM
         value: "Lenexux <no-reply@lenexux.com>"
-      # --- IA (Gemini) : clé persistante, survit aux redéploiements ---
+      # --- IA : clé de l'opérateur, repli pour tout espace sans clé propre.
+      # OPENROUTER_API_KEY est prise EN PREMIER ; viennent ensuite ANTHROPIC,
+      # OPENAI puis GEMINI. Une seule clé suffit.
+      - key: OPENROUTER_API_KEY
+        sync: false          # coller la clé OpenRouter, sk-or-v1-… (jamais dans Git)
+      - key: OPENROUTER_MODEL
+        # Chaîne de repli : le premier sert, les suivants prennent le relais s'il
+        # est en panne ou saturé. Trois fournisseurs distincts, à dessein.
+        value: openai/gpt-4o-mini, ~google/gemini-flash-latest, ~anthropic/claude-haiku-latest
       - key: GEMINI_API_KEY
-        sync: false          # coller la clé Gemini (jamais dans Git)
+        sync: false          # clé Gemini en direct, si vous préférez Google seul
       - key: GEMINI_MODEL
         value: gemini-3.6-flash
 

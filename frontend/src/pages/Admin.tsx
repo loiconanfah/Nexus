@@ -246,7 +246,9 @@ function AiIntegration() {
         <KeyRound size={15} style={{ color: 'var(--nx-violet)' }} />
         <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Intégrations IA', 'AI Integrations')}</h3>
         <span className="ml-auto rounded px-2 py-0.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: configured || shared ? 'var(--nx-success)' : 'var(--nx-text-muted)', background: configured || shared ? 'color-mix(in srgb, var(--nx-success) 12%, transparent)' : 'var(--nx-surface)' }}>
-          {shared ? `${t('Active', 'Active')} · ${t('clé Lenexux', 'Lenexux key')}` : configured ? `${t('Configuré', 'Configured')} · ${providerLabel(cfg!.provider)}` : t('Non configuré', 'Not configured')}
+          {/* Le fournisseur est nommé même pour la clé partagée : c'est ce qui
+              permet de vérifier qu'un changement d'opérateur a bien pris effet. */}
+          {shared ? `${t('Active', 'Active')} · ${t('clé Lenexux', 'Lenexux key')}${cfg?.provider ? ` · ${providerLabel(cfg.provider)}` : ''}` : configured ? `${t('Configuré', 'Configured')} · ${providerLabel(cfg!.provider)}` : t('Non configuré', 'Not configured')}
         </span>
       </div>
 

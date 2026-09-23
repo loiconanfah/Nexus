@@ -55,7 +55,7 @@ public sealed class AiConfigController(
         var (provider, configured, model, host) = config.Status();
         return Ok(new
         {
-            providers = new[] { "anthropic", "gemini", "openai", "azure-openai" },
+            providers = new[] { "openrouter", "anthropic", "gemini", "openai", "azure-openai" },
             provider,
             configured,
             model,
@@ -71,7 +71,7 @@ public sealed class AiConfigController(
         if (!RequireAdmin(out var forbidden)) return forbidden;
         if (req is null || string.IsNullOrWhiteSpace(req.Provider) || string.IsNullOrWhiteSpace(req.ApiKey))
             return BadRequest(new { error = "provider_and_key_required" });
-        if (req.Provider is not ("anthropic" or "azure-openai" or "openai" or "gemini"))
+        if (req.Provider is not ("openrouter" or "anthropic" or "azure-openai" or "openai" or "gemini"))
             return BadRequest(new { error = "unknown_provider" });
         if (req.Provider == "azure-openai" && string.IsNullOrWhiteSpace(req.Endpoint))
             return BadRequest(new { error = "endpoint_required_for_azure" });
