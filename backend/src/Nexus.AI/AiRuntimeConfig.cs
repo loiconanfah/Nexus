@@ -82,8 +82,17 @@ public sealed class AiRuntimeConfig
     public (string Provider, string? ApiKey, string? Endpoint, string Model) Snapshot()
     {
         var e = Resolve();
-        return (e.Provider, e.ApiKey, e.Endpoint, e.Model);
+        return (e.Provider, e.ApiKey, e.Endpoint, Model(e));
     }
+
+    /// <summary>
+    /// Le modele d'une entree, jamais vide. Une ligne enregistree SANS modele
+    /// existait (cle posee alors que le champ etait vide, ou ecriture anterieure
+    /// a ce garde-fou) : l'appel partait alors sur une URL sans modele et
+    /// echouait a chaque fois, en affichant « modele  » dans le diagnostic.
+    /// </summary>
+    private static string Model(Entry e)
+        => string.IsNullOrWhiteSpace(e.Model) ? DefaultModel(e.Provider) : e.Model;
 
     /// <summary>Statut sans secret : la cle n'est jamais exposee.</summary>
     public (string Provider, bool Configured, string Model, string? EndpointHost) Status()
@@ -91,7 +100,7 @@ public sealed class AiRuntimeConfig
         var e = Resolve();
         string? host = null;
         if (!string.IsNullOrWhiteSpace(e.Endpoint) && Uri.TryCreate(e.Endpoint, UriKind.Absolute, out var u)) host = u.Host;
-        return (e.Provider, Configured(e), e.Model, host);
+        return (e.Provider, Configured(e), Model(e), host);
     }
 
     public void Set(string provider, string apiKey, string? endpoint, string? model)

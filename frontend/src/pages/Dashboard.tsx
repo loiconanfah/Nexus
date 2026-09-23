@@ -153,7 +153,10 @@ export function Dashboard() {
 function ResiliencePanel({ fallback }: { fallback: number }) {
   const { t, lang } = useLang()
   const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
+  // Les parts sont visibles d'emblee : cachees derriere un chevron, et l'ecart
+  // ne pouvant pas exister avant un second jour de relevé, le travail ne se
+  // voyait pas du tout le jour où on l'installait.
+  const [open, setOpen] = useState(true)
   const { data } = useQuery({ queryKey: ['resilience', lang], queryFn: () => api.resilience(lang) })
 
   const score = data?.total ?? fallback
@@ -168,6 +171,11 @@ function ResiliencePanel({ fallback }: { fallback: number }) {
           <div className="flex items-baseline gap-2">
             <span style={{ fontFamily: geist, fontSize: 32, lineHeight: 1, color }}>{score}</span>
             <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>/100</span>
+            {data && delta === null && (
+              <span style={{ fontFamily: mono, fontSize: 11.5, color: 'var(--nx-outline)' }}>
+                {t('premier relevé, l’écart apparaîtra demain', 'first reading, the change will show tomorrow')}
+              </span>
+            )}
             {delta !== null && delta !== 0 && (
               <span style={{ fontFamily: mono, fontSize: 12.5, fontWeight: 600, color: delta > 0 ? 'var(--nx-success)' : ERR }}>
                 {delta > 0 ? '+' : ''}{delta} {t('depuis le', 'since')} {data?.previous ? new Date(data.previous.day).toLocaleDateString(lang === 'en' ? 'en-CA' : 'fr-CA', { day: 'numeric', month: 'short' }) : ''}
