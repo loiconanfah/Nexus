@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
   Building2, TrendingUp, TrendingDown, Users, MapPin, Contact, Truck, FolderKanban, ArrowRight,
-  Pencil, History, X, RotateCcw, Save,
+  Pencil, History, X, RotateCcw, Save, AlertTriangle,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
@@ -87,6 +87,12 @@ const STRUCT_FIELDS: StructField[] = [
   { key: 'projects', src: 'projects', fr: 'Projets actifs', en: 'Active projects' },
 ]
 
+/** Explication et exemple d'un levier, partagés par l'assistant et le panneau de modification. */
+function fieldHint(key: string): { help?: [string, string]; example?: [string, string] } {
+  const f = WIZARD_STEPS.flatMap((s) => s.fields).find((x) => x.key === key)
+  return { help: f?.help, example: f?.example }
+}
+
 export function EnterpriseModel() {
   const { t, lang } = useLang()
   const nav = useNavigate()
@@ -142,6 +148,19 @@ export function EnterpriseModel() {
           onClose={() => setPanel('none')}
           onRestored={() => { setPanel('none'); refetch(); qc.invalidateQueries({ queryKey: ['enterprise-history'] }) }}
         />
+      )}
+
+      {/* Marges sans coûts : le chiffre est exact, mais il ne veut rien dire. */}
+      {data.pnl.revenue > 0 && data.pnl.cogs + data.pnl.opex.total + data.pnl.depreciation === 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2"
+          style={{ borderColor: 'color-mix(in srgb, var(--nx-warning) 45%, transparent)', background: 'color-mix(in srgb, var(--nx-warning) 7%, transparent)', fontSize: 12.5 }}>
+          <AlertTriangle size={14} style={{ color: 'var(--nx-warning)' }} />
+          <span style={{ color: 'var(--nx-text)' }}>
+            {t('Aucun coût n’est saisi : les marges affichent donc 100 %, ce qui ne reflète pas votre réalité.',
+              'No cost has been entered, so margins show 100%, which does not reflect your reality.')}
+          </span>
+          <button onClick={() => setPanel('edit')} style={{ color: 'var(--nx-cyan-text)' }}>{t('Compléter les coûts', 'Fill in the costs')}</button>
+        </div>
       )}
 
       {/* En-tête entreprise */}
@@ -327,6 +346,7 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
   const set = (k: string, v: string) => setForm((s) => ({ ...s, [k]: v }))
   const num = (k: string) => Number.parseFloat(form[k] || '') || 0
   const revenueOk = num('units') > 0 && num('avgPrice') > 0 && form.company.trim().length > 0
+  const m = useMoney()
 
   const save = useMutation({ mutationFn: api.saveEnterpriseModel, onSuccess: () => onSaved() })
 
@@ -354,7 +374,10 @@ function EditModal({ model, onClose, onSaved }: { model: EM; onClose: () => void
         <SectionLabel>{t('Leviers financiers & opérationnels', 'Financial & operating drivers')}</SectionLabel>
         <div className="grid gap-x-4 sm:grid-cols-2">
           {DRIVER_FIELDS.map((f) => (
-            <WInput key={f.key} numeric suffix={f.pct ? '%' : undefined} label={vl(f.key, f.fr, f.en)} value={form[f.key]} onChange={(v) => set(f.key, v)} />
+            <WInput key={f.key} numeric suffix={f.pct ? '%' : m.symbol} label={vl(f.key, f.fr, f.en)}
+              help={fieldHint(f.key).help ? t(...fieldHint(f.key).help!) : undefined}
+              example={fieldHint(f.key).example ? t(...fieldHint(f.key).example!) : undefined}
+              value={form[f.key]} onChange={(v) => set(f.key, v)} />
           ))}
         </div>
         <SectionLabel>{t('Structure de l’organisation', 'Organization structure')}</SectionLabel>
@@ -476,66 +499,139 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   )
 }
 
-// ── Formulaire multi-étapes : créer un modèle d'entreprise quand il n'existe pas ──
-type WField = { key: string; fr: string; en: string; pct?: boolean }
-const WIZARD_STEPS: { title: [string, string]; hint: [string, string]; fields: WField[] }[] = [
+// ── Formulaire de création du modèle d'entreprise ─────────────────────────────
+//
+// Chaque champ dit ce qu'il attend, dans les mots du secteur, avec un exemple et
+// son unité. Quatre étapes seulement : deux champs suffisent à démarrer, tout le
+// reste est facultatif et se complète plus tard. Un encart recalcule en direct ce
+// que la saisie produit, et le compare au chiffre d'affaires déjà déclaré : une
+// erreur de saisie se voit tout de suite.
+
+type WKind = 'money' | 'count' | 'pct'
+type WField = {
+  key: string
+  fr: string; en: string
+  help: [string, string]
+  example?: [string, string]
+  kind: WKind
+  optional?: boolean
+}
+
+const WIZARD_STEPS: { title: [string, string]; intro: [string, string]; fields: WField[] }[] = [
   {
-    title: ['Revenus', 'Revenue'],
-    hint: ['Votre volume d’activité, et ce qu’il rapporte en moyenne.', 'Your activity volume, and what it brings in on average.'],
+    title: ['Ce que vous vendez', 'What you sell'],
+    intro: ['Deux chiffres suffisent : combien de fois par an, et ce que cela rapporte en moyenne.',
+      'Two figures are enough: how many times a year, and what each one brings in on average.'],
     fields: [
-      { key: 'units', fr: 'Unités / abonnés (par an)', en: 'Units / subscribers (per year)' },
-      { key: 'avgPrice', fr: 'Prix moyen unitaire', en: 'Average unit price' },
-      { key: 'cogsPercent', fr: 'Coût des ventes (% du revenu)', en: 'Cost of sales (% of revenue)', pct: true },
-      { key: 'churnRate', fr: 'Attrition annuelle (%)', en: 'Annual churn (%)', pct: true },
+      {
+        key: 'units', kind: 'count', fr: 'Clients servis par an', en: 'Customers served per year',
+        help: ['Sur une année complète. Un ordre de grandeur suffit.', 'Over a full year. A ballpark figure is enough.'],
+        example: ['Par exemple 4 800 dossiers traités dans l’année.', 'For example 4,800 cases handled in the year.'],
+      },
+      {
+        key: 'avgPrice', kind: 'money', fr: 'Ce que rapporte chacun, en moyenne', en: 'What each one brings in, on average',
+        help: ['Le revenu moyen sur l’année, avant toute dépense.', 'Average yearly revenue, before any expense.'],
+        example: ['Si 4 800 dossiers rapportent 240 M au total, indiquez 50 000.', 'If 4,800 cases bring in 240M in total, enter 50,000.'],
+      },
+      {
+        key: 'cogsPercent', kind: 'pct', fr: 'Part qui repart en coûts directs', en: 'Share that goes back out as direct costs',
+        help: ['Ce que chaque vente coûte avant salaires : achats, matières, coût du risque, sous-traitance.',
+          'What each sale costs before salaries: purchases, materials, cost of risk, subcontracting.'],
+        example: ['Souvent entre 20 et 60 %. Laissez vide si vous ne le suivez pas.', 'Often between 20 and 60%. Leave empty if you do not track it.'],
+        optional: true,
+      },
+      {
+        key: 'churnRate', kind: 'pct', fr: 'Clients perdus dans l’année', en: 'Customers lost during the year',
+        help: ['La part de vos clients qui ne reviennent pas.', 'The share of your customers who do not come back.'],
+        example: ['Laissez vide si vous ne la mesurez pas.', 'Leave empty if you do not measure it.'],
+        optional: true,
+      },
     ],
   },
   {
-    title: ['Effectif', 'Workforce'],
-    hint: ['La masse salariale et sa part facturable.', 'Payroll and its billable share.'],
+    title: ['Vos équipes', 'Your teams'],
+    intro: ['Ce que coûtent les personnes, et combien produisent directement le service.',
+      'What people cost, and how many directly produce the service.'],
     fields: [
-      { key: 'headcount', fr: 'Effectif total', en: 'Total headcount' },
-      { key: 'avgSalary', fr: 'Salaire moyen chargé', en: 'Average loaded salary' },
-      { key: 'billableRatio', fr: 'Taux facturable (%)', en: 'Billable ratio (%)', pct: true },
+      {
+        key: 'headcount', kind: 'count', fr: 'Nombre de personnes', en: 'Number of people',
+        help: ['Employés et agents, toutes fonctions confondues.', 'Staff and agents, all roles included.'],
+      },
+      {
+        key: 'avgSalary', kind: 'money', fr: 'Coût annuel moyen d’une personne', en: 'Average yearly cost per person',
+        help: ['Charges comprises, donc plus élevé que le salaire net versé.', 'Employer costs included, so higher than the net salary paid.'],
+        example: ['Masse salariale annuelle ÷ nombre de personnes.', 'Annual payroll ÷ number of people.'],
+      },
+      {
+        key: 'billableRatio', kind: 'pct', fr: 'Part qui produit directement le service', en: 'Share directly producing the service',
+        help: ['Les personnes au contact du client ou de la production. Le reste est du support.',
+          'People in contact with customers or production. The rest is support.'],
+        example: ['Par exemple 70 % en agence, 30 % au siège.', 'For example 70% in branches, 30% at head office.'],
+        optional: true,
+      },
     ],
   },
   {
-    title: ['Dépenses (OPEX)', 'Operating expenses'],
-    hint: ['Dépenses annuelles hors salaires.', 'Annual expenses excluding salaries.'],
+    title: ['Vos autres dépenses', 'Your other expenses'],
+    intro: ['Dépenses annuelles hors salaires. Tout est facultatif : laissez vide ce que vous ne suivez pas.',
+      'Annual expenses excluding salaries. All optional: leave empty what you do not track.'],
     fields: [
-      { key: 'marketing', fr: 'Marketing', en: 'Marketing' },
-      { key: 'rnd', fr: 'R&D', en: 'R&D' },
-      { key: 'ga', fr: 'Frais généraux & admin', en: 'General & admin' },
+      {
+        key: 'marketing', kind: 'money', fr: 'Commercial et communication', en: 'Sales and communication',
+        help: ['Publicité, sensibilisation, force de vente externe.', 'Advertising, outreach, external sales force.'], optional: true,
+      },
+      {
+        key: 'rnd', kind: 'money', fr: 'Nouveaux produits et informatique', en: 'New products and IT',
+        help: ['Développements, licences, projets d’amélioration.', 'Development, licences, improvement projects.'], optional: true,
+      },
+      {
+        key: 'ga', kind: 'money', fr: 'Frais de fonctionnement', en: 'Running costs',
+        help: ['Loyers, énergie, assurances, honoraires, administration.', 'Rent, energy, insurance, fees, administration.'], optional: true,
+      },
     ],
   },
   {
-    title: ['Capital & impôts', 'Capital & taxes'],
-    hint: ['Amortissements, dette, fiscalité, trésorerie.', 'Depreciation, debt, taxes, cash.'],
+    title: ['Finances', 'Finances'],
+    intro: ['Ce qui vient après l’exploitation. Facultatif, mais utile pour chiffrer une décision à l’euro près.',
+      'What comes after operations. Optional, but useful to price a decision precisely.'],
     fields: [
-      { key: 'depreciation', fr: 'Amortissements', en: 'Depreciation' },
-      { key: 'interest', fr: 'Charges d’intérêts', en: 'Interest expense' },
-      { key: 'taxRate', fr: 'Taux d’imposition (%)', en: 'Tax rate (%)', pct: true },
-      { key: 'cashOnHand', fr: 'Trésorerie disponible', en: 'Cash on hand' },
-    ],
-  },
-  {
-    title: ['Structure de l’organisation', 'Organization structure'],
-    hint: ['Compteurs de l’en-tête (n’affectent pas les finances).', 'Header counts (do not affect financials).'],
-    fields: [
-      { key: 'divisions', fr: 'Divisions', en: 'Divisions' },
-      { key: 'locations', fr: 'Sites / implantations', en: 'Locations' },
-      { key: 'suppliers', fr: 'Fournisseurs', en: 'Suppliers' },
-      { key: 'projects', fr: 'Projets actifs', en: 'Active projects' },
+      {
+        key: 'depreciation', kind: 'money', fr: 'Usure annuelle du matériel', en: 'Yearly wear of equipment',
+        help: ['Les amortissements comptables : véhicules, matériel, logiciels.', 'Accounting depreciation: vehicles, equipment, software.'], optional: true,
+      },
+      {
+        key: 'interest', kind: 'money', fr: 'Intérêts payés par an', en: 'Interest paid per year',
+        help: ['Sur vos emprunts et découverts.', 'On your loans and overdrafts.'], optional: true,
+      },
+      {
+        key: 'taxRate', kind: 'pct', fr: 'Impôt sur les bénéfices', en: 'Profit tax rate',
+        help: ['Le taux appliqué à votre résultat.', 'The rate applied to your profit.'], optional: true,
+      },
+      {
+        key: 'cashOnHand', kind: 'money', fr: 'Argent disponible aujourd’hui', en: 'Cash available today',
+        help: ['Ce que vous avez en banque et en caisse.', 'What you hold in bank and cash.'], optional: true,
+      },
     ],
   },
 ]
 
+const STRUCTURE_FIELDS: WField[] = [
+  { key: 'divisions', kind: 'count', fr: 'Directions ou départements', en: 'Divisions or departments', help: ['', ''], optional: true },
+  { key: 'locations', kind: 'count', fr: 'Sites ou agences', en: 'Sites or branches', help: ['', ''], optional: true },
+  { key: 'suppliers', kind: 'count', fr: 'Fournisseurs principaux', en: 'Main suppliers', help: ['', ''], optional: true },
+  { key: 'projects', kind: 'count', fr: 'Projets en cours', en: 'Projects under way', help: ['', ''], optional: true },
+]
+
 function ModelWizard({ onDone }: { onDone: () => void }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const profile = useOrganization().data?.profile
+  const money = useMoney()
   const sector = profile?.sector
   const vl = (key: string, fr: string, en: string) => { const l = driverLabel(sector, key, { fr, en }); return t(l.fr, l.en) }
-  const [step, setStep] = useState(0) // 0 = identité, 1..4 = leviers
-  // Le profil saisi au démarrage fournit déjà nom, secteur et effectif : on ne les redemande pas.
+
+  const [step, setStep] = useState(0)
+  const [touched, setTouched] = useState(false)
+  // Le profil de démarrage donne déjà nom, secteur et effectif : on ne les redemande pas.
   const [form, setForm] = useState<Record<string, string>>(() => ({
     company: profile?.name ?? '',
     industry: profile ? t(...(SECTOR_LABELS[profile.sector] ?? [profile.sector, profile.sector])) : '',
@@ -543,47 +639,53 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
   }))
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
-  const save = useMutation({
-    mutationFn: api.saveEnterpriseModel,
-    onSuccess: () => onDone(),
-  })
+  const save = useMutation({ mutationFn: api.saveEnterpriseModel, onSuccess: () => onDone() })
 
-  const TOTAL = WIZARD_STEPS.length + 1 // +1 pour l'étape identité
-  const num = (k: string) => Number.parseFloat(form[k] || '') || 0
-  const identityOk = form.company.trim().length > 0
-  const revenueOk = num('units') > 0 && num('avgPrice') > 0
-  const canNext = step === 0 ? identityOk : step === 1 ? revenueOk : true
+  const TOTAL = WIZARD_STEPS.length + 1            // + le récapitulatif
+  const num = (k: string) => Number.parseFloat((form[k] || '').replace(',', '.')) || 0
+  const declared = profile?.annualRevenue ?? 0
+  const estimated = num('units') * num('avgPrice')
+  const gap = declared > 0 && estimated > 0 ? Math.abs(estimated - declared) / declared : 0
+  const sellingOk = num('units') > 0 && num('avgPrice') > 0
+  const canNext = step === 0 ? sellingOk : true
+  const missing = step === 0 && !sellingOk
+
+  /** Déduit le revenu moyen du chiffre d'affaires déjà déclaré. */
+  function fillPriceFromRevenue() {
+    const u = num('units')
+    if (u > 0 && declared > 0) set('avgPrice', String(Math.round(declared / u)))
+  }
 
   function submit() {
     const pct = (k: string) => num(k) / 100
-    const drivers = {
-      units: num('units'), avgPrice: num('avgPrice'), cogsPercent: pct('cogsPercent'),
-      headcount: num('headcount'), avgSalary: num('avgSalary'), billableRatio: pct('billableRatio'),
-      marketing: num('marketing'), rnd: num('rnd'), ga: num('ga'),
-      depreciation: num('depreciation'), taxRate: pct('taxRate'), interest: num('interest'),
-      cashOnHand: num('cashOnHand'), churnRate: pct('churnRate'),
-      divisions: Math.round(num('divisions')), locations: Math.round(num('locations')),
-      suppliers: Math.round(num('suppliers')), projects: Math.round(num('projects')),
-    }
-    save.mutate({ companyName: form.company.trim(), industry: form.industry.trim(), drivers })
+    save.mutate({
+      companyName: form.company.trim() || t('Mon organisation', 'My organization'),
+      industry: form.industry.trim(),
+      drivers: {
+        units: num('units'), avgPrice: num('avgPrice'), cogsPercent: pct('cogsPercent'),
+        headcount: num('headcount'), avgSalary: num('avgSalary'), billableRatio: pct('billableRatio'),
+        marketing: num('marketing'), rnd: num('rnd'), ga: num('ga'),
+        depreciation: num('depreciation'), taxRate: pct('taxRate'), interest: num('interest'),
+        cashOnHand: num('cashOnHand'), churnRate: pct('churnRate'),
+        divisions: Math.round(num('divisions')), locations: Math.round(num('locations')),
+        suppliers: Math.round(num('suppliers')), projects: Math.round(num('projects')),
+      },
+    })
   }
 
-  const wz = step >= 1 ? WIZARD_STEPS[step - 1] : null
+  const wz = step < WIZARD_STEPS.length ? WIZARD_STEPS[step] : null
+  const suffix = (k: WKind) => k === 'pct' ? '%' : k === 'money' ? money.symbol : undefined
 
   return (
-    <div className="mx-auto flex max-w-xl flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-6">
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <Building2 size={22} style={{ color: CYAN }} />
-          <h2 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>
-            {t('Créer le modèle d’entreprise', 'Create the enterprise model')}
-          </h2>
+          <h2 style={{ fontFamily: geist, fontSize: 22, color: 'var(--nx-text)' }}>{t('Votre modèle d’entreprise', 'Your enterprise model')}</h2>
         </div>
-        <p style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>
-          {t(
-            'Renseignez les leviers de votre organisation. Le jumeau décisionnel (P&L, trésorerie, KPIs) est ensuite calculé automatiquement.',
-            'Enter your organization’s drivers. The decision twin (P&L, cash, KPIs) is then computed automatically.',
-          )}
+        <p style={{ fontSize: 13.5, color: 'var(--nx-text-muted)', lineHeight: 1.6 }}>
+          {t('Il sert à une chose : traduire une panne ou une décision en euros, en francs ou en dollars. Deux chiffres suffisent pour commencer, le reste se complète quand vous voulez.',
+            'It serves one purpose: turning an outage or a decision into money. Two figures are enough to start, the rest can be filled in whenever you want.')}
         </p>
       </div>
 
@@ -594,64 +696,113 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
       </div>
 
       <div className="rounded-lg border p-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-        <div className="mb-1" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>
-          {t('Étape', 'Step')} {step + 1} / {TOTAL}
+        <div className="mb-1 flex items-center justify-between" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>
+          <span>{t('Étape', 'Step')} {step + 1} / {TOTAL}</span>
+          {wz && wz.fields.every((f) => f.optional) && (
+            <span style={{ color: 'var(--nx-text-muted)' }}>{t('facultatif', 'optional')}</span>
+          )}
         </div>
-        {step === 0 ? (
+
+        {wz ? (
           <>
-            <h3 className="mb-4" style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{t('Identité', 'Identity')}</h3>
-            <WInput label={t('Nom de l’entreprise', 'Company name')} value={form.company} onChange={(v) => set('company', v)} placeholder={t('Mon organisation', 'My organization')} />
-            <WInput label={t('Secteur d’activité', 'Industry')} value={form.industry} onChange={(v) => set('industry', v)} placeholder={t('ex. Télécommunications', 'e.g. Telecommunications')} />
-          </>
-        ) : wz ? (
-          <>
-            <h3 style={{ fontFamily: geist, fontSize: 17, color: 'var(--nx-text)' }}>{t(wz.title[0], wz.title[1])}</h3>
-            <p className="mb-4" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t(wz.hint[0], wz.hint[1])}</p>
+            <h3 style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{t(...wz.title)}</h3>
+            <p className="mb-5 mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)', lineHeight: 1.55 }}>{t(...wz.intro)}</p>
             {wz.fields.map((f) => (
               <WInput
-                key={f.key} numeric suffix={f.pct ? '%' : undefined}
-                label={vl(f.key, f.fr, f.en)} value={form[f.key] || ''} onChange={(v) => set(f.key, v)}
-                placeholder={f.pct ? '0–100' : '0'}
+                key={f.key} numeric suffix={suffix(f.kind)}
+                label={vl(f.key, f.fr, f.en)}
+                help={t(...f.help)}
+                example={f.example ? t(...f.example) : undefined}
+                optional={f.optional ? t('facultatif', 'optional') : undefined}
+                invalid={touched && missing && (f.key === 'units' || f.key === 'avgPrice') && num(f.key) <= 0}
+                value={form[f.key] || ''} onChange={(v) => set(f.key, v)}
+                placeholder={f.kind === 'pct' ? '0 à 100' : '0'}
+                action={f.key === 'avgPrice' && declared > 0 && num('units') > 0
+                  ? { label: t('Déduire de votre chiffre d’affaires', 'Derive from your revenue'), onClick: fillPriceFromRevenue }
+                  : undefined}
               />
             ))}
-          </>
-        ) : null}
 
-        {step === 1 && !revenueOk && (
-          <p style={{ fontSize: 12, color: 'var(--nx-outline)' }}>
-            {t('Les deux premiers champs sont requis (> 0).', 'The first two fields are required (> 0).')}
+            {step === 0 && (
+              <div className="mt-4 rounded-md border p-3" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)' }}>
+                <div style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>
+                  {t('Ce que votre saisie donne', 'What your entries give')}
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                  <span style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{money.compact(estimated)}</span>
+                  <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('de revenu annuel', 'of yearly revenue')}</span>
+                </div>
+                {declared > 0 && (
+                  <p className="mt-1.5" style={{ fontSize: 12.5, color: gap > 0.25 ? 'var(--nx-warning)' : 'var(--nx-text-muted)', lineHeight: 1.5 }}>
+                    {estimated <= 0
+                      ? t(`Au démarrage, vous aviez indiqué ${money.compact(declared)} de chiffre d’affaires.`, `At setup you entered ${money.compact(declared)} of revenue.`)
+                      : gap > 0.25
+                        ? t(`Écart important avec les ${money.compact(declared)} déclarés au démarrage : vérifiez le volume ou le montant moyen.`,
+                          `Large gap with the ${money.compact(declared)} declared at setup: check the volume or the average amount.`)
+                        : t(`Cohérent avec les ${money.compact(declared)} déclarés au démarrage.`, `Consistent with the ${money.compact(declared)} declared at setup.`)}
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <h3 style={{ fontFamily: geist, fontSize: 18, color: 'var(--nx-text)' }}>{t('Vérification', 'Check')}</h3>
+            <p className="mb-5 mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)', lineHeight: 1.55 }}>
+              {t('Voici ce qui sera enregistré. Tout reste modifiable ensuite, champ par champ.', 'Here is what will be saved. Everything stays editable afterwards, field by field.')}
+            </p>
+            {!profile && (
+              <>
+                <WInput label={t('Nom de l’organisation', 'Organisation name')} value={form.company} onChange={(v) => set('company', v)} placeholder={t('Mon organisation', 'My organization')} />
+                <WInput label={t('Secteur d’activité', 'Industry')} value={form.industry} onChange={(v) => set('industry', v)} placeholder={t('ex. Microfinance', 'e.g. Microfinance')} />
+              </>
+            )}
+            <dl className="mb-4 grid gap-x-6 gap-y-2 rounded-md border p-3 sm:grid-cols-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)', fontSize: 13 }}>
+              <RecapLine label={t('Revenu annuel', 'Yearly revenue')} value={money.compact(estimated)} />
+              <RecapLine label={t('Coûts directs', 'Direct costs')} value={money.compact(estimated * num('cogsPercent') / 100)} />
+              <RecapLine label={t('Masse salariale', 'Payroll')} value={money.compact(num('headcount') * num('avgSalary'))} />
+              <RecapLine label={t('Autres dépenses', 'Other expenses')} value={money.compact(num('marketing') + num('rnd') + num('ga'))} />
+            </dl>
+            <div style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+              {t('Quelques repères de structure, si vous les avez sous la main :', 'A few structure figures, if you have them at hand:')}
+            </div>
+            <div className="mt-2 grid gap-x-4 sm:grid-cols-2">
+              {STRUCTURE_FIELDS.map((f) => (
+                <WInput key={f.key} numeric label={vl(f.key, f.fr, f.en)} optional={t('facultatif', 'optional')}
+                  value={form[f.key] || ''} onChange={(v) => set(f.key, v)} placeholder="0" />
+              ))}
+            </div>
+          </>
+        )}
+
+        {touched && missing && (
+          <p className="mt-2" style={{ fontSize: 12.5, color: NEG }}>
+            {t('Indiquez au moins un volume et un montant moyen : sans eux, aucun chiffrage n’est possible.',
+              'Enter at least a volume and an average amount: without them, no pricing is possible.')}
           </p>
         )}
-        {save.isError && (
-          <p style={{ fontSize: 12, color: NEG }}>{(save.error as Error).message}</p>
-        )}
+        {save.isError && <p className="mt-2" style={{ fontSize: 12.5, color: NEG }}>{(save.error as Error).message}</p>}
       </div>
 
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          disabled={step === 0}
+        <button onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}
           className="rounded-md border px-4 py-2 text-sm"
-          style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', opacity: step === 0 ? 0.4 : 1 }}
-        >
+          style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', opacity: step === 0 ? 0.4 : 1 }}>
           {t('Précédent', 'Back')}
         </button>
+        <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {lang === 'fr' ? 'Modifiable à tout moment' : 'Editable at any time'}
+        </span>
         {step < TOTAL - 1 ? (
-          <button
-            onClick={() => canNext && setStep((s) => s + 1)}
-            disabled={!canNext}
+          <button onClick={() => { setTouched(true); if (canNext) { setTouched(false); setStep((s) => s + 1) } }}
             className="flex items-center gap-1.5 rounded-md px-5 py-2 text-sm font-medium"
-            style={{ background: canNext ? CYAN : 'var(--nx-border)', color: canNext ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)' }}
-          >
+            style={{ background: CYAN, color: 'var(--nx-on-cyan)' }}>
             {t('Suivant', 'Next')} <ArrowRight size={15} />
           </button>
         ) : (
-          <button
-            onClick={submit}
-            disabled={save.isPending || !revenueOk}
+          <button onClick={submit} disabled={save.isPending || !sellingOk}
             className="rounded-md px-5 py-2 text-sm font-medium"
-            style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: save.isPending || !revenueOk ? 0.6 : 1 }}
-          >
+            style={{ background: CYAN, color: 'var(--nx-on-cyan)', opacity: save.isPending || !sellingOk ? 0.6 : 1 }}>
             {save.isPending ? t('Création…', 'Creating…') : t('Créer le modèle', 'Create model')}
           </button>
         )}
@@ -660,13 +811,27 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
   )
 }
 
-function WInput({ label, value, onChange, placeholder, numeric, suffix }: {
+function RecapLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt style={{ color: 'var(--nx-text-muted)' }}>{label}</dt>
+      <dd style={{ fontFamily: mono, color: 'var(--nx-text)' }}>{value}</dd>
+    </div>
+  )
+}
+
+function WInput({ label, value, onChange, placeholder, numeric, suffix, help, example, optional, invalid, action }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; numeric?: boolean; suffix?: string
+  help?: string; example?: string; optional?: string; invalid?: boolean; action?: { label: string; onClick: () => void }
 }) {
   return (
-    <label className="mb-3 block">
-      <span className="mb-1 block" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{label}</span>
-      <div className="flex items-center rounded-md border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-bg)' }}>
+    <label className="mb-4 block">
+      <span className="mb-0.5 flex flex-wrap items-baseline gap-2">
+        <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--nx-text)' }}>{label}</span>
+        {optional && <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-outline)' }}>{optional}</span>}
+      </span>
+      {help && <span className="mb-1.5 block" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.45 }}>{help}</span>}
+      <div className="flex items-center rounded-md border" style={{ borderColor: invalid ? NEG : 'var(--nx-border)', background: 'var(--nx-bg)' }}>
         <input
           type={numeric ? 'number' : 'text'}
           inputMode={numeric ? 'decimal' : undefined}
@@ -678,6 +843,12 @@ function WInput({ label, value, onChange, placeholder, numeric, suffix }: {
         />
         {suffix && <span className="px-3" style={{ fontFamily: mono, fontSize: 13, color: 'var(--nx-outline)' }}>{suffix}</span>}
       </div>
+      <span className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+        {example ? <span style={{ fontSize: 12, color: 'var(--nx-outline)' }}>{example}</span> : <span />}
+        {action && (
+          <button type="button" onClick={action.onClick} style={{ fontSize: 12, color: 'var(--nx-cyan-text)' }}>{action.label}</button>
+        )}
+      </span>
     </label>
   )
 }

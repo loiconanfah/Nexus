@@ -1,4 +1,4 @@
-namespace Nexus.Api.Business;
+﻿namespace Nexus.Api.Business;
 
 /// <summary>
 /// Assemble le modele d'entreprise pour un tenant. Deux jeux de demo (CGI, Bell)
@@ -44,7 +44,7 @@ public static class EnterpriseModelProvider
     // ── Parties generiques (derivees des leviers, identiques pour tout modele) ──
     private static EnterpriseModel Build(
         CompanyProfile companyMeta, BusinessDrivers d,
-        List<DivisionLine> divisions, List<SegmentLine> segments, DomainQuality quality)
+        List<DivisionLine> divisions, List<SegmentLine> segments, DomainQuality quality, bool demo = true)
     {
         var pnl = BusinessModelEngine.ComputePnl(d);
         var cash = BusinessModelEngine.ComputeCash(d, pnl);
@@ -73,7 +73,7 @@ public static class EnterpriseModelProvider
             new("cashOnHand", cash.CashOnHand, Currency, 5.4),
             new("churn", d.ChurnRate * 100, "%", -0.4),
         };
-        return new EnterpriseModel(true, true, Currency, company, d, pnl, cash, trend, divisions, segments, costs, kpis, quality);
+        return new EnterpriseModel(true, demo, Currency, company, d, pnl, cash, trend, divisions, segments, costs, kpis, quality);
     }
 
     // ── CGI ──
@@ -136,6 +136,7 @@ public static class EnterpriseModelProvider
             Divisions: d.Divisions, Locations: d.Locations, Customers: d.Units,
             Suppliers: d.Suppliers, Projects: d.Projects);
         // Pas de repartition divisions/segments saisie : le socle financier suffit.
-        return Build(company, d, [], [], new DomainQuality(75, 75, 75, 75, 75));
+        // Modèle saisi par l'organisation : ce ne sont pas des données de démonstration.
+        return Build(company, d, [], [], new DomainQuality(75, 75, 75, 75, 75), demo: false);
     }
 }

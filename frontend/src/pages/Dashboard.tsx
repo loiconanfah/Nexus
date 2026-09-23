@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertOctagon, AlertTriangle, ArrowRight, DownloadCloud, HelpCircle, History, Network,
-  Package, PieChart, Radar,
+  AlertOctagon, AlertTriangle, ArrowRight, Blocks, DownloadCloud, HelpCircle, History, Network,
+  Package, PieChart, Radar, ScanText, Upload,
 } from 'lucide-react'
 import { CompanyOverview3D } from '../components/CompanyOverview3D'
 import { api } from '../lib/api'
@@ -52,20 +52,49 @@ export function Dashboard() {
   if (!data) return null
 
   if (empty) {
+    // Un espace d'entreprise (profil renseigné) n'a rien à faire d'un jeu de
+    // démonstration : on lui montre par où entrer SES données. Le jeu de démo
+    // reste proposé aux espaces de découverte, qui n'ont pas de profil.
+    const real = Boolean(org.data?.profile?.name)
     return (
-      <div className="mx-auto flex max-w-lg flex-col items-center gap-4 rounded-sm border p-14 text-center" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+      <div className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-sm border p-12 text-center" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
         <div className="rounded-sm p-4" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
           <Network size={26} style={{ color: CYAN }} />
         </div>
-        <div style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{t('Aucune télémétrie pour ce tenant', 'No telemetry for this tenant')}</div>
-        <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>{t('Importez le jeu de démo pour révéler le graphe de dépendances, ses risques et ses points uniques de défaillance.', 'Import the demo dataset to reveal the dependency graph, its risks and single points of failure.')}</p>
-        <button
-          onClick={() => importDemo.mutate()} disabled={importDemo.isPending}
-          className="flex items-center gap-2 rounded-sm px-4 py-2.5"
-          style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}
-        >
-          <DownloadCloud size={16} /> {importDemo.isPending ? t('Importation…', 'Importing…') : t('Charger le jeu de démo', 'Load demo dataset')}
-        </button>
+        <div style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>
+          {real ? t('Votre graphe est encore vide', 'Your graph is still empty') : t('Aucune donnée dans cet espace', 'No data in this workspace')}
+        </div>
+        <p style={{ fontSize: 14, color: 'var(--nx-text-muted)', lineHeight: 1.6 }}>
+          {real
+            ? t('Ajoutez vos systèmes, vos activités et ce dont elles dépendent. Trois portes d’entrée, au choix : un fichier, un document, ou une connexion directe à vos outils.',
+              'Add your systems, your activities and what they depend on. Three ways in: a file, a document, or a direct connection to your tools.')
+            : t('Importez le jeu de démonstration pour découvrir le graphe de dépendances, ses risques et ses points uniques de défaillance.',
+              'Import the demo dataset to explore the dependency graph, its risks and single points of failure.')}
+        </p>
+        {real ? (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button onClick={() => navigate('/onboarding')} className="flex items-center gap-2 rounded-sm px-4 py-2.5"
+              style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
+              <Upload size={16} /> {t('Importer un fichier (CSV, Excel)', 'Import a file (CSV, Excel)')}
+            </button>
+            <button onClick={() => navigate('/documents')} className="flex items-center gap-2 rounded-sm border px-4 py-2.5"
+              style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontSize: 13 }}>
+              <ScanText size={16} /> {t('Analyser un document', 'Analyze a document')}
+            </button>
+            <button onClick={() => navigate('/integrations')} className="flex items-center gap-2 rounded-sm border px-4 py-2.5"
+              style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontSize: 13 }}>
+              <Blocks size={16} /> {t('Connecter un outil', 'Connect a tool')}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => importDemo.mutate()} disabled={importDemo.isPending}
+            className="flex items-center gap-2 rounded-sm px-4 py-2.5"
+            style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}
+          >
+            <DownloadCloud size={16} /> {importDemo.isPending ? t('Importation…', 'Importing…') : t('Charger le jeu de démo', 'Load demo dataset')}
+          </button>
+        )}
         {importDemo.error && <ErrorBox message={(importDemo.error as Error).message} />}
       </div>
     )
