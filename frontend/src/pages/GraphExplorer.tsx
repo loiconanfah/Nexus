@@ -275,7 +275,7 @@ function Inspector({ rec, onClose, onAnalyze }: { rec: GraphEntityRecord; onClos
       {/* Header */}
       <div className="border-b p-4" style={{ borderColor: 'var(--nx-border)' }}>
         <div className="mb-1 flex items-start justify-between">
-          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>{t('Entité', 'Entity')} {entityTypeLabel(rec.entityType, t)}</span>
+          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Entité', 'Entity')} {entityTypeLabel(rec.entityType, t)}</span>
           <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
         </div>
         <h2 style={{ fontFamily: geist, fontSize: 22, fontWeight: 500, color: 'var(--nx-text)' }}>{rec.name}</h2>

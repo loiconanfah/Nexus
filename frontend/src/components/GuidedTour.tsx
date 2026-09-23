@@ -18,7 +18,6 @@ const DONE_KEY = 'nexus.tour.done'
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
 const CYAN = 'var(--nx-cyan)'
-const CYAN_T = 'var(--nx-cyan-text)'
 
 type Step = {
   /** Sélecteur data-tour de la cible ; absent = étape centrée, sans surlignage. */
@@ -366,7 +365,7 @@ function Bubble({
       }}
     >
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+        <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           <Compass size={13} /> {t('Visite guidée', 'Guided tour')}
         </span>
         <button onClick={onSkip} title={t('Fermer', 'Close')} style={{ color: 'var(--nx-text-muted)' }}>

@@ -120,7 +120,7 @@ export function EnterpriseModel() {
       {/* Bannière de but : jumeau descriptif */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: CYAN }}>{t('Jumeau descriptif', 'Descriptive twin')}</span>
+          <span style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Jumeau descriptif', 'Descriptive twin')}</span>
           <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>· {t('L’état actuel et la structure de l’entreprise.', 'The current state and structure of the company.')}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -211,7 +211,7 @@ export function EnterpriseModel() {
       <div className="grid gap-5 lg:grid-cols-3">
         {/* P&L */}
         <div className="rounded-lg border p-5 lg:col-span-1" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-          <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Compte de résultat (annualisé)', 'Income statement (annualized)')}</h3>
+          <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Compte de résultat (annualisé)', 'Income statement (annualized)')}</h3>
           <PnlRow label={t('Revenu', 'Revenue')} value={money(pnl.revenue, currency)} strong />
           <PnlRow label={t('− Coût des services', '− Cost of services')} value={money(-pnl.cogs, currency)} />
           <PnlRow label={t('Marge brute', 'Gross profit')} value={money(pnl.grossProfit, currency)} sub={`${(pnl.grossMargin * 100).toFixed(1)}%`} strong />
@@ -229,21 +229,31 @@ export function EnterpriseModel() {
 
         {/* Tendance 12 mois */}
         <div className="rounded-lg border p-5 lg:col-span-2" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-          <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{`${t('Tendance 12 mois', '12-month trend')} (${m.millions})`}</h3>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{`${t('Tendance 12 mois', '12-month trend')} (${m.millions})`}</h3>
+            {/* Trois courbes : la légende nomme chacune, la couleur ne suffit jamais. */}
+            <div className="flex flex-wrap items-center gap-3" style={{ fontSize: 11.5, color: 'var(--nx-text-muted)' }}>
+              {([['--nx-cat-1', t('Revenu', 'Revenue')], ['--nx-cat-3', 'EBITDA'], ['--nx-cat-2', t('Résultat net', 'Net profit')]] as const).map(([c, label]) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  <span aria-hidden style={{ width: 10, height: 2, borderRadius: 1, background: `var(${c})` }} />{label}
+                </span>
+              ))}
+            </div>
+          </div>
           <div style={{ height: 260 }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="gr-rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-cyan)" stopOpacity={0.35} /><stop offset="100%" stopColor="var(--nx-cyan)" stopOpacity={0} /></linearGradient>
-                  <linearGradient id="gr-eb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-success)" stopOpacity={0.3} /><stop offset="100%" stopColor="var(--nx-success)" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gr-rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-cat-1)" stopOpacity={0.30} /><stop offset="100%" stopColor="var(--nx-cat-1)" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gr-eb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-cat-3)" stopOpacity={0.26} /><stop offset="100%" stopColor="var(--nx-cat-3)" stopOpacity={0} /></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" />
                 <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={false} tickLine={false} width={44} />
                 <Tooltip contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(value, name) => { const n = String(name); return [`${Number(value).toFixed(1)} ${m.millions}`, n === 'revenue' ? t('Revenu', 'Revenue') : n === 'ebitda' ? 'EBITDA' : t('Net', 'Net')] }} />
-                <Area type="monotone" dataKey="revenue" stroke="var(--nx-cyan)" strokeWidth={2} fill="url(#gr-rev)" />
-                <Area type="monotone" dataKey="ebitda" stroke="var(--nx-success)" strokeWidth={2} fill="url(#gr-eb)" />
-                <Area type="monotone" dataKey="net" stroke="var(--nx-warning)" strokeWidth={1.5} fillOpacity={0} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--nx-cat-1)" strokeWidth={2} fill="url(#gr-rev)" />
+                <Area type="monotone" dataKey="ebitda" stroke="var(--nx-cat-3)" strokeWidth={2} fill="url(#gr-eb)" />
+                <Area type="monotone" dataKey="net" stroke="var(--nx-cat-2)" strokeWidth={1.5} fillOpacity={0} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -452,7 +462,7 @@ function HistoryModal({ onClose, onRestored }: { onClose: () => void; onRestored
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-2 mt-1" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{children}</div>
+    <div className="mb-2 mt-1" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{children}</div>
   )
 }
 
@@ -493,7 +503,7 @@ function PnlRow({ label, value, sub, strong, accent }: { label: string; value: s
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-      <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{title}</h3>
+      <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{title}</h3>
       {children}
     </div>
   )
@@ -696,7 +706,7 @@ function ModelWizard({ onDone }: { onDone: () => void }) {
       </div>
 
       <div className="rounded-lg border p-6" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-        <div className="mb-1 flex items-center justify-between" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>
+        <div className="mb-1 flex items-center justify-between" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           <span>{t('Étape', 'Step')} {step + 1} / {TOTAL}</span>
           {wz && wz.fields.every((f) => f.optional) && (
             <span style={{ color: 'var(--nx-text-muted)' }}>{t('facultatif', 'optional')}</span>

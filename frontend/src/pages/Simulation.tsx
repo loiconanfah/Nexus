@@ -472,7 +472,7 @@ function DraggablePanel({ title, side, top, width, onClose, children }: {
     <div ref={ref} className="absolute z-30 flex flex-col rounded-lg border shadow-xl"
       style={{ left: pos?.x ?? (side === 'right' ? undefined : 12), right: pos ? undefined : (side === 'right' ? 12 : undefined), top: pos?.y ?? top, width, maxHeight: 'calc(100% - 96px)', background: 'color-mix(in srgb, var(--nx-panel) 95%, transparent)', borderColor: 'var(--nx-border)', backdropFilter: 'blur(6px)' }}>
       <div onPointerDown={onDown} className="flex shrink-0 cursor-move items-center justify-between gap-2 border-b px-3 py-2 select-none" style={{ borderColor: 'var(--nx-border)' }}>
-        <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+        <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           <GripVertical size={12} /> {title}
         </span>
         {onClose && <button onClick={onClose} title="×" style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>}
@@ -552,7 +552,7 @@ function ImpactPanel({ origin, originType, action, modeled }: { origin: string; 
 
       {/* Analyse IA */}
       <div className="rounded-sm border p-3" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', background: 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)' }}>
-        <div className="mb-1 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+        <div className="mb-1 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           <Sparkles size={12} /> {t('Analyse IA', 'AI analysis')}{ai && !ai.usedAi && <span style={{ color: 'var(--nx-outline)' }}> · {t('repli', 'fallback')}</span>}
         </div>
         {explain.isPending ? (

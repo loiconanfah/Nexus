@@ -158,7 +158,7 @@ export function CookieConsent() {
     >
       <div className="flex items-center gap-2">
         <Cookie size={15} style={{ color: 'var(--nx-cyan)' }} />
-        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-cyan-text)' }}>
+        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           {t('Témoins de mesure d’audience', 'Analytics cookies')}
         </span>
       </div>

@@ -163,7 +163,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
           <button
             onClick={() => { if (collapsed) toggleNav(); setTimeout(() => searchRef.current?.focus(), 0) }}
             className={`flex w-full items-center rounded-sm py-2 transition-colors ${collapsed ? 'justify-center' : 'justify-center gap-2'}`}
-            style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-cyan-text)', fontFamily: mono, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase' }}
+            style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-label)', fontFamily: mono, fontSize: 12, letterSpacing: '0.05em', textTransform: 'uppercase' }}
             title={t('Rechercher', 'Execute Command')}
           >
             <Terminal size={14} /> {!collapsed && t('Rechercher', 'Execute Command')}

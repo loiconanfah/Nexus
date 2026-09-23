@@ -219,7 +219,7 @@ export function Setup() {
 
         {/* Contenu de l'étape */}
         <section className="rounded-lg border p-5 sm:p-7" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
-          <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN_T }}>
+          <div style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
             {t('Étape', 'Step')} {step + 1} / {STEPS.length}
           </div>
 

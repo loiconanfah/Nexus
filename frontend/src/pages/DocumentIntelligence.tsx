@@ -341,7 +341,7 @@ function Results(props: {
       {/* Proposition pour le graphe */}
       <div className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: CYAN_T }}><GitMerge size={14} /> {t('Proposition pour votre graphe', 'Proposal for your graph')}</span>
+          <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-label)' }}><GitMerge size={14} /> {t('Proposition pour votre graphe', 'Proposal for your graph')}</span>
           <div className="flex rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
             {([['all', t('Tout', 'All')], ['new', t('Nouveaux', 'New')], ['existing', t('Déjà présents', 'Already present')]] as const).map(([k, l]) => (
               <button key={k} onClick={() => setFilter(k)} className="px-2.5 py-1" style={{ fontSize: 12, background: filter === k ? 'var(--nx-surface-high)' : 'transparent', color: filter === k ? 'var(--nx-text)' : 'var(--nx-text-muted)' }}>{l}</button>

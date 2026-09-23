@@ -156,13 +156,13 @@ function ImpactTuningPanel() {
           {t('Adaptez les hypothèses d’impact à votre organisation. Un coût réel saisi par actif prime toujours sur ces paliers.',
              'Tune the impact assumptions to your organization. A real per-asset cost always overrides these tiers.')}
         </p>
-        <div className="mb-2" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>{t('Paliers de coût d’arrêt (par heure)', 'Downtime cost tiers (per hour)')}</div>
+        <div className="mb-2" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-label)' }}>{t('Paliers de coût d’arrêt (par heure)', 'Downtime cost tiers (per hour)')}</div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {COST_FIELDS.map(([k, fr, en]) => (
             <TuneInput key={k} label={t(fr, en)} value={form[k] ?? ''} onChange={(v) => set(k, v)} />
           ))}
         </div>
-        <div className="mb-2 mt-4" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>{t('Courbes', 'Curves')}</div>
+        <div className="mb-2 mt-4" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-label)' }}>{t('Courbes', 'Curves')}</div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {CURVE_FIELDS.map(([k, fr, en, suffix]) => (
             <TuneInput key={k} label={t(fr, en)} value={form[k] ?? ''} onChange={(v) => set(k, v)} suffix={suffix} />

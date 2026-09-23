@@ -68,7 +68,7 @@ export function DemoChoice() {
 
       {/* Contenu */}
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-6 py-12">
-        <div className="mb-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-cyan-text)' }}>
+        <div className="mb-2" style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           {t('Accès démo', 'Demo access')}
         </div>
         <h1 className="text-3xl font-semibold tracking-tight md:text-4xl" style={{ fontFamily: geist, color: 'var(--nx-text)' }}>

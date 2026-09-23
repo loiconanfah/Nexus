@@ -408,7 +408,7 @@ export function Help() {
 
 function BlockView({ block, i }: { block: Block; i: 0 | 1 }) {
   if (block.kind === 'h') {
-    return <h4 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: CYAN }}>{block.text[i]}</h4>
+    return <h4 style={{ fontFamily: mono, fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{block.text[i]}</h4>
   }
   if (block.kind === 'p') {
     return <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--nx-text-muted)' }}>{block.text[i]}</p>

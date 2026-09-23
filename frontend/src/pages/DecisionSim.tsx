@@ -352,7 +352,7 @@ function FinancialLevers() {
         <div className="rounded-lg border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
           <div className="mb-2 flex items-center gap-2">
             <Lightbulb size={15} style={{ color: CYAN }} />
-            <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Analyste IA', 'AI Analyst')}</h3>
+            <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Analyste IA', 'AI Analyst')}</h3>
             {analysis && <span className="rounded-sm px-1.5 py-0.5" style={{ fontFamily: mono, fontSize: 9, color: analysis.aiUsed ? CYAN : 'var(--nx-outline)', border: `1px solid ${analysis.aiUsed ? 'color-mix(in srgb, var(--nx-cyan) 40%, transparent)' : 'var(--nx-border)'}` }}>{analysis.aiUsed ? t('IA', 'AI') : t('RÈGLES', 'RULES')}</span>}
             {busy && <Loader2 size={13} className="animate-spin" style={{ color: 'var(--nx-outline)' }} />}
           </div>
@@ -373,7 +373,7 @@ function FinancialLevers() {
       {tab === 'levers' ? (
         <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
           <div className="flex flex-col gap-4 rounded-lg border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-            <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Leviers de décision', 'Decision levers')}</h3>
+            <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Leviers de décision', 'Decision levers')}</h3>
             <Lever label={t('Prix', 'Price')} unit="%" min={-20} max={20} step={1} value={levers.pricePct} onChange={(v) => setLevers({ ...levers, pricePct: v })} />
             <Lever label={t('Volume des ventes', 'Sales volume')} unit="%" min={-30} max={30} step={1} value={levers.volumePct} onChange={(v) => setLevers({ ...levers, volumePct: v })} />
             <Lever label={t('Effectif', 'Headcount')} unit={t('empl.', 'staff')} min={-400} max={600} step={10} value={levers.headcountDelta} onChange={(v) => setLevers({ ...levers, headcountDelta: v })} />
@@ -400,7 +400,7 @@ function ComparePanel({ base, sim, money, nf, t, compact }: { base: Metrics; sim
   ]
   return (
     <div className="rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-      <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Actuel vs Simulé', 'Current vs Simulated')}</h3>
+      <h3 className="mb-3" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Actuel vs Simulé', 'Current vs Simulated')}</h3>
       <div style={{ height: 160 }} className="mb-3">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chart} margin={{ top: 4, right: 4, left: -18, bottom: 0 }} barGap={2}>
@@ -454,7 +454,7 @@ function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparab
     <div className="flex flex-col gap-4">
       {/* Graphique : résultat net par scénario */}
       <div className="rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-        <h3 className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}><Scale size={14} /> {`${t('Résultat net par scénario', 'Net profit by scenario')} (${m.millions})`}</h3>
+        <h3 className="mb-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}><Scale size={14} /> {`${t('Résultat net par scénario', 'Net profit by scenario')} (${m.millions})`}</h3>
         <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chart} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
@@ -499,7 +499,7 @@ function CompareScenarios({ comparables, money, nf, t }: { comparables: Comparab
             })}
             {/* Ligne score */}
             <tr style={{ background: 'color-mix(in srgb, var(--nx-cyan) 4%, transparent)' }}>
-              <td className="p-3" style={{ color: CYAN, fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Score de décision', 'Decision score')}</td>
+              <td className="p-3" style={{ color: 'var(--nx-label)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('Score de décision', 'Decision score')}</td>
               {comparables.map((c) => (
                 <td key={c.id} className="p-3 text-right" style={{ fontFamily: geist, fontSize: 16, color: c.id === winnerId ? POS : 'var(--nx-text)', fontWeight: c.id === winnerId ? 700 : 400 }}>{c.score}</td>
               ))}
@@ -526,7 +526,7 @@ function IconList({ icon: Icon, color, title, items }: { icon: typeof Lightbulb;
 function Card({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-      <h3 className="mb-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{title}</h3>
+      <h3 className="mb-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{title}</h3>
       {children}
     </div>
   )

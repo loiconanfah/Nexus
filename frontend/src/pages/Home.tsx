@@ -279,7 +279,7 @@ function Intro({ t }: { t: (fr: string, en: string) => string }) {
     <section className="rounded-sm border p-6 sm:p-8" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 rounded-full" style={{ background: CYAN }} />
-        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN_T }}>
+        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           {t('Intelligence des dépendances et d’impact', 'Dependency & impact intelligence')}
         </span>
       </div>
@@ -324,7 +324,7 @@ function Intro({ t }: { t: (fr: string, en: string) => string }) {
 function Pillar({ t, title, body }: { t: (fr: string, en: string) => string; title: [string, string]; body: [string, string] }) {
   return (
     <div className="p-5" style={{ background: 'var(--nx-surface-container)' }}>
-      <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: CYAN_T }}>{t(...title)}</h3>
+      <h3 style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t(...title)}</h3>
       <p className="mt-2" style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--nx-text-muted)' }}>{t(...body)}</p>
     </div>
   )
@@ -341,7 +341,7 @@ function VideoSection({ t }: { t: (fr: string, en: string) => string }) {
     <section className="rounded-sm border" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="flex items-center gap-2 border-b px-5 py-3" style={{ borderColor: 'var(--nx-border)' }}>
         <Video size={15} style={{ color: CYAN }} />
-        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
           {t('Démonstration en vidéo', 'Video walkthrough')}
         </span>
       </div>

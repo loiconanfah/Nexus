@@ -107,7 +107,7 @@ export function Dashboard() {
         <div>
           <div className="mb-1 flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: CYAN }} />
-            <span style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: CYAN_T }}>{t('Télémétrie en direct', 'Live Telemetry')}</span>
+            <span style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-label)' }}>{t('Télémétrie en direct', 'Live Telemetry')}</span>
           </div>
           <h2 className="mb-1" style={{ fontFamily: geist, fontSize: 24, letterSpacing: '-0.01em', color: 'var(--nx-text)' }}>{greeting(t)}, {t('équipe Opérations', 'Operations Team')}</h2>
           <p style={{ fontSize: 14, color: 'var(--nx-text-muted)' }}>
@@ -164,12 +164,17 @@ function ResiliencePanel({ score }: { score: number }) {
 }
 
 function Metric({ label, value, color, accent, icon }: { label: string; value: number | string; color: string; accent: string; icon: React.ReactNode }) {
+  // Zéro n'est pas une alerte : un compteur à 0 reste neutre, la couleur d'état
+  // est réservée à ce qui demande vraiment l'attention.
+  const quiet = value === 0 || value === '0' || value === '0%'
+  const tone = quiet ? 'var(--nx-text-muted)' : color
+  const edge = quiet ? 'var(--nx-border)' : accent
   return (
-    <div className="flex flex-col justify-between rounded-sm border p-3" style={{ background: 'var(--nx-surface-high)', borderColor: 'var(--nx-border)', borderLeft: `2px solid ${accent}` }}>
-      <span className="mb-4" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{label}</span>
+    <div className="flex flex-col justify-between rounded-md border p-3" style={{ background: 'var(--nx-surface-high)', borderColor: 'var(--nx-border)', borderLeft: `2px solid ${edge}` }}>
+      <span className="mb-4" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{label}</span>
       <div className="flex items-end justify-between">
-        <span style={{ fontFamily: geist, fontSize: 24, color }}>{value}</span>
-        <span style={{ color: accent }}>{icon}</span>
+        <span style={{ fontFamily: geist, fontSize: 24, color: tone }}>{value}</span>
+        <span style={{ color: quiet ? 'var(--nx-outline)' : accent }}>{icon}</span>
       </div>
     </div>
   )

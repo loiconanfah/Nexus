@@ -125,7 +125,7 @@ export function SetupBar() {
     <div className="border-b" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }} data-tour="setup">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-6 py-2.5">
         <div className="flex items-center gap-3">
-          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>{t('Mise en place', 'Setup')}</span>
+          <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Mise en place', 'Setup')}</span>
           <Progress percent={data.percent} width={140} />
           <span style={{ fontFamily: geist, fontSize: 14, fontWeight: 600 }}>{data.percent} %</span>
         </div>
@@ -167,7 +167,7 @@ function StepCard({ s, t, onGo }: { s: SetupStep; t: T; onGo: () => void }) {
       <span className="min-w-0">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium" style={{ textDecoration: s.done ? 'line-through' : 'none' }}>{text ? t(...text.title) : s.key}</span>
-          {s.required && !s.done && <span style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T, border: `1px solid ${CYAN}`, borderRadius: 3, padding: '0 4px' }}>{t('Requis', 'Required')}</span>}
+          {s.required && !s.done && <span style={{ fontFamily: mono, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)', border: `1px solid ${CYAN}`, borderRadius: 3, padding: '0 4px' }}>{t('Requis', 'Required')}</span>}
           {s.target > 1 && <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{Math.min(s.current, s.target)}/{s.target}</span>}
         </span>
         {text && <span className="mt-0.5 block text-xs" style={{ color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{t(...text.why)}</span>}
@@ -266,7 +266,7 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-10 z-[60] w-[min(380px,calc(100vw-32px))] overflow-hidden rounded-md border shadow-xl" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)' }}>
           <div className="flex items-center justify-between border-b px-4 py-2.5" style={{ borderColor: 'var(--nx-border)' }}>
-            <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN_T }}>
+            <span className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
               {t('Notifications', 'Notifications')} {isFetching && <Loader2 size={12} className="animate-spin" />}
             </span>
             {unread > 0 && <button onClick={markAll} className="text-xs" style={{ color: CYAN_T }}>{t('Tout marquer comme lu', 'Mark all as read')}</button>}

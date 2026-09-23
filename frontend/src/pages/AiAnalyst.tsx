@@ -192,7 +192,7 @@ function AnswerCard({ a, t, onView, onSimulate }: { a: AiAnswer; t: T; onView: (
                 </div>
                 {a.recommendedAction && <div style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>▸ {a.recommendedAction}</div>}
                 <div className="flex gap-2">
-                  <button onClick={onView} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5 transition-colors" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Eye size={13} /> {t('Sous-graphe', 'Subgraph')}</button>
+                  <button onClick={onView} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5 transition-colors" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-label)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Eye size={13} /> {t('Sous-graphe', 'Subgraph')}</button>
                   {a.affectedAssets.length > 0 && <button onClick={() => onSimulate(a.affectedAssets[0])} className="flex flex-1 items-center justify-center gap-1 rounded border px-3 py-1.5" style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text-muted)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}><Zap size={13} /> {t('Simuler', 'Simulate')}</button>}
                 </div>
               </div>

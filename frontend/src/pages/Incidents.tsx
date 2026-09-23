@@ -112,11 +112,11 @@ export function Incidents() {
 
               <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{incidentTrigger(i, t)}</p>
               <div className="rounded-sm p-2.5" style={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)' }}>
-                <span style={{ fontFamily: mono, fontSize: 10, color: CYAN_T, textTransform: 'uppercase' }}>{t('Action recommandée', 'Recommended action')}</span>
+                <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-label)', textTransform: 'uppercase' }}>{t('Action recommandée', 'Recommended action')}</span>
                 <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>{incidentReco(i, t)}</p>
               </div>
 
-              <button onClick={() => navigate(`/simulations?asset=${entityId}&name=${encodeURIComponent(i.entityName)}`)} className="mt-auto flex items-center justify-center gap-2 self-start rounded-sm px-3 py-1.5" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+              <button onClick={() => navigate(`/simulations?asset=${entityId}&name=${encodeURIComponent(i.entityName)}`)} className="mt-auto flex items-center justify-center gap-2 self-start rounded-sm px-3 py-1.5" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-label)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 <Play size={13} /> {t('Simuler le scénario', 'Simulate scenario')}
               </button>
             </div>

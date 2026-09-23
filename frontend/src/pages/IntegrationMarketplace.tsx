@@ -6,7 +6,6 @@ import { CATEGORIES, CONNECTORS, TIER_META, type Connector, type Tier } from '..
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
-const CYAN_T = 'var(--nx-cyan-text)'
 
 export function IntegrationMarketplace() {
   const navigate = useNavigate()
@@ -61,7 +60,7 @@ export function IntegrationMarketplace() {
       {byCat.map(({ cat, items }) => (
         <div key={cat.key}>
           <div className="mb-2 mt-2 flex items-center gap-2">
-            <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: CYAN_T }}>{lang === 'fr' ? cat.fr : cat.en}</span>
+            <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--nx-label)' }}>{lang === 'fr' ? cat.fr : cat.en}</span>
             <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>· {items.length}</span>
             <div className="h-px flex-1" style={{ background: 'var(--nx-border)' }} />
           </div>
@@ -98,10 +97,10 @@ function Card({ k, onImport, onKey }: { k: Connector; onImport: () => void; onKe
       <div className="flex items-center gap-2">
         {(k.tier === 'active' || k.tier === 'assisted') && (
           k.category === 'ai'
-            ? <a href={k.docUrl} target="_blank" rel="noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+            ? <a href={k.docUrl} target="_blank" rel="noreferrer" className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-label)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 <Plug size={13} /> {t('Configurer', 'Set up')}
               </a>
-            : <button onClick={onImport} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
+            : <button onClick={onImport} className="flex flex-1 items-center justify-center gap-1.5 rounded-sm py-2" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-cyan) 30%, transparent)', color: 'var(--nx-label)', fontFamily: mono, fontSize: 11, textTransform: 'uppercase' }}>
                 {k.tier === 'active' ? <><Sparkles size={13} /> {t('Connecter', 'Connect')}</> : <><Plug size={13} /> {t('Importer l’export', 'Import export')}</>}
               </button>
         )}

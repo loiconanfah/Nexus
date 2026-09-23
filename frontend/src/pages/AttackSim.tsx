@@ -316,7 +316,7 @@ export function AttackSim() {
 
             {/* Analyse IA + contre-mesures suggérées */}
             <div className="rounded-sm border p-3" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', background: 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)' }}>
-              <div className="mb-1 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-cyan-text)' }}><Sparkles size={12} /> {t('Analyse IA', 'AI analysis')}</div>
+              <div className="mb-1 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-label)' }}><Sparkles size={12} /> {t('Analyse IA', 'AI analysis')}</div>
               {explain.isPending ? <p style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Analyse…', 'Analyzing…')}</p> : explain.data ? (
                 <>
                   <p style={{ fontSize: 13, color: 'var(--nx-text)', lineHeight: 1.5 }}>{explain.data.narrative}</p>

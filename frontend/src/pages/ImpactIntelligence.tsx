@@ -132,7 +132,7 @@ export function ImpactIntelligence() {
           {/* Répartition par type */}
           {Object.keys(data.affectedByType).length > 0 && (
             <div className="rounded-lg border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-              <div className="mb-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{t('Cascade par type', 'Cascade by type')}</div>
+              <div className="mb-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Cascade par type', 'Cascade by type')}</div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(data.affectedByType).sort((a, b) => b[1] - a[1]).map(([type, n]) => (
                   <span key={type} className="rounded-md border px-2.5 py-1" style={{ borderColor: 'var(--nx-border)', fontSize: 12, color: 'var(--nx-text)' }}>
@@ -226,7 +226,7 @@ function Kpi({ label, value, sub, icon, accent }: { label: string; value: string
 function Panel({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="rounded-lg border p-5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
-      <h3 className="mb-3 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: CYAN }}>{icon} {title}</h3>
+      <h3 className="mb-3 flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{icon} {title}</h3>
       {children}
     </div>
   )

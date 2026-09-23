@@ -82,7 +82,7 @@ export function DigitalTwin() {
         {Object.entries(grouped).map(([type, items]) => (
           <div key={type}>
             <div className="mb-2 flex items-center gap-2">
-              <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: CYAN_T }}>{entityTypeLabel(type, t)}</span>
+              <span style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--nx-label)' }}>{entityTypeLabel(type, t)}</span>
               <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>· {items.length}</span>
               <div className="h-px flex-1" style={{ background: 'var(--nx-border)' }} />
             </div>

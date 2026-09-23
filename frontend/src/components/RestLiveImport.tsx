@@ -88,7 +88,7 @@ export function RestLiveImport({ onImported }: { onImported?: () => void }) {
 
       {columns.length > 0 && (
         <div className="mt-4 border-t pt-4" style={{ borderColor: 'var(--nx-border)' }}>
-          <div className="mb-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: CYAN }}>
+          <div className="mb-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
             {preview.data?.estimatedRows ?? '?'} {t('lignes ·', 'rows ·')} {columns.length} {t('colonnes détectées', 'columns detected')}
           </div>
           <div className="mb-3 flex flex-wrap gap-1.5">
