@@ -164,6 +164,42 @@ public static class DocumentAnalyzer
         }
     }
 
+    // ───── Ce que l'extrait nomme vraiment ─────
+
+    /// <summary>
+    /// Un nom est-il présent dans ce texte ? La comparaison ignore la casse et les
+    /// accents ; un nom de plusieurs mots est reconnu même sous sa forme courte
+    /// (« Core Banking » pour « Core Banking System ») dès que la plupart de ses
+    /// mots significatifs y figurent.
+    ///
+    /// Sert à n'envoyer au modèle que ce dont l'extrait parle. Lui décrire les
+    /// centaines d'éléments du reste du document coûte des jetons à CHAQUE section
+    /// sans rien apporter : un lien doit de toute façon s'appuyer sur l'extrait.
+    /// </summary>
+    public static bool MentionedIn(string foldedText, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var folded = Fold(name).Trim();
+        if (folded.Length == 0) return false;
+        if (folded.Length >= 3 && foldedText.Contains(folded, StringComparison.Ordinal)) return true;
+
+        var words = folded.Split([' ', '-', '_', '/', ',', '(', ')'], StringSplitOptions.RemoveEmptyEntries)
+            .Where(w => w.Length >= 4).ToList();
+        if (words.Count < 2) return false;
+        var seen = words.Count(w => foldedText.Contains(w, StringComparison.Ordinal));
+        return seen >= Math.Max(2, (int)Math.Ceiling(words.Count * 0.6));
+    }
+
+    /// <summary>Texte préparé une fois pour toutes les comparaisons de noms.</summary>
+    public static string Fold(string text) => TextFold.RemoveDiacritics(text).ToLowerInvariant();
+
+    /// <summary>Les éléments que cet extrait nomme, par leur nom ou par un alias.</summary>
+    public static IReadOnlyList<NamedEntity> Mentioned(string text, IReadOnlyList<NamedEntity> entities)
+    {
+        var folded = Fold(text);
+        return [.. entities.Where(e => MentionedIn(folded, e.Name) || (e.Aliases ?? []).Any(a => MentionedIn(folded, a)))];
+    }
+
     // ───────────────────────────── Consignes au modèle ─────────────────────────────
 
     public static string SystemPrompt(string lang)
@@ -227,11 +263,15 @@ public static class DocumentAnalyzer
 
     public static string UserPrompt(DocumentChunk chunk, int total, IEnumerable<string> knownNames)
     {
+        // Seuls les noms que l'extrait mentionne servent à harmoniser l'écriture ;
+        // lui réciter tout le graphe coûterait des jetons à chaque section.
+        var folded = Fold(chunk.Text);
         var known = new List<string>();
         var size = 0;
         foreach (var n in knownNames.Where(n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.OrdinalIgnoreCase))
         {
-            if (size + n.Length > 4000 || known.Count >= 250) break;
+            if (size + n.Length > 2000 || known.Count >= 120) break;
+            if (!MentionedIn(folded, n)) continue;
             known.Add(n); size += n.Length + 2;
         }
         var sb = new StringBuilder();
@@ -610,7 +650,11 @@ public static class DocumentAnalyzer
         if (entities.Count < 2) return [];
         // Une section faite de lignes structurées a déjà livré ses liens exacts.
         if (DocumentTables.IsMostlyStructured(chunk.Text, DocumentTables.Read(chunk.Text))) return [];
-        var parsed = ParseChunk(await complete(LinksSystemPrompt(), LinksUserPrompt(chunk, entities), ct));
+        // Seuls les éléments que l'extrait NOMME peuvent y être reliés : envoyer les
+        // autres coûte des jetons à chaque section et égare le modèle.
+        var present = Mentioned(chunk.Text, entities);
+        if (present.Count < 2) return [];
+        var parsed = ParseChunk(await complete(LinksSystemPrompt(), LinksUserPrompt(chunk, present), ct));
         if (parsed is null) return [];
 
         // Un lien peut viser un élément par son nom OU par un alias (identifiant de

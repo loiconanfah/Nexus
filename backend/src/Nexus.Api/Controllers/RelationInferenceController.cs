@@ -79,7 +79,7 @@ public sealed class RelationInferenceController(
 
         var user = $"CATALOGUE ({sample.Count} entités) :\n{catalog}\nRELATIONS DÉJÀ CONNUES :\n{(existingList.Length == 0 ? "(aucune)" : existingList.ToString())}";
 
-        var completion = await chat.CompleteAsync(system, Truncate(user, 9000), ct);
+        var completion = await chat.CompleteAsync(system, Truncate(user, 9000), ct, CompletionOptions.Extraction);
         if (string.IsNullOrWhiteSpace(completion))
             return Ok(new { usedAi = false, message = "Le modèle n'a pas répondu.", proposals = Array.Empty<object>() });
 

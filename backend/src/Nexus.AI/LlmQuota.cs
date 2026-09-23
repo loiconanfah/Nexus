@@ -42,10 +42,10 @@ public sealed class QuotaChatCompletion(
 {
     public bool IsConfigured => inner.IsConfigured;
 
-    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default)
+    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? completion = null)
     {
         var tid = tenant.TenantId;
-        if (tid is null) return await inner.CompleteAsync(system, user, ct); // hors requête tenant : pas de quota
+        if (tid is null) return await inner.CompleteAsync(system, user, ct, completion); // hors requête tenant : pas de quota
 
         var period = DateTime.UtcNow.ToString("yyyy-MM");
         var used = await usage.GetAsync(tid.Value, period, ct);
@@ -54,7 +54,7 @@ public sealed class QuotaChatCompletion(
         var overChars = options.MonthlyCharCap > 0 && used.Chars >= options.MonthlyCharCap;
         if (overCalls || overChars) return null; // quota atteint → repli déterministe
 
-        var reply = await inner.CompleteAsync(system, user, ct);
+        var reply = await inner.CompleteAsync(system, user, ct, completion);
         if (reply is not null)
         {
             var chars = system.Length + user.Length + reply.Length;

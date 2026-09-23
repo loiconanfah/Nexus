@@ -226,7 +226,8 @@ export interface ExtractedRelation { source: string; sourceType: string; target:
 
 // Intelligence documentaire : lecture, analyse par sections, consolidation.
 export interface ParsedDocument { fileName: string; format: 'docx' | 'xlsx' | 'csv' | 'pdf' | 'html' | 'text'; text: string; characters: number; tables: number; pages: number; sections: number; warnings: string[] }
-export interface DocumentSection { index: number; section: string; text: string; characters: number }
+/** `structured` : section faite de lignes de tableau, lue exactement sans IA. */
+export interface DocumentSection { index: number; section: string; text: string; characters: number; structured?: boolean }
 export interface DocumentPlan { aiAvailable: boolean; total: number; truncated: boolean; sections: DocumentSection[] }
 export interface RawEntity { name: string; type: string; criticality: number; aliases: string[]; description?: string | null }
 export interface DocumentRisk { title: string; severity: 'high' | 'medium' | 'low'; detail: string; entities: string[]; evidence?: string | null }
@@ -728,4 +729,14 @@ export interface WorkspaceResetResult {
 export interface WorkspaceRestoreResult {
   entitiesRestored: number
   relationsRestored: number
+}
+
+/** Consommation IA du mois courant (0 en plafond = illimité). */
+export interface AiUsage {
+  period: string
+  calls: number
+  chars: number
+  callCap: number
+  charCap: number
+  capReached: boolean
 }

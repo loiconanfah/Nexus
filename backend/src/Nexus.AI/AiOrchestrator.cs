@@ -219,7 +219,7 @@ public sealed class AiOrchestrator(
             "Tu es NEXUS Analyst. Réponds en français, de façon concise et professionnelle, " +
             "UNIQUEMENT à partir des FAITS fournis. N'invente aucune donnée. Ne contredis jamais les chiffres.";
 
-        var completion = await chat.CompleteAsync(system, $"Question : {answer.Question}\n\n{context}", ct);
+        var completion = await chat.CompleteAsync(system, $"Question : {answer.Question}\n\n{context}", ct, CompletionOptions.Prose);
         return string.IsNullOrWhiteSpace(completion)
             ? answer
             : answer with { Answer = completion.Trim(), LlmNaturalized = true };

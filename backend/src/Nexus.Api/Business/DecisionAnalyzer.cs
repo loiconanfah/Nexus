@@ -80,7 +80,7 @@ public sealed class DecisionAnalyzer(IChatCompletion chat)
             "N'invente AUCUN chiffre : réutilise uniquement ceux fournis. " +
             $"Rédige en {(lang == "en" ? "anglais" : "français")}.";
 
-        var raw = await chat.CompleteAsync(system, facts, ct);
+        var raw = await chat.CompleteAsync(system, facts, ct, CompletionOptions.Structured);
         if (string.IsNullOrWhiteSpace(raw)) return null;
         try
         {

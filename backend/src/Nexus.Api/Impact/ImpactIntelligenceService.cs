@@ -149,7 +149,7 @@ public sealed class ImpactIntelligenceService(
                 "et le TYPE de scénario. Réponds UNIQUEMENT en JSON strict : {\"subject\":\"...\",\"scenario\":\"supplier|employee|database|application|server|network|location|cloud|cyber|data|power|communication|generic\"}. " +
                 "Le subject doit être le NOM PROPRE ou l'expression la plus discriminante (ex. « fournisseur Acme » → subject:\"Acme\"). " +
                 "Si aucun scénario évident, mets \"generic\".";
-            var raw = await chat.CompleteAsync(system, $"Question : « {question} »", ct);
+            var raw = await chat.CompleteAsync(system, $"Question : « {question} »", ct, CompletionOptions.Structured);
             var parsed = TryParseExtract(raw);
             if (parsed is not null) return parsed.Value;
         }
@@ -272,7 +272,7 @@ public sealed class ImpactIntelligenceService(
                 "La narrative explique en langage métier ce qui est exposé et pourquoi c'est grave (chiffres à l'appui). " +
                 "Donne EXACTEMENT 3 mitigations concrètes et actionnables, priorisées, liées aux dépendances dangereuses si présentes. " +
                 $"Rédige en {(lang == "en" ? "anglais" : "français")}.";
-            var raw = await chat.CompleteAsync(system, JsonSerializer.Serialize(ctx), ct);
+            var raw = await chat.CompleteAsync(system, JsonSerializer.Serialize(ctx), ct, CompletionOptions.Structured);
             var parsed = TryParseNarrative(raw);
             if (parsed is not null) return (parsed.Value.Item1, parsed.Value.Item2, true);
         }

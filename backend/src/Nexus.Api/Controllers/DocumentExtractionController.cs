@@ -104,7 +104,17 @@ public sealed class DocumentExtractionController(
             aiAvailable = chat.IsConfigured,
             total = all.Count,
             truncated = all.Count > kept.Count,
-            sections = kept.Select(c => new { c.Index, c.Section, c.Text, characters = c.Text.Length }),
+            // « structured » : la section est faite de lignes de tableau, lues
+            // exactement sans IA. Le client n'a alors aucune passe de liens à
+            // demander — c'est autant d'appels et de jetons épargnés.
+            sections = kept.Select(c => new
+            {
+                c.Index,
+                c.Section,
+                c.Text,
+                characters = c.Text.Length,
+                structured = DocumentTables.IsMostlyStructured(c.Text, DocumentTables.Read(c.Text)),
+            }),
         });
     }
 
@@ -122,7 +132,7 @@ public sealed class DocumentExtractionController(
         var known = graph.Select(g => g.Name).Concat(req.KnownNames ?? []);
         var answered = false;
         var parsed = await DocumentAnalyzer.ExtractSectionAsync(chunk, Math.Max(1, req.Total), known, lang,
-            async (s, u, t) => { var r = await chat.CompleteAsync(s, u, t); answered |= r is not null; return r; }, ct);
+            async (s, u, t) => { var r = await chat.CompleteAsync(s, u, t, CompletionOptions.Extraction); answered |= r is not null; return r; }, ct);
         if (parsed is null)
             return Ok(new
             {
@@ -146,7 +156,7 @@ public sealed class DocumentExtractionController(
         if (!chat.IsConfigured) return Ok(new { ok = false, message = NoAi(Lang(req.Lang)), relations = Array.Empty<object>() });
         var chunk = new DocumentChunk(req.Index, req.Section ?? "", req.Text.Length > 12_000 ? req.Text[..12_000] : req.Text);
         var entities = req.Entities.Where(e => !string.IsNullOrWhiteSpace(e.Name)).Take(400).ToList();
-        var relations = await DocumentAnalyzer.ExtractLinksAsync(chunk, entities, (s, u, t) => chat.CompleteAsync(s, u, t), ct);
+        var relations = await DocumentAnalyzer.ExtractLinksAsync(chunk, entities, (s, u, t) => chat.CompleteAsync(s, u, t, CompletionOptions.Extraction), ct);
         return Ok(new { ok = true, relations });
     }
 
@@ -159,7 +169,7 @@ public sealed class DocumentExtractionController(
         var graph = await repository.GetEntitiesAsync(tenant, ct: ct);
         var edges = await repository.GetRelationsAsync(tenant, ct: ct);
         var groups = chat.IsConfigured
-            ? await DocumentAnalyzer.ReconcileAsync(req.Parts, (s, u, t) => chat.CompleteAsync(s, u, t), ct)
+            ? await DocumentAnalyzer.ReconcileAsync(req.Parts, (s, u, t) => chat.CompleteAsync(s, u, t, CompletionOptions.Extraction), ct)
             : [];
         var result = DocumentAnalyzer.Consolidate(req.Parts, graph, edges, Lang(req.Lang), Math.Max(1, req.Sections), req.Warnings, groups, req.Analyzed);
         return Ok(result);
@@ -181,7 +191,7 @@ public sealed class DocumentExtractionController(
         var text = req.Text.Length > DocumentTextExtractor.MaxTextChars ? req.Text[..DocumentTextExtractor.MaxTextChars] : req.Text;
         var graph = await repository.GetEntitiesAsync(tenant, ct: ct);
         var edges = await repository.GetRelationsAsync(tenant, ct: ct);
-        var result = await DocumentAnalyzer.RunAsync(text, (s, u, c) => chat.CompleteAsync(s, u, c), graph, edges, lang, ct);
+        var result = await DocumentAnalyzer.RunAsync(text, (s, u, c) => chat.CompleteAsync(s, u, c, CompletionOptions.Extraction), graph, edges, lang, ct);
         var usedAi = result.Stats.SectionsAnalyzed > 0;
         return Ok(new
         {

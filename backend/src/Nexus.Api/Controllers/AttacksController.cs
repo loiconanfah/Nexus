@@ -46,7 +46,7 @@ public sealed class AttacksController(ITenantProvider tenantProvider, IChatCompl
             "risks = 2-3 risques concrets (exfiltration de données, mouvement latéral, détournement d'agent, persistance). " +
             "countermeasures = 3 contre-mesures actionnables et PRIORISÉES (isoler tel élément, révoquer un accès, segmenter, surveiller, limiter les permissions d'agent). " +
             $"Sois concret et opérationnel. Rédige en {(lang == "en" ? "anglais" : "français")}.";
-        var raw = await chat.CompleteAsync(system, JsonSerializer.Serialize(ctx), ct);
+        var raw = await chat.CompleteAsync(system, JsonSerializer.Serialize(ctx), ct, CompletionOptions.Structured);
         var parsed = TryParse(raw);
         if (parsed is null)
             return Ok(new { usedAi = false, narrative = Heuristic(req, lang), risks = Array.Empty<string>(), countermeasures = Mitigations(req, lang) });

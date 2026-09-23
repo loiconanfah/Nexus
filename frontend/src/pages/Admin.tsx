@@ -205,6 +205,9 @@ function AiIntegration() {
   const [model, setModel] = useState('')
   const [testMsg, setTestMsg] = useState<{ ok: boolean; message: string } | null>(null)
   const [models, setModels] = useState<string[]>([])
+  // Ce que l'espace a consommé ce mois-ci : sans ce chiffre, on ne peut que
+  // supposer qu'une analyse coûte cher.
+  const { data: usage } = useQuery({ queryKey: ['aiUsage'], queryFn: api.aiUsage, refetchInterval: 60000 })
 
   const loadModels = useMutation({
     mutationFn: api.aiModels,
@@ -245,6 +248,29 @@ function AiIntegration() {
       </div>
 
       <div className="flex flex-col gap-3 p-4">
+        {usage && (usage.calls > 0 || usage.chars > 0) && (
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-sm border px-3 py-2"
+            style={{ borderColor: usage.capReached ? 'color-mix(in srgb, var(--nx-danger) 35%, transparent)' : 'var(--nx-border)', background: 'var(--nx-surface)' }}>
+            <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
+              {t(`Consommation ${usage.period}`, `Usage ${usage.period}`)}
+            </span>
+            <span style={{ fontFamily: mono, fontSize: 11.5, color: 'var(--nx-text)' }}>
+              {usage.calls} {t('appels', 'calls')}{usage.callCap > 0 ? ` / ${usage.callCap}` : ''}
+            </span>
+            <span style={{ fontFamily: mono, fontSize: 11.5, color: 'var(--nx-text)' }}>
+              {Math.round(usage.chars / 1000)} k {t('caractères', 'characters')}{usage.charCap > 0 ? ` / ${Math.round(usage.charCap / 1000)} k` : ''}
+            </span>
+            {usage.capReached && (
+              <span style={{ fontSize: 12, color: 'var(--nx-danger)' }}>
+                {t('Plafond mensuel atteint : les analyses repassent en mode déterministe.', 'Monthly cap reached: analyses fall back to deterministic mode.')}
+              </span>
+            )}
+            <span style={{ fontSize: 11.5, color: 'var(--nx-text-muted)' }}>
+              {t('Compte ce qui est envoyé et reçu par Lenexux ; la facturation de votre fournisseur peut y ajouter ses propres jetons de réflexion.',
+                'Counts what Lenexux sends and receives; your provider may bill its own reasoning tokens on top.')}
+            </span>
+          </div>
+        )}
         {shared && (
           <div className="flex items-start gap-2 rounded-sm p-3" style={{ background: 'color-mix(in srgb, var(--nx-success) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-success) 30%, transparent)' }}>
             <Check size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--nx-success)' }} />

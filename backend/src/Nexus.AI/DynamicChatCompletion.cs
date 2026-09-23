@@ -57,8 +57,8 @@ public sealed class DynamicChatCompletion(AiRuntimeConfig config, IHttpClientFac
         }
     }
 
-    public Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default)
-        => Resolve().CompleteAsync(system, user, ct);
+    public Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? options = null)
+        => Resolve().CompleteAsync(system, user, ct, options);
 
     /// <summary>Teste réellement la connexion au fournisseur configuré.</summary>
     public async Task<(bool Ok, string Message)> TestAsync(CancellationToken ct = default)
@@ -215,13 +215,17 @@ internal sealed class OpenAiCompatibleCompletion(ChatClient client) : IChatCompl
 {
     public bool IsConfigured => true;
 
-    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default)
+    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? options = null)
     {
         try
         {
+            var chatOptions = new ChatCompletionOptions { Temperature = options?.Json == true ? 0.1f : 0.2f };
+            if (options?.MaxTokens is { } max) chatOptions.MaxOutputTokenCount = max;
+            // Mode JSON : la réponse ne peut plus être entourée de texte ni de balises.
+            if (options?.Json == true) chatOptions.ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat();
             var response = await client.CompleteChatAsync(
                 [new SystemChatMessage(system), new UserChatMessage(user)],
-                new ChatCompletionOptions { Temperature = 0.2f },
+                chatOptions,
                 ct);
             return response.Value.Content.Count > 0 ? response.Value.Content[0].Text : null;
         }

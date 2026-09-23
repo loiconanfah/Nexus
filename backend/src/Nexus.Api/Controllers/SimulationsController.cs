@@ -120,7 +120,7 @@ public sealed class SimulationsController(
             "(directs vs indirects, chiffres à l'appui), et pourquoi certains éléments sont épargnés par CE type d'incident. " +
             "Donne 2-3 risques concrets et 3 mitigations actionnables et priorisées. " +
             $"Sois concret, sans jargon inutile. Rédige en {(lang == "en" ? "anglais" : "français")}.";
-        var raw = await chat.CompleteAsync(system, JsonSerializer.Serialize(ctx), ct);
+        var raw = await chat.CompleteAsync(system, JsonSerializer.Serialize(ctx), ct, CompletionOptions.Structured);
         var parsed = TryParse(raw);
         if (parsed is null)
             return Ok(new { usedAi = false, narrative = HeuristicNarrative(req, lang), risks = Array.Empty<string>(), mitigations = HeuristicMitigations(req, lang) });

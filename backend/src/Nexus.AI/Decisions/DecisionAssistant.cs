@@ -411,7 +411,7 @@ public sealed class DecisionAssistant(IChatCompletion chat)
             $"Relations autour des éléments concernés :\n{string.Join("\n", around)}\n\n" +
             $"Catalogue des éléments existants :\n{catalog}";
 
-        var raw = await chat.CompleteAsync(system, user, ct);
+        var raw = await chat.CompleteAsync(system, user, ct, CompletionOptions.Structured);
         return string.IsNullOrWhiteSpace(raw) ? null : ParseAi(raw, g);
     }
 

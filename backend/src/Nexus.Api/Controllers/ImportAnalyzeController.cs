@@ -38,7 +38,7 @@ public sealed class ImportAnalyzeController(IChatCompletion chat) : ControllerBa
             $"Types d'entités autorisés : {EntityTypes}. Types de relations autorisés : {RelationTypes}. " +
             "N'invente jamais un nom de colonne. Choisis le defaultEntityType le plus probable pour ces données.";
 
-        var completion = await chat.CompleteAsync(system, "Échantillon :\n" + Truncate(req.Sample, 2500), ct);
+        var completion = await chat.CompleteAsync(system, "Échantillon :\n" + Truncate(req.Sample, 2500), ct, CompletionOptions.Structured);
         if (string.IsNullOrWhiteSpace(completion))
             return Ok(new { usedAi = false, message = "Le modèle n'a pas répondu — mapping heuristique.", mapping = (object?)null });
 

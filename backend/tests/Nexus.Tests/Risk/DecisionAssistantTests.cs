@@ -31,7 +31,7 @@ public class DecisionAssistantTests
     {
         public bool IsConfigured => answer is not null;
         public string? LastUser { get; private set; }
-        public Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default) { LastUser = user; return Task.FromResult(answer); }
+        public Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? options = null) { LastUser = user; return Task.FromResult(answer); }
     }
 
     [Fact]

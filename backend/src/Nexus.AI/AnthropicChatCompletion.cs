@@ -15,7 +15,7 @@ public sealed class AnthropicChatCompletion(HttpClient http, string apiKey, stri
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(apiKey);
 
-    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default)
+    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? options = null)
     {
         try
         {
@@ -25,7 +25,7 @@ public sealed class AnthropicChatCompletion(HttpClient http, string apiKey, stri
             req.Content = JsonContent.Create(new
             {
                 model,
-                max_tokens = 1024,
+                max_tokens = options?.MaxTokens ?? 1024,
                 system,
                 messages = new[] { new { role = "user", content = user } },
             });

@@ -12,6 +12,29 @@ import type { ChunkExtraction, DocumentAnalysis, ImportResult } from './types'
 type Lang = 'fr' | 'en'
 const T = (lang: Lang, fr: string, en: string) => (lang === 'en' ? en : fr)
 
+/**
+ * Nombre de sections traitées en parallèle. Une à la fois, l'analyse d'un
+ * document de dix sections attend dix allers-retours bout à bout ; trois à la
+ * fois divise l'attente d'autant, sans déclencher les limites de débit des
+ * paliers gratuits.
+ */
+const PARALLEL = 3
+
+/** Exécute `work` sur chaque élément, `limit` à la fois, en gardant l'ordre des résultats. */
+async function mapLimit<TIn, TOut>(items: TIn[], limit: number, work: (item: TIn, index: number) => Promise<TOut>): Promise<TOut[]> {
+  const out = new Array<TOut>(items.length)
+  let next = 0
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const i = next++
+      if (i >= items.length) return
+      out[i] = await work(items[i], i)
+    }
+  })
+  await Promise.all(runners)
+  return out
+}
+
 // Dernière analyse documentaire : l'écran la retrouve en revenant, même si
 // l'analyse s'est terminée pendant qu'on était ailleurs.
 let lastDocument: { fileName: string; analysis: DocumentAnalysis } | null = null
@@ -41,21 +64,26 @@ export function startDocumentAnalysis(opts: { text: string; lang: Lang; fileName
       }
 
       const n = plan.sections.length
-      job.total(n * 2 + 1)
+      // Les sections structurées sont lues exactement, sans IA : aucune passe de
+      // liens à demander pour elles.
+      const linkable = plan.sections.filter((s) => !s.structured)
+      job.total(n + linkable.length + 1)
       const warnings: string[] = []
       if (plan.truncated) warnings.push(T(lang, `Document très long : les ${n} premières sections sur ${plan.total} sont analysées.`, `Very long document: the first ${n} sections of ${plan.total} are analyzed.`))
 
-      // 1. Éléments et risques, section par section.
+      // 1. Éléments et risques, plusieurs sections à la fois.
       const parts: ChunkExtraction[] = []
-      const known: string[] = []
-      for (const s of plan.sections) {
-        if (ctrl.signal.aborted) { job.cancelled(); return }
-        job.progress(s.index, T(lang, `Éléments et risques, section ${s.index + 1} sur ${n}`, `Elements and risks, section ${s.index + 1} of ${n}`))
-        const r = await api.extractSection({ index: s.index, total: n, section: s.section, text: s.text, knownNames: known, lang }, ctrl.signal)
-        if (!r.ok || !r.extraction) { warnings.push(T(lang, `Section ${s.index + 1} non analysée : ${r.message ?? ''}`, `Section ${s.index + 1} not analyzed: ${r.message ?? ''}`)); continue }
-        parts.push(r.extraction)
-        known.push(...r.extraction.entities.map((e) => e.name))
-      }
+      let done = 0
+      const extracted = await mapLimit(plan.sections, PARALLEL, async (s) => {
+        if (ctrl.signal.aborted) return null
+        const r = await api.extractSection({ index: s.index, total: n, section: s.section, text: s.text, knownNames: [], lang }, ctrl.signal)
+        done++
+        job.progress(done, T(lang, `Éléments et risques, ${done} section(s) sur ${n}`, `Elements and risks, ${done} section(s) of ${n}`))
+        if (!r.ok || !r.extraction) { warnings.push(T(lang, `Section ${s.index + 1} non analysée : ${r.message ?? ''}`, `Section ${s.index + 1} not analyzed: ${r.message ?? ''}`)); return null }
+        return r.extraction
+      })
+      if (ctrl.signal.aborted) { job.cancelled(); return }
+      for (const e of extracted) if (e) parts.push(e)
       if (parts.length === 0) {
         job.fail(T(lang, 'Aucune section n’a pu être analysée', 'No section could be analyzed'))
         notify({ kind: 'error', title: T(lang, 'Analyse impossible', 'Analysis failed'), message: warnings.at(-1) })
@@ -72,15 +100,19 @@ export function startDocumentAnalysis(opts: { text: string; lang: Lang; fileName
       }
       const entities = [...byName.values()]
       const linkParts: ChunkExtraction[] = []
-      for (const s of plan.sections) {
-        if (ctrl.signal.aborted) { job.cancelled(); return }
-        job.progress(n + s.index, T(lang, `Liens entre éléments, section ${s.index + 1} sur ${n}`, `Links between elements, section ${s.index + 1} of ${n}`))
+      let linked = 0
+      const links = await mapLimit(linkable, PARALLEL, async (s) => {
+        if (ctrl.signal.aborted) return null
         const r = await api.linkSection({ index: s.index, section: s.section, text: s.text, entities, lang }, ctrl.signal)
-        if (r.ok && r.relations.length) linkParts.push({ entities: [], relations: r.relations, risks: [] })
-      }
+        linked++
+        job.progress(n + linked, T(lang, `Liens entre éléments, ${linked} section(s) sur ${linkable.length}`, `Links between elements, ${linked} section(s) of ${linkable.length}`))
+        return r.ok && r.relations.length ? r.relations : null
+      })
+      if (ctrl.signal.aborted) { job.cancelled(); return }
+      for (const r of links) if (r) linkParts.push({ entities: [], relations: r, risks: [] })
 
       // 3. Fusion et recoupement avec le graphe.
-      job.progress(n * 2, T(lang, 'Fusion des doublons et recoupement avec votre graphe', 'Merging duplicates and cross-referencing your graph'))
+      job.progress(n + linkable.length, T(lang, 'Fusion des doublons et recoupement avec votre graphe', 'Merging duplicates and cross-referencing your graph'))
       const analysis = await api.consolidateDocument({ parts: [...parts, ...linkParts], sections: n, analyzed: parts.length, warnings, lang }, ctrl.signal)
       lastDocument = { fileName: opts.fileName ?? '', analysis }
       opts.onDone?.(analysis)

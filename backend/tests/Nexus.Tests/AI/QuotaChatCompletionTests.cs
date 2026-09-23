@@ -12,7 +12,7 @@ public class QuotaChatCompletionTests
     {
         public int Calls;
         public bool IsConfigured => true;
-        public Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default)
+        public Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? options = null)
         { Calls++; return Task.FromResult(reply); }
     }
 

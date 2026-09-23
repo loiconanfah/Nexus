@@ -58,7 +58,7 @@ public sealed class DecisionInterpreter(IChatCompletion chat)
             $"Leviers actuels : revenu {revenue:F0} {currency}, effectif {d.Headcount}, prix moyen {d.AvgPrice:F0}, " +
             $"salaire moyen {d.AvgSalary:F0}, marketing {d.Marketing:F0}, coût des services {d.CogsPercent:P0}.";
 
-        var raw = await chat.CompleteAsync(system, user, ct);
+        var raw = await chat.CompleteAsync(system, user, ct, CompletionOptions.Structured);
         if (string.IsNullOrWhiteSpace(raw)) return null;
 
         try

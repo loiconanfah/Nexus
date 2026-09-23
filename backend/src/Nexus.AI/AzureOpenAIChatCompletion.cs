@@ -27,7 +27,7 @@ public sealed class AzureOpenAIChatCompletion : IChatCompletion
 
     public bool IsConfigured => _client is not null;
 
-    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default)
+    public async Task<string?> CompleteAsync(string system, string user, CancellationToken ct = default, CompletionOptions? options = null)
     {
         if (_client is null)
         {
@@ -36,9 +36,12 @@ public sealed class AzureOpenAIChatCompletion : IChatCompletion
 
         try
         {
+            var chatOptions = new ChatCompletionOptions { Temperature = options?.Json == true ? 0.1f : 0.2f };
+            if (options?.MaxTokens is { } max) chatOptions.MaxOutputTokenCount = max;
+            if (options?.Json == true) chatOptions.ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat();
             var response = await _client.CompleteChatAsync(
                 [new SystemChatMessage(system), new UserChatMessage(user)],
-                new ChatCompletionOptions { Temperature = 0.2f },
+                chatOptions,
                 ct);
 
             return response.Value.Content.Count > 0 ? response.Value.Content[0].Text : null;
