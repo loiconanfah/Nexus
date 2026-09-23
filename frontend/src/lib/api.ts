@@ -187,7 +187,12 @@ export const api = {
 
   aiConfig: () =>
     fetch(`${BASE}/ai/config`, { headers: headers(false) })
-      .then(handle<{ providers: string[]; provider: string; configured: boolean; model: string; endpointHost: string | null; source?: 'own' | 'shared' | 'none' }>),
+      .then(handle<{
+        providers: string[]; provider: string; configured: boolean; model: string; endpointHost: string | null
+        source?: 'own' | 'shared' | 'none'
+        // Ce que l'espace obtiendrait s'il abandonnait sa propre clé.
+        sharedAvailable?: boolean; sharedProvider?: string; sharedModel?: string
+      }>),
 
   /** Logo de l'organisation (data URL) ; null le retire. Réservé aux administrateurs. */
   setOrganizationLogo: (dataUrl: string | null) =>
@@ -200,6 +205,11 @@ export const api = {
 
   clearAiKey: () =>
     fetch(`${BASE}/ai/config`, { method: 'DELETE', headers: headers(false) }).then(handle<{ configured: boolean }>),
+
+  /** Bascule vers la clé de l'opérateur : nommée par son effet, pas par le geste. */
+  useSharedAiKey: () =>
+    fetch(`${BASE}/ai/config/use-shared`, { method: 'POST', headers: headers(false) })
+      .then(handle<{ configured: boolean; source: string; provider: string; model: string }>),
 
   testAiKey: () =>
     fetch(`${BASE}/ai/config/test`, { method: 'POST', headers: headers(false) }).then(handle<{ ok: boolean; message: string }>),

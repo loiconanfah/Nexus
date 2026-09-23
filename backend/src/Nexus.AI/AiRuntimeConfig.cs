@@ -79,6 +79,16 @@ public sealed class AiRuntimeConfig
 
     public bool IsConfigured => Configured(Resolve());
 
+    /// <summary>
+    /// La clé de l'opérateur existe-t-elle, et chez quel fournisseur ? Un espace
+    /// doit pouvoir savoir CE QU'IL OBTIENDRA en abandonnant sa propre clé : sans
+    /// cela, l'écran ne peut que lui proposer un saut dans le vide.
+    /// </summary>
+    public (bool Available, string Provider, string Model) SharedStatus()
+        => _cache.TryGetValue(Global, out var g) && Configured(g)
+            ? (true, g.Provider, Model(g))
+            : (false, "", "");
+
     public (string Provider, string? ApiKey, string? Endpoint, string Model) Snapshot()
     {
         var e = Resolve();

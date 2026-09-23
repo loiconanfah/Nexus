@@ -62,6 +62,10 @@ public sealed class AiConfigController(
             endpointHost = host,
             // « shared » : l'espace n'a pas de cle propre et utilise celle de Lenexux.
             source = config.Source(),
+            // Ce que l'espace obtiendrait s'il abandonnait sa propre cle.
+            sharedAvailable = config.SharedStatus().Available,
+            sharedProvider = config.SharedStatus().Provider,
+            sharedModel = config.SharedStatus().Model,
         });
     }
 
@@ -118,6 +122,24 @@ public sealed class AiConfigController(
         // Apres effacement, la cle partagee peut encore s'appliquer : on renvoie l'etat reel.
         var (_, configured, _, _) = config.Status();
         return Ok(new { configured, source = config.Source() });
+    }
+
+    /// <summary>
+    /// Bascule explicite vers la clé de l'opérateur. Techniquement, c'est
+    /// l'effacement de la clé propre à l'espace ; du point de vue de l'utilisateur,
+    /// ce n'est pas la même chose : « effacer » ne dit pas ce qu'on obtient après.
+    /// L'opération est donc nommée par son effet, et refusée si aucune clé
+    /// d'opérateur n'existe, pour ne pas priver l'espace d'IA sans le prévenir.
+    /// </summary>
+    [HttpPost("use-shared")]
+    public IActionResult UseShared()
+    {
+        if (!RequireAdmin(out var forbidden)) return forbidden;
+        var shared = config.SharedStatus();
+        if (!shared.Available) return BadRequest(new { error = "no_shared_key" });
+        config.Clear();
+        var (provider, configured, model, _) = config.Status();
+        return Ok(new { configured, source = config.Source(), provider, model });
     }
 
     [HttpPost("test")]

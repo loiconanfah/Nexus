@@ -223,6 +223,23 @@ function AiIntegration() {
   const pickModel = useMutation({ mutationFn: (m: string) => api.setAiModel(m), onSuccess: () => { setTestMsg(null); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
   const autoPick = useMutation({ mutationFn: api.autoPickModel, onSuccess: (r) => { setTestMsg({ ok: r.ok, message: r.ok ? `Modèle auto-sélectionné : ${r.model}` : (r.message ?? 'Aucun modèle utilisable.') }); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
   const clear = useMutation({ mutationFn: api.clearAiKey, onSuccess: () => { setTestMsg(null); setModels([]); qc.invalidateQueries({ queryKey: ['aiConfig'] }) } })
+  // Bascule vers la clé de l'opérateur. « Effacer » décrivait le geste ; ce qui
+  // compte pour l'utilisateur est ce qu'il obtient APRÈS.
+  const [confirmShared, setConfirmShared] = useState(false)
+  const useShared = useMutation({
+    mutationFn: api.useSharedAiKey,
+    onSuccess: (r) => {
+      setConfirmShared(false); setTestMsg(null); setModels([]); setProvider(''); setModel('')
+      qc.invalidateQueries({ queryKey: ['aiConfig'] })
+      notify({
+        kind: 'success',
+        title: t('Vous utilisez la clé fournie par Lenexux', 'You are now using the key provided by Lenexux'),
+        message: t(`Fournisseur ${providerLabel(r.provider)}, modèle ${r.model}. Votre clé a été retirée de nos serveurs.`,
+          `Provider ${providerLabel(r.provider)}, model ${r.model}. Your key was removed from our servers.`),
+      })
+    },
+    onError: (e) => notify({ kind: 'error', title: t('Bascule impossible', 'Could not switch'), message: (e as Error).message.slice(0, 160) }),
+  })
 
   const providerLabel = (p: string) => p === 'anthropic' ? 'Claude (Anthropic)' : p === 'azure-openai' ? 'Azure OpenAI' : p === 'openai' ? 'OpenAI' : p === 'gemini' ? 'Google Gemini' : p === 'openrouter' ? 'OpenRouter' : p
   // OpenRouter ne reçoit pas UN modèle mais une CHAÎNE : si le premier flanche,
@@ -361,6 +378,32 @@ function AiIntegration() {
           </label>
         </div>
 
+        {/* Un espace qui a sa propre clé doit pouvoir revenir à celle de
+            l'opérateur SANS deviner que cela s'appelle « effacer ». */}
+        {configured && cfg?.sharedAvailable && !confirmShared && (
+          <button onClick={() => setConfirmShared(true)} className="flex items-center gap-2 self-start rounded-sm border px-3 py-2"
+            style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)', background: 'color-mix(in srgb, var(--nx-cyan) 8%, transparent)', color: CYAN_T, fontFamily: mono, fontSize: 12 }}>
+            <Sparkles size={14} /> {t(`Utiliser la clé fournie par Lenexux (${providerLabel(cfg.sharedProvider ?? '')})`, `Use the key provided by Lenexux (${providerLabel(cfg.sharedProvider ?? '')})`)}
+          </button>
+        )}
+        {confirmShared && (
+          <div className="flex flex-col gap-2 rounded-sm border p-3" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 35%, transparent)', background: 'var(--nx-surface)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--nx-text)' }}>
+              {t('Passer sur la clé fournie par Lenexux ?', 'Switch to the key provided by Lenexux?')}
+            </span>
+            <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.6 }}>
+              {t(`Votre clé ${providerLabel(cfg!.provider)} sera retirée de nos serveurs. Votre espace utilisera ${providerLabel(cfg?.sharedProvider ?? '')}, avec le modèle choisi par l’opérateur (${cfg?.sharedModel ?? ''}) : c’est lui qui paie les appels, donc lui qui choisit le modèle. Vos appels seront alors soumis au plafond mensuel de cette clé. Vous pourrez reposer votre clé à tout moment.`,
+                `Your ${providerLabel(cfg!.provider)} key will be removed from our servers. Your workspace will use ${providerLabel(cfg?.sharedProvider ?? '')}, with the model chosen by the operator (${cfg?.sharedModel ?? ''}): they pay for the calls, so they choose the model. Your calls will then be subject to that key’s monthly cap. You can add your key back at any time.`)}
+            </span>
+            <div className="flex items-center gap-3">
+              <button onClick={() => useShared.mutate()} disabled={useShared.isPending} className="flex items-center gap-2 rounded-sm px-3 py-1.5"
+                style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 12.5, fontWeight: 600 }}>
+                {useShared.isPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {t('Oui, basculer', 'Yes, switch')}
+              </button>
+              <button onClick={() => setConfirmShared(false)} style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+            </div>
+          </div>
+        )}
         {pendingSwitch && (
           <div className="flex items-start gap-2 rounded-sm p-2.5" style={{ background: 'color-mix(in srgb, var(--nx-warning) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-warning) 35%, transparent)' }}>
             <AlertTriangle size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--nx-warning)' }} />
