@@ -319,8 +319,8 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
             <Bullets items={[
               'Comptes & rôles : plusieurs personnes partagent le MÊME espace de travail. Deux rôles, administrateur (configure : comptes, sondes, IA, réglages d’impact) et membre (consulte et analyse). Un espace conserve toujours au moins un administrateur.',
               'Collectors : déclarer, surveiller et révoquer les sondes installées dans votre réseau ; planifier des collectes récurrentes.',
-              'Configuration IA : par tenant, choix du fournisseur (Anthropic, Gemini, OpenAI, Azure) et du modèle ; la clé est stockée côté serveur et n’est jamais renvoyée.',
-              'Quota LLM : plafond mensuel par tenant (appels + caractères), repli déterministe au-delà. Consommation via GET /api/v1/ai/usage.',
+              'Configuration IA : l’IA est active dès l’ouverture d’un espace, avec la clé de l’opérateur (OpenRouter, qui bascule seul d’un modèle à l’autre en cas de panne). Une clé propre par tenant reste possible (OpenRouter, Anthropic, Gemini, OpenAI, Azure) ; elle est stockée côté serveur et n’est jamais renvoyée.',
+              'Quota LLM : le plafond mensuel protège la CLÉ DE L’OPÉRATEUR, par espace et, si la variable est posée, tous espaces confondus. Un espace qui a posé sa propre clé paie ses appels et n’est pas plafonné. Repli déterministe au-delà. Consommation via GET /api/v1/ai/usage.',
               'Inscriptions : ouvrables/fermables (NEXUS_ALLOW_REGISTRATION).',
             ]} />
             <Figure src="admin.png" caption="Administration & système." />

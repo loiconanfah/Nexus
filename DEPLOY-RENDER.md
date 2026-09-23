@@ -53,11 +53,19 @@ Render demande alors les valeurs des secrets marqués `sync: false`.
 | `nexus-api` | `OPENROUTER_API_KEY` | ta clé OpenRouter (`sk-or-v1-…`), recommandée |
 | `nexus-api` | `GEMINI_API_KEY` | ta clé Gemini (si tu préfères Google en direct) |
 
-- Clé IA de l'opérateur : elle sert de repli à **tout espace sans clé propre**. `OPENROUTER_API_KEY`
-  est prise en premier ; viennent ensuite `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`.
-  Avec OpenRouter, `OPENROUTER_MODEL` accepte **plusieurs modèles séparés par des virgules** : le
-  premier est utilisé, les suivants prennent le relais s'il est en panne ou saturé. Laissée vide,
-  la chaîne par défaut s'applique.
+- Clé IA de l'opérateur : elle sert à **tout espace sans clé propre**, donc à la quasi-totalité des
+  comptes. `OPENROUTER_API_KEY` est prise en premier ; viennent ensuite `ANTHROPIC_API_KEY`,
+  `OPENAI_API_KEY`, `GEMINI_API_KEY`. Avec OpenRouter, `OPENROUTER_MODEL` accepte **plusieurs
+  modèles séparés par des virgules** : le premier est utilisé, les suivants prennent le relais s'il
+  est en panne ou saturé. Laissée vide, la chaîne par défaut s'applique
+  (`openai/gpt-4o-mini`, `~google/gemini-flash-latest`, `~anthropic/claude-haiku-latest`).
+- **Borner la dépense.** C'est l'opérateur qui paie les appels de cette clé. Deux garde-fous, à
+  poser tous les deux : une limite de crédit sur la clé elle-même, chez OpenRouter (seule limite
+  exprimée en argent), et `NEXUS_LLM_SHARED_CALL_CAP` / `NEXUS_LLM_SHARED_CHAR_CAP` côté API, qui
+  plafonnent l'usage TOUS espaces confondus. Sans ce dernier, le plafond par espace
+  (`NEXUS_LLM_MONTHLY_CALL_CAP`, 2000 appels) se contourne en ouvrant plusieurs comptes, puisque
+  l'inscription est libre. Un espace qui a posé sa propre clé paie ses appels : il n'est plafonné
+  par aucun des deux.
 - `NEXUS_JWT_KEY` est **généré automatiquement** par Render (ne pas y toucher).
 - `NEXUS_ADMIN_EMAIL` vaut `admin@cgi.demo` par défaut (modifiable).
 - Inscription libre : `NEXUS_ALLOW_REGISTRATION=true`. Sans SMTP, les comptes sont actifs dès

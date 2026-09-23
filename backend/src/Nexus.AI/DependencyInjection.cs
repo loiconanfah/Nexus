@@ -37,7 +37,9 @@ public static class DependencyInjection
             var store = sp.GetService<ILlmUsageStore>();
             var tenant = sp.GetService<ICurrentTenant>();
             if (store is null || tenant is null) return inner;
-            return new QuotaChatCompletion(inner, tenant, store, sp.GetRequiredService<LlmQuotaOptions>());
+            var cfg = sp.GetRequiredService<AiRuntimeConfig>();
+            return new QuotaChatCompletion(inner, tenant, store, sp.GetRequiredService<LlmQuotaOptions>(),
+                usesSharedKey: () => cfg.Source() != "own");
         });
 
         services.AddScoped<AiOrchestrator>();

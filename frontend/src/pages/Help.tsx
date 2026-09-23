@@ -233,7 +233,8 @@ const DOCS: readonly Doc[] = [
       ] },
       { kind: 'ul', items: [
         ['Fonctionne sans clé (réponses ancrées, non « naturalisées »).', 'Works without a key (grounded answers, not “naturalized”).'],
-        ['Avec une clé (OpenRouter, Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI), les réponses sont reformulées plus naturellement.', 'With a key (OpenRouter, Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI), answers are phrased more naturally.'],
+        ['L’IA est active dès la création du compte, avec la clé fournie par Lenexux : aucune clé à poser, aucun abonnement à souscrire.', 'AI is active from the moment the account is created, using the key provided by Lenexux: no key to add, no subscription to take out.'],
+        ['Une clé propre (OpenRouter, Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI) reste possible pour choisir le fournisseur et le modèle, et pour sortir du plafond mensuel de la clé partagée.', 'Your own key (OpenRouter, Google Gemini, Anthropic Claude, OpenAI, Azure OpenAI) remains possible, to choose the provider and model and to leave the shared key’s monthly cap.'],
         ['Les clés se gèrent dans Admin & système, restent côté serveur, et ne sont jamais renvoyées au navigateur.', 'Keys are managed in Admin & System, stay server-side, and are never returned to the browser.'],
       ] },
       { kind: 'p', text: [

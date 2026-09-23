@@ -8,7 +8,7 @@
 #   1. Pousser ce dépôt sur GitHub.
 #   2. Render → New → Blueprint → sélectionner ce dépôt.
 #   3. Render lit ce fichier et crée les 4 services.
-#   4. Renseigner les secrets marqués « sync: false » (mots de passe, clé Gemini).
+#   4. Renseigner les secrets marqués « sync: false » (mots de passe, clé OpenRouter).
 #
 # Render fournit automatiquement : HTTPS/TLS, sauvegardes Postgres,
 # redéploiement à chaque « git push ».
@@ -116,6 +116,14 @@ services:
         sync: false          # clé Gemini en direct, si vous préférez Google seul
       - key: GEMINI_MODEL
         value: gemini-3.6-flash
+      # Plafonds mensuels de la clé de l'opérateur. Par espace d'abord ; puis,
+      # si vous les posez, TOUS espaces confondus : avec l'inscription libre, le
+      # plafond par espace se contourne en ouvrant dix comptes. 0 = illimité.
+      # Un espace qui a posé sa propre clé paie ses appels et n'est pas plafonné.
+      - key: NEXUS_LLM_SHARED_CALL_CAP
+        sync: false          # ex. 20000 appels/mois pour tout le monde
+      - key: NEXUS_LLM_SHARED_CHAR_CAP
+        sync: false          # ex. 200000000 caractères/mois pour tout le monde
 
   # -------------------------------------------------------------------
   # Web — SPA Vite servie en statique, /api relayé vers l'API (proxy serveur)

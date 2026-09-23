@@ -280,13 +280,20 @@ function AiIntegration() {
           <div className="flex items-start gap-2 rounded-sm p-3" style={{ background: 'color-mix(in srgb, var(--nx-success) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--nx-success) 30%, transparent)' }}>
             <Check size={15} className="mt-0.5 shrink-0" style={{ color: 'var(--nx-success)' }} />
             <span style={{ fontSize: 12.5, color: 'var(--nx-text)', lineHeight: 1.5 }}>
-              {t('L’IA est déjà active pour votre espace, avec la clé fournie par Lenexux : rien à configurer. Vous pouvez ajouter votre propre clé si vous voulez choisir le fournisseur et le modèle, ou ne pas dépendre du quota mensuel de la clé partagée.',
-                'AI is already active for your workspace, using the key provided by Lenexux: nothing to set up. You can add your own key to choose the provider and model, or to avoid depending on the shared key’s monthly quota.')}
+              {t('L’IA est déjà active pour votre espace, avec la clé fournie par Lenexux : rien à installer, rien à payer. Une clé propre reste possible si vous voulez choisir le fournisseur et le modèle, ou sortir du plafond mensuel de la clé partagée : vos appels ne sont alors plus plafonnés, puisque vous les payez.',
+                'AI is already active for your workspace, using the key provided by Lenexux: nothing to install, nothing to pay. Your own key remains possible if you want to choose the provider and model, or to leave the shared key’s monthly cap: your calls are then no longer capped, since you pay for them.')}
             </span>
           </div>
         )}
         <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>
-          {shared ? t('Clé propre (facultatif) : enregistrée côté serveur, rattachée à votre espace, jamais renvoyée au navigateur ni partagée avec d’autres espaces.', 'Own key (optional): stored server-side, scoped to your workspace, never returned to the browser nor shared with other workspaces.') : t('Ajoutez votre clé pour activer la naturalisation des réponses de l’Analyste IA et le mapping assisté. Elle est enregistrée côté serveur, propre à votre espace de travail — elle persiste entre les sessions et les redéploiements, n’est jamais renvoyée au navigateur ni partagée avec les autres tenants.', 'Add your key to enable AI Analyst naturalization and assisted mapping. It is stored server-side, scoped to your workspace — it persists across sessions and redeploys, is never returned to the browser and never shared with other tenants.')}
+          {shared
+            ? t('Clé propre (facultatif) : enregistrée côté serveur, rattachée à votre espace, jamais renvoyée au navigateur ni partagée avec d’autres espaces.',
+              'Own key (optional): stored server-side, scoped to your workspace, never returned to the browser nor shared with other workspaces.')
+            : configured
+              ? t('Votre clé est enregistrée côté serveur, propre à votre espace de travail : elle persiste entre les sessions et les redéploiements, n’est jamais renvoyée au navigateur ni partagée avec les autres espaces. Vos appels ne sont pas plafonnés par Lenexux.',
+                'Your key is stored server-side, scoped to your workspace: it persists across sessions and redeploys, is never returned to the browser nor shared with other workspaces. Your calls are not capped by Lenexux.')
+              : t('Aucun modèle n’est disponible pour cet espace. Ajoutez une clé pour activer l’analyse documentaire, les dépendances inférées et la reformulation des réponses. Elle est enregistrée côté serveur et n’est jamais renvoyée au navigateur.',
+                'No model is available for this workspace. Add a key to enable document analysis, inferred dependencies and answer phrasing. It is stored server-side and never returned to the browser.')}
         </p>
 
         <div className="grid gap-3 md:grid-cols-2">
