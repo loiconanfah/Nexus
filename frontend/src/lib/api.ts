@@ -140,6 +140,10 @@ export const api = {
   verifyRelation: (id: string, note?: string) =>
     fetch(`${BASE}/audit/relations/${id}/verify`, { method: 'POST', headers: headers(), body: JSON.stringify({ note: note ?? null }) })
       .then(handle<VerifyResult>),
+  /** Validation humaine groupée : une seule requête pour toute une liste. */
+  verifyRelations: (ids: string[], note?: string) =>
+    fetch(`${BASE}/audit/relations/verify`, { method: 'POST', headers: headers(), body: JSON.stringify({ ids, note: note ?? null }) })
+      .then(handle<{ verified: number; notFound: number }>),
 
   actions: () => fetch(`${BASE}/actions`, { headers: headers(false) }).then(handle<ActionBoard>),
 
@@ -191,6 +195,9 @@ export const api = {
 
   archivedEntities: () =>
     fetch(`${BASE}/entities/archived`, { headers: headers(false) }).then(handle<GraphEntityRecord[]>),
+  /** Corrige un actif : nom, type, criticité, description. */
+  updateEntity: (id: string, body: { name?: string; entityType?: string; criticality?: number; description?: string | null }) =>
+    fetch(`${BASE}/entities/${id}`, { method: 'PATCH', headers: headers(), body: JSON.stringify(body) }).then(handle<GraphEntityRecord>),
   deleteEntity: (id: string) =>
     fetch(`${BASE}/entities/${id}`, { method: 'DELETE', headers: headers(false) }).then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
   decommissionEntity: (id: string) =>

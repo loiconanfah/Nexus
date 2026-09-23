@@ -141,6 +141,47 @@ public sealed class Neo4jGraphRepository(INeo4jConnection connection) : IGraphRe
 
     // Coût d'arrêt réel par heure. null / ≤ 0 retire la propriété (repli sur la
     // criticité). Ne filtre pas validUntil : on peut régler le coût même mis de côté.
+    public async Task<bool> UpdateEntityAsync(Guid tenantId, Guid id, string? name, string? entityType, int? criticality, string? description, CancellationToken ct = default)
+    {
+        var current = await GetEntityAsync(tenantId, id, ct);
+        if (current is null) return false;
+
+        const string cypher = """
+            MATCH (n:Entity { id: $id, tenantId: $tenantId })
+            SET n.name = coalesce($name, n.name),
+                n.entityType = coalesce($type, n.entityType),
+                n.criticality = coalesce($criticality, n.criticality),
+                n.description = CASE WHEN $description IS NULL THEN n.description ELSE $description END,
+                n.updatedAt = $now
+            RETURN count(n) AS c
+            """;
+        var newType = entityType is null ? null : SafeLabel(entityType, EntityType.IsKnown);
+        var res = await connection.WriteAsync(cypher, new
+        {
+            id = id.ToString(), tenantId = tenantId.ToString(),
+            name = string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
+            type = newType,
+            criticality = criticality is >= 0 and <= 100 ? criticality : null,
+            description,
+            now = DateTimeOffset.UtcNow.ToString(Iso),
+        }, ct);
+        if (res.Count == 0 || res[0]["c"].As<long>() == 0) return false;
+
+        // Le type est aussi un LABEL : il faut retirer l'ancien, sinon l'actif
+        // cumulerait les deux et apparaîtrait dans deux familles à la fois.
+        if (newType is not null && !string.Equals(newType, current.EntityType, StringComparison.OrdinalIgnoreCase))
+        {
+            var oldLabel = SafeLabel(current.EntityType, EntityType.IsKnown);
+            var relabel = $$"""
+                MATCH (n:Entity { id: $id, tenantId: $tenantId })
+                REMOVE n:`{{oldLabel}}`
+                SET n:`{{newType}}`
+                """;
+            await connection.WriteAsync(relabel, new { id = id.ToString(), tenantId = tenantId.ToString() }, ct);
+        }
+        return true;
+    }
+
     public async Task<bool> SetCostPerHourAsync(Guid tenantId, Guid id, double? costPerHour, CancellationToken ct = default)
     {
         const string cypher = """

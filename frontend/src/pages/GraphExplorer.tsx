@@ -1,17 +1,17 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Background, BackgroundVariant, Handle, Panel, Position, ReactFlow, ReactFlowProvider,
-  useReactFlow, type Edge, type Node, type NodeProps,
+  useReactFlow, type Edge, type Node, type NodeChange, type NodeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import {
-  Boxes, ChevronsDownUp, ChevronsUpDown, Crosshair, Database, FileText, Mail,
-  Maximize2, Minimize2, Network, ScanSearch, Server, Share2, Sparkles, Users, X,
+  Boxes, ChevronsDownUp, ChevronsUpDown, Crosshair, Database, FileText, Group, Mail,
+  Maximize2, Minimize2, Network, RotateCcw, ScanSearch, Server, Share2, Sparkles, Users, Workflow, X,
 } from 'lucide-react'
 import { api } from '../lib/api'
-import { layoutGraph } from '../lib/layout'
+import { layoutClustered, layoutGraph } from '../lib/layout'
 import { useLang } from '../lib/i18n'
 import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
@@ -79,7 +79,23 @@ function EntityNode({ data, selected }: NodeProps) {
   )
 }
 
-const nodeTypes = { entity: EntityNode }
+type ClusterData = { label: string; count: number }
+
+/** Fond nommé d'une famille d'actifs. Purement visuel : ni cliquable, ni déplaçable. */
+function ClusterNode({ data }: NodeProps) {
+  const { label, count } = data as ClusterData
+  return (
+    <div className="h-full w-full rounded-md"
+      style={{ border: '1px solid var(--nx-border)', background: 'color-mix(in srgb, var(--nx-surface) 55%, transparent)' }}>
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{label}</span>
+        <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-outline)' }}>{count}</span>
+      </div>
+    </div>
+  )
+}
+
+const nodeTypes = { entity: EntityNode, cluster: ClusterNode }
 
 function CommandBar({ selected, onSimulate }: { selected: string | null; onSimulate: () => void }) {
   const { t } = useLang()
@@ -115,6 +131,10 @@ function GraphInner() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<GraphEntityRecord | null>(null)
   const [view, setView] = useState<'flow' | 'holo'>('flow')
+  // Mise en page : par familles (par défaut, lisible) ou selon le sens des dépendances.
+  const [arrange, setArrange] = useState<'clusters' | 'flow'>('clusters')
+  // Le plan n'est pas figé : ce que l'utilisateur déplace reste où il l'a mis.
+  const [moved, setMoved] = useState<Record<string, { x: number; y: number }>>({})
   const canvasRef = useRef<HTMLDivElement>(null)
   const [fs, setFs] = useState(false)
 
@@ -151,8 +171,35 @@ function GraphInner() {
       labelStyle: { fill: 'var(--nx-text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono' },
       labelBgStyle: { fill: 'var(--nx-panel)' },
     }))
-    return { nodes: layoutGraph(rfNodes, rfEdges), edges: rfEdges }
-  }, [data, query])
+    if (arrange === 'flow') return { nodes: layoutGraph(rfNodes, rfEdges), edges: rfEdges }
+
+    // Par familles : chaque type d'actif forme une grappe encadrée, au lieu de
+    // colonnes alignées d'un bout à l'autre du plan.
+    const { nodes: placed, clusters } = layoutClustered(rfNodes, rfEdges, (n) => (n.data as NodeData).rec.entityType)
+    const frames: Node[] = clusters.map((c) => ({
+      id: `cluster:${c.key}`, type: 'cluster', position: { x: c.x, y: c.y },
+      data: { label: entityTypeLabel(c.key, t), count: c.count } as ClusterData,
+      draggable: false, selectable: false, focusable: false, zIndex: -1,
+      style: { width: c.width, height: c.height, pointerEvents: 'none' as const },
+    }))
+    return { nodes: [...frames, ...placed], edges: rfEdges }
+  }, [data, query, arrange, t])
+
+  // Un changement de mise en page repart d'une disposition propre.
+  useEffect(() => { setMoved({}) }, [arrange, data])
+
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setMoved((prev) => {
+      let next = prev
+      for (const ch of changes) {
+        if (ch.type === 'position' && ch.position) {
+          if (next === prev) next = { ...prev }
+          next[ch.id] = ch.position
+        }
+      }
+      return next
+    })
+  }, [])
 
   // 2) MISE EN AVANT à la sélection : le nœud + ses relations liées ressortent,
   //    le reste est atténué (lecture facilitée des courants). Léger (pas de re-layout).
@@ -164,7 +211,7 @@ function GraphInner() {
       if (e.source === selId) neighbors.add(e.target)
       if (e.target === selId) neighbors.add(e.source)
     }
-    const nodes = laidOut.nodes.map((n) => ({
+    const nodes = laidOut.nodes.map((n) => n.type === 'cluster' ? n : ({
       ...n, selected: n.id === selId,
       data: { ...(n.data as NodeData), dim: (n.data as NodeData).dim || !neighbors.has(n.id) } as NodeData,
     }))
@@ -178,6 +225,12 @@ function GraphInner() {
     })
     return { nodes, edges }
   }, [laidOut, selected])
+
+  // Positions déplacées à la main : elles priment sur la mise en page calculée.
+  const placedNodes = useMemo(
+    () => (Object.keys(moved).length === 0 ? nodes : nodes.map((n) => (moved[n.id] ? { ...n, position: moved[n.id] } : n))),
+    [nodes, moved],
+  )
 
   if (isLoading) return <div style={{ fontFamily: mono, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DU GRAPHE…', 'LOADING GRAPH…')}</div>
   if (error) return <div style={{ color: ERR }}>{(error as Error).message}</div>
@@ -199,6 +252,16 @@ function GraphInner() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex rounded-sm border p-0.5" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
+            <ViewTab active={arrange === 'clusters'} onClick={() => setArrange('clusters')} icon={<Group size={14} />} label={t('Par familles', 'By family')} />
+            <ViewTab active={arrange === 'flow'} onClick={() => setArrange('flow')} icon={<Workflow size={14} />} label={t('Par dépendances', 'By dependency')} />
+          </div>
+          {Object.keys(moved).length > 0 && (
+            <button onClick={() => setMoved({})} className="flex items-center gap-1.5 rounded-sm border px-2 py-1.5"
+              style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)', color: 'var(--nx-cyan-text)', fontSize: 12 }}>
+              <RotateCcw size={13} /> {t('Replacer', 'Reset positions')}
+            </button>
+          )}
           <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
             {data.nodes.length} {t('nœuds', 'nodes')} · {data.edges.length} {t('liens', 'links')}
           </span>
@@ -217,9 +280,11 @@ function GraphInner() {
 
         {view === 'flow' ? (
           <ReactFlow
-            nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView minZoom={0.2}
+            nodes={placedNodes} edges={edges} nodeTypes={nodeTypes} fitView minZoom={0.2}
             proOptions={{ hideAttribution: true }}
-            onNodeClick={(_, n) => setSelected((n.data as NodeData).rec)}
+            onNodesChange={onNodesChange}
+            nodesDraggable
+            onNodeClick={(_, n) => { if (n.type !== 'cluster') setSelected((n.data as NodeData).rec) }}
             onPaneClick={() => setSelected(null)}
             style={{ background: 'var(--nx-panel)' }}
           >

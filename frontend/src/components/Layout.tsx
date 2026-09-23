@@ -13,6 +13,7 @@ import { useTheme } from '../lib/theme'
 import { LogoMark } from './Logo'
 import { startGuidedTour } from './GuidedTour'
 import { NotificationBell, SetupBar } from './SetupCenter'
+import { Toasts } from './Toasts'
 
 type NavItem = { to: string; fr: string; en: string; icon: typeof LayoutDashboard }
 const NAV: { fr: string; en: string; items: NavItem[] }[] = [
@@ -207,6 +208,7 @@ export function Layout({ children, header }: { children: ReactNode; header?: Rea
 
         <main data-tour="page" className="min-h-0 flex-1 overflow-y-auto p-6" style={{ color: 'var(--nx-text)' }}>{children}</main>
       </div>
+      <Toasts />
     </div>
   )
 }

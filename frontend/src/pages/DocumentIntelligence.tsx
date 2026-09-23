@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -6,8 +6,10 @@ import {
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { notify, runningJobs, subscribe } from '../lib/notify'
+import { getLastDocumentAnalysis, startDocumentAnalysis } from '../lib/tasks'
 import { entityTypeLabel, relationTypeLabel } from '../lib/labels'
-import type { CandidateEntity, CandidateRelation, ChunkExtraction, DocumentAnalysis, DocumentFinding, DocumentRisk, ParsedDocument } from '../lib/types'
+import type { CandidateEntity, CandidateRelation, DocumentAnalysis, DocumentFinding, DocumentRisk, ParsedDocument } from '../lib/types'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -43,7 +45,6 @@ export function DocumentIntelligence() {
   const { t, lang } = useLang()
   const qc = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
-  const cancelRef = useRef<AbortController | null>(null)
 
   const [text, setText] = useState('')
   const [file, setFile] = useState<ParsedDocument | null>(null)
@@ -58,7 +59,22 @@ export function DocumentIntelligence() {
   const [ingestProgress, setIngestProgress] = useState<{ done: number; total: number } | null>(null)
   const [ingestRes, setIngestRes] = useState<{ entitiesCreated: number; entitiesLinked?: number; relationsCreated: number; relationsExisting?: number; unresolved: number } | null>(null)
 
-  const busy = progress.phase !== 'idle' && progress.phase !== 'done'
+  // « En cours » vient des tâches de fond : l'état survit au changement d'écran.
+  const [, forceRender] = useState(0)
+  useEffect(() => subscribe(() => forceRender((n) => n + 1)), [])
+  const analysing = runningJobs().some((j) => j.kind === 'document')
+  const busy = analysing || progress.phase === 'reading'
+
+  // Analyse terminée pendant qu'on était ailleurs : on la retrouve en revenant.
+  useEffect(() => {
+    const last = getLastDocumentAnalysis()
+    if (last && !analysis) {
+      setAnalysis(last.analysis)
+      setSelEntities(new Set(last.analysis.entities.filter((e) => e.status === 'new').map((e) => e.name)))
+      setSelRelations(new Set(last.analysis.relations.filter((r) => r.status === 'new').map(relKey)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function onFile(f: File) {
     setFileErr(null); setAnalysis(null); setIngestRes(null)
@@ -77,69 +93,24 @@ export function DocumentIntelligence() {
     }
   }
 
-  async function analyze() {
+  // L'analyse tourne dans une tâche de fond : on peut quitter la page, elle
+  // continue, et son résultat est retrouvé au retour.
+  function analyze() {
     if (!text.trim() || busy) return
-    const ctrl = new AbortController()
-    cancelRef.current = ctrl
     setRunErr(null); setAnalysis(null); setIngestRes(null)
-    setProgress({ phase: 'extracting', step: 1, total: 1, label: '' })
-    try {
-      const plan = await api.planDocument(text)
-      if (!plan.aiAvailable) { setRunErr(t('Aucun modèle IA n’est disponible pour cet espace (voir Admin, Intégrations IA).', 'No AI model is available for this workspace (see Admin, AI integrations).')); return }
-      const n = plan.sections.length
-      const warnings: string[] = []
-      if (plan.truncated) warnings.push(t(`Document très long : les ${n} premières sections sur ${plan.total} sont analysées.`, `Very long document: the first ${n} sections out of ${plan.total} are analyzed.`))
-
-      // 1. Éléments et risques, section par section.
-      const parts: ChunkExtraction[] = []
-      const known: string[] = []
-      for (const s of plan.sections) {
-        if (ctrl.signal.aborted) return
-        setProgress({ phase: 'extracting', step: s.index + 1, total: n, label: s.section })
-        const r = await api.extractSection({ index: s.index, total: n, section: s.section, text: s.text, knownNames: known, lang }, ctrl.signal)
-        if (!r.ok || !r.extraction) { warnings.push(t(`Section ${s.index + 1} non analysée : ${r.message ?? ''}`, `Section ${s.index + 1} not analyzed: ${r.message ?? ''}`)); continue }
-        parts.push(r.extraction)
-        known.push(...r.extraction.entities.map((e) => e.name))
-      }
-      if (parts.length === 0) { setRunErr(warnings.at(-1) ?? t('Aucune section n’a pu être analysée.', 'No section could be analyzed.')); return }
-
-      // 2. Liens, section par section, avec tous les éléments du document.
-      // Avec leurs alias : un lien qui cite « APP-001 » est ramené au bon élément.
-      const byName = new Map<string, { name: string; type: string; aliases: string[] }>()
-      for (const e of parts.flatMap((p) => p.entities)) {
-        const k = e.name.toLowerCase()
-        const cur = byName.get(k)
-        if (cur) { for (const a of e.aliases ?? []) if (!cur.aliases.includes(a)) cur.aliases.push(a) }
-        else byName.set(k, { name: e.name, type: e.type, aliases: [...(e.aliases ?? [])] })
-      }
-      const entities = [...byName.values()]
-      const linkParts: ChunkExtraction[] = []
-      for (const s of plan.sections) {
-        if (ctrl.signal.aborted) return
-        setProgress({ phase: 'linking', step: s.index + 1, total: n, label: s.section })
-        const r = await api.linkSection({ index: s.index, section: s.section, text: s.text, entities, lang }, ctrl.signal)
-        if (r.ok && r.relations.length) linkParts.push({ entities: [], relations: r.relations, risks: [] })
-      }
-
-      // 3. Consolidation et recoupement avec le graphe.
-      setProgress({ phase: 'consolidating', step: n, total: n, label: '' })
-      const res = await api.consolidateDocument({ parts: [...parts, ...linkParts], sections: n, analyzed: parts.length, warnings, lang }, ctrl.signal)
-      setAnalysis(res)
-      setSelEntities(new Set(res.entities.filter((e) => e.status === 'new').map((e) => e.name)))
-      setSelRelations(new Set(res.relations.filter((r) => r.status === 'new').map(relKey)))
-      setFilter('all')
-    } catch (e) {
-      if (!ctrl.signal.aborted) setRunErr(t('L’analyse a été interrompue par une erreur. Réessayez.', 'The analysis stopped on an error. Please retry.') + (e instanceof Error ? ` (${e.message.slice(0, 120)})` : ''))
-    } finally {
-      setProgress((p) => ({ ...p, phase: 'done' }))
-      cancelRef.current = null
-    }
+    startDocumentAnalysis({
+      text, lang, fileName: file?.fileName,
+      onDone: (res) => {
+        setAnalysis(res)
+        setSelEntities(new Set(res.entities.filter((e) => e.status === 'new').map((e) => e.name)))
+        setSelRelations(new Set(res.relations.filter((r) => r.status === 'new').map(relKey)))
+        setFilter('all')
+      },
+    })
   }
 
   function cancel() {
-    cancelRef.current?.abort()
-    setProgress({ phase: 'idle', step: 0, total: 0, label: '' })
-    setRunErr(t('Analyse annulée.', 'Analysis cancelled.'))
+    runningJobs().filter((j) => j.kind === 'document').forEach((j) => j.cancel?.())
   }
 
   async function ingest() {
@@ -178,8 +149,17 @@ export function DocumentIntelligence() {
       }
       setIngestRes(sum)
       qc.invalidateQueries()
+      notify({
+        kind: 'success',
+        title: t('Ajouté au graphe', 'Added to the graph'),
+        message: t(`${sum.entitiesCreated} élément(s) créé(s) et ${sum.relationsCreated} lien(s) ajoutés. Les liens attendent votre validation.`,
+          `${sum.entitiesCreated} element(s) created and ${sum.relationsCreated} link(s) added. The links await your validation.`),
+        actions: [{ label: t('Valider dans Confiance & audit', 'Validate in Confidence & Audit'), to: '/audit' }],
+      })
     } catch (e) {
-      setRunErr(t('L’ajout au graphe a échoué.', 'Adding to the graph failed.') + (e instanceof Error ? ` (${e.message.slice(0, 120)})` : ''))
+      const detail = e instanceof Error ? e.message.slice(0, 140) : ''
+      setRunErr(t('L’ajout au graphe a échoué.', 'Adding to the graph failed.') + (detail ? ` (${detail})` : ''))
+      notify({ kind: 'error', title: t('Ajout au graphe impossible', 'Could not add to the graph'), message: detail })
     } finally { setIngesting(false); setIngestProgress(null) }
   }
 
@@ -251,7 +231,17 @@ export function DocumentIntelligence() {
           </div>
         </div>
 
-        {busy && <ProgressBar p={progress} t={t} />}
+        {analysing && (
+          <div className="flex items-center gap-2 rounded-md border px-3 py-2" style={{ borderColor: 'color-mix(in srgb, var(--nx-cyan) 35%, transparent)', background: 'var(--nx-surface-high)', fontSize: 12.5 }}>
+            <Loader2 size={14} className="animate-spin" style={{ color: 'var(--nx-cyan)' }} />
+            <span style={{ color: 'var(--nx-text)' }}>{t('Analyse en cours. Vous pouvez quitter cette page : elle se poursuit et vous serez prévenu.', 'Analysis under way. You can leave this page: it keeps running and you will be notified.')}</span>
+          </div>
+        )}
+        {progress.phase === 'reading' && (
+          <div className="flex items-center gap-2" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+            <Loader2 size={14} className="animate-spin" /> {t('Lecture du fichier…', 'Reading the file…')}
+          </div>
+        )}
         {runErr && <div className="flex items-start gap-1.5 rounded-sm p-2.5" style={{ fontSize: 12.5, color: 'var(--nx-danger)', background: 'color-mix(in srgb, var(--nx-danger) 7%, transparent)' }}><AlertTriangle size={14} className="mt-0.5 shrink-0" /> {runErr}</div>}
       </div>
 
@@ -264,28 +254,6 @@ export function DocumentIntelligence() {
   )
 }
 
-function ProgressBar({ p, t }: { p: Progress; t: T }) {
-  // Trois temps : éléments (0 à 45 %), liens (45 à 90 %), recoupement (90 à 100 %).
-  const pct = p.phase === 'reading' ? 10
-    : p.phase === 'extracting' ? ((p.step - 1) / Math.max(1, p.total)) * 45
-      : p.phase === 'linking' ? 45 + ((p.step - 1) / Math.max(1, p.total)) * 45
-        : p.phase === 'consolidating' ? 92 : 100
-  const label = p.phase === 'reading' ? p.label
-    : p.phase === 'extracting' ? t(`Relevé des éléments et des risques : section ${p.step} sur ${p.total}`, `Finding elements and risks: section ${p.step} of ${p.total}`)
-      : p.phase === 'linking' ? t(`Recherche des liens entre éléments : section ${p.step} sur ${p.total}`, `Finding links between elements: section ${p.step} of ${p.total}`)
-        : t('Fusion des doublons et recoupement avec votre graphe…', 'Merging duplicates and cross-referencing your graph…')
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-3" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
-        <span className="truncate">{label}{p.label && p.phase !== 'reading' ? ` · ${p.label}` : ''}</span>
-        <span style={{ fontFamily: mono }}>{Math.round(pct)} %</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(4, pct)}%`, background: CYAN }} />
-      </div>
-    </div>
-  )
-}
 
 /* ───────────────────────────── Résultats ───────────────────────────── */
 

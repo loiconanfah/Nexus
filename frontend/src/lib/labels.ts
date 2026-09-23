@@ -95,6 +95,9 @@ const RELATION_TYPE: Record<string, [string, string]> = {
   RELATED_TO: ['lié à', 'related to'],
 }
 
+/** Types d'actifs proposés à la correction manuelle, dans l'ordre du référentiel. */
+export const ENTITY_TYPE_KEYS = Object.keys(ENTITY_TYPE)
+
 export function entityTypeLabel(type: string, t: T): string {
   const m = ENTITY_TYPE[type]
   return m ? t(m[0], m[1]) : type

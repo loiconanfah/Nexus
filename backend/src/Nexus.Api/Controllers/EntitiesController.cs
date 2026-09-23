@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Tenancy;
 using Nexus.Domain.Ontology;
 using Nexus.Graph;
+using Nexus.Ingestion.Normalization;
 using Nexus.Risk;
 using Nexus.Risk.Scoring;
 
@@ -60,6 +61,27 @@ public sealed class EntitiesController(
         if (!RequireAdmin(out var forbidden)) return forbidden;
         var ok = await repository.ReactivateEntityAsync(tenant, id, ct);
         return ok ? NoContent() : NotFound(new { error = "entity_not_found" });
+    }
+
+    public sealed record UpdateEntityRequest(string? Name, string? EntityType, int? Criticality, string? Description);
+
+    /// <summary>
+    /// Corrige un actif : nom, type, criticité, description. Un import ou une
+    /// extraction se trompe parfois ; il faut pouvoir rectifier sans tout refaire.
+    /// </summary>
+    [HttpPatch("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEntityRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (!RequireAdmin(out var forbidden)) return forbidden;
+        if (req is null) return BadRequest(new { error = "body_required" });
+        if (req.Name is not null && req.Name.Trim().Length is 0 or > 200) return BadRequest(new { error = "name_invalid" });
+        if (req.Criticality is < 0 or > 100) return BadRequest(new { error = "criticality_invalid" });
+
+        var type = req.EntityType is null ? null : OntologyResolver.ResolveEntityType(req.EntityType).Name;
+        var ok = await repository.UpdateEntityAsync(tenant, id, req.Name, type, req.Criticality, req.Description, ct);
+        if (!ok) return NotFound(new { error = "entity_not_found" });
+        return Ok(await repository.GetEntityAsync(tenant, id, ct));
     }
 
     public sealed record SetCostRequest(double? CostPerHour);

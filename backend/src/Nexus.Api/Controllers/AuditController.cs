@@ -46,6 +46,38 @@ public sealed class AuditController(
         });
     }
 
+    public sealed record VerifyManyRequest(List<Guid> Ids, string? Note);
+
+    /// <summary>
+    /// Validation humaine EN LOT. Valider une centaine de dépendances une par une
+    /// est irréaliste : l'écran propose de tout valider d'un coup, et chaque
+    /// dépendance reçoit la même preuve humaine qu'une validation unitaire.
+    /// Les identifiants inconnus sont signalés, pas silencieusement ignorés.
+    /// </summary>
+    [HttpPost("relations/verify")]
+    public async Task<IActionResult> VerifyRelations([FromBody] VerifyManyRequest req, CancellationToken ct)
+    {
+        if (!TryGetTenant(out var tenant, out var error)) return error;
+        if (req?.Ids is null || req.Ids.Count == 0) return BadRequest(new { error = "ids_required" });
+        if (req.Ids.Count > 2000) return BadRequest(new { error = "too_many", max = 2000 });
+
+        var who = User?.Identity?.Name ?? "utilisateur";
+        var note = string.IsNullOrWhiteSpace(req.Note) ? null : req.Note!.Trim();
+        int verified = 0, notFound = 0;
+        foreach (var id in req.Ids.Distinct())
+        {
+            ct.ThrowIfCancellationRequested();
+            var evidence = RelationEvidence.From(
+                EvidenceSource.HumanValidation,
+                note is null ? $"Confirmée par {who} (validation groupée)" : $"Confirmée par {who} — {note}",
+                sourceSystem: "Lenexux",
+                sourceRecord: who);
+            var breakdown = await repository.AddRelationEvidenceAsync(tenant, id, evidence, verifiedBy: who, ct: ct);
+            if (breakdown is null) notFound++; else verified++;
+        }
+        return Ok(new { verified, notFound });
+    }
+
     /// <summary>Décomposition explicable de la confiance d'une dépendance (d'où vient le score).</summary>
     [HttpGet("relations/{id:guid}/confidence")]
     public async Task<IActionResult> ExplainConfidence(Guid id, CancellationToken ct)

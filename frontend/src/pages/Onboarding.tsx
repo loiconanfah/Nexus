@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Database, FileUp, GitBranch, Loader2, Sheet, Sparkles, Upload, Wand2 } from 'lucide-react'
+import { CheckCircle2, Database, FileUp, GitBranch, Layers, Loader2, Sheet, Sparkles, Upload, Wand2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { notify, runningJobs, subscribe } from '../lib/notify'
+import { startImport, type SheetImport } from '../lib/tasks'
 import { CONNECTORS } from '../lib/connectors'
 import { RestLiveImport } from '../components/RestLiveImport'
 import type { FilePreview, ImportResult } from '../lib/types'
@@ -85,12 +87,16 @@ function buildAutoProfile(ds: string, m: AutoMap): object {
 }
 
 export function Onboarding() {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const qc = useQueryClient()
   const [params] = useSearchParams()
   const connector = useMemo(() => CONNECTORS.find((c) => c.id === params.get('connector')), [params])
   const [mode, setMode] = useState<Mode>('nodes')
   const [busy, setBusy] = useState(false)
+  // Un import en cours reste visible même si l'on revient sur cet écran plus tard.
+  const [, forceRender] = useState(0)
+  useEffect(() => subscribe(() => forceRender((n) => n + 1)), [])
+  const importing = runningJobs().some((j) => j.kind === 'import')
   const [result, setResult] = useState<ImportResult | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
@@ -105,20 +111,17 @@ export function Onboarding() {
 
   const modeTitle = (m: Mode) => m === 'nodes' ? t('Systèmes & actifs', 'Systems & Assets') : m === 'edges' ? t('Dépendances', 'Dependencies') : t('Auto / IA — tout fichier', 'Auto / AI — any file')
 
-  async function runImport(file: File, profileObj: object) {
-    setBusy(true); setErr(null); setResult(null); setFileName(file.name)
-    try {
-      // Excel et CSV suivent le MÊME pipeline ; seul le lecteur de fichier change.
-      const res = EXCEL.test(file.name)
-        ? await api.importExcel(file, file.name, JSON.stringify(profileObj))
-        : await api.importCsv(file, file.name, JSON.stringify(profileObj))
-      setResult(res); setPending(null); setMap(null)
-      qc.invalidateQueries()
-    } catch (e) {
-      setErr((e as Error).message)
-    } finally {
-      setBusy(false)
-    }
+  /** Lance l'import d'un ou plusieurs jeux, en tâche de fond. */
+  function runImport(file: File, jobs: SheetImport[]) {
+    setErr(null); setResult(null); setFileName(file.name)
+    startImport({
+      file, sheets: jobs, lang, excel: EXCEL.test(file.name),
+      onDone: (results) => {
+        if (results.length > 0) setResult(results[results.length - 1].result)
+        setPending(null); setMap(null); setSheets(null); setSheet(null)
+        qc.invalidateQueries()
+      },
+    })
   }
 
   /** Analyse IA du mapping sur un échantillon (sinon l'heuristique suffit). */
@@ -170,7 +173,7 @@ export function Onboarding() {
       return
     }
     const ds = file.name.replace(/\.[^.]+$/, '')
-    runImport(file, PRESETS[mode].build(ds))
+    runImport(file, [{ dataset: ds, profile: PRESETS[mode].build(ds) }])
   }
 
   /** Jeu de données : la feuille choisie pour un classeur, le nom du fichier sinon. */
@@ -180,7 +183,37 @@ export function Onboarding() {
 
   function confirmAuto() {
     if (!pending || !map) return
-    runImport(pending.file, buildAutoProfile(datasetName(pending.file), map))
+    const ds = datasetName(pending.file)
+    runImport(pending.file, [{ dataset: ds, profile: buildAutoProfile(ds, map) }])
+  }
+
+  /**
+   * Importe TOUTES les feuilles d'un classeur d'un coup : chacune reçoit le
+   * mapping détecté sur ses propres colonnes. Les feuilles sans colonne de nom
+   * ni couple source/cible (une page de garde, par exemple) sont écartées.
+   */
+  function importAllSheets() {
+    if (!sheets || !pending) return
+    const jobs: SheetImport[] = []
+    const skipped: string[] = []
+    for (const d of sheets) {
+      const m = autoDetect(d.columns)
+      const usable = m.kind === 'relations' ? Boolean(m.source && m.target) : Boolean(m.name)
+      if (!usable || d.rows === 0) { skipped.push(d.name); continue }
+      jobs.push({ dataset: d.name, profile: buildAutoProfile(d.name, m) })
+    }
+    if (jobs.length === 0) {
+      notify({ kind: 'warning', title: t('Aucune feuille importable', 'No importable sheet'), message: t('Aucune feuille ne présente de colonne de nom, ni de couple source et cible.', 'No sheet has a name column, nor a source and target pair.') })
+      return
+    }
+    if (skipped.length > 0) {
+      notify({
+        kind: 'info',
+        title: t(`${skipped.length} feuille(s) écartée(s)`, `${skipped.length} sheet(s) skipped`),
+        message: t(`Sans colonne exploitable : ${skipped.slice(0, 4).join(', ')}${skipped.length > 4 ? '…' : ''}`, `No usable column: ${skipped.slice(0, 4).join(', ')}${skipped.length > 4 ? '…' : ''}`),
+      })
+    }
+    runImport(pending.file, jobs)
   }
 
   /** Changement de feuille : colonnes, mapping et échantillon suivent. */
@@ -245,10 +278,17 @@ export function Onboarding() {
               </button>
             ))}
           </div>
-          <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
-            {t('Choisissez la feuille à importer : ses colonnes sont reconnues ci-dessous, quel que soit leur intitulé.',
-              'Choose the sheet to import: its columns are recognised below, whatever they are called.')}
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button onClick={importAllSheets} disabled={importing} className="flex items-center gap-2 rounded-sm px-4 py-2 disabled:opacity-60"
+              style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
+              {importing ? <Loader2 size={15} className="animate-spin" /> : <Layers size={15} />}
+              {t(`Importer les ${sheets.length} feuilles`, `Import all ${sheets.length} sheets`)}
+            </button>
+            <span style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+              {t('ou choisissez une feuille ci-dessus pour vérifier son mapping avant de l’importer seule.',
+                'or pick a sheet above to check its mapping before importing it alone.')}
+            </span>
+          </div>
         </div>
       )}
 
@@ -292,8 +332,8 @@ export function Onboarding() {
               </>
             )}
           </div>
-          <button onClick={confirmAuto} disabled={busy} className="mt-4 flex items-center justify-center gap-2 rounded-sm px-4 py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
-            {busy ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />} {t('Importer avec ce mapping', 'Import with this mapping')}
+          <button onClick={confirmAuto} disabled={busy || importing} className="mt-4 flex items-center justify-center gap-2 rounded-sm px-4 py-2 disabled:opacity-60" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
+            {busy || importing ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />} {t('Importer avec ce mapping', 'Import with this mapping')}
           </button>
         </div>
       )}

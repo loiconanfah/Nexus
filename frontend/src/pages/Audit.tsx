@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BadgeCheck, FileSearch, ShieldQuestion, Check, ChevronDown, Loader2 } from 'lucide-react'
+import { BadgeCheck, CheckCheck, FileSearch, ShieldQuestion, Check, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import type { AuditLowConf } from '../lib/types'
 import { confidenceStatusLabel, evidenceSourceLabel, relationTypeLabel } from '../lib/labels'
+import { notify } from '../lib/notify'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -65,9 +66,10 @@ export function Audit() {
         </div>
 
         <div className="rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
-          <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
+          <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--nx-border)' }}>
             <ShieldQuestion size={14} style={{ color: 'var(--nx-warning)' }} />
-            <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Dépendances à revoir', 'Dependencies Needing Review')}</h3>
+            <h3 className="flex-1" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{t('Dépendances à revoir', 'Dependencies Needing Review')}</h3>
+            {data.lowConfidence.length > 1 && <VerifyAll ids={data.lowConfidence.map((e) => e.id)} />}
           </div>
           <div className="flex flex-col divide-y" style={{ maxHeight: 320, overflowY: 'auto' }}>
             {data.lowConfidence.map((e) => <ReviewRow key={e.id} row={e} />)}
@@ -107,6 +109,53 @@ export function Audit() {
   )
 }
 
+
+/**
+ * Validation groupée : valider une à une est interminable quand un import en
+ * laisse des dizaines. Le geste reste explicite (confirmation demandée), car il
+ * engage une preuve humaine sur chaque dépendance de la liste.
+ */
+function VerifyAll({ ids }: { ids: string[] }) {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const [confirming, setConfirming] = useState(false)
+
+  const run = useMutation({
+    mutationFn: () => api.verifyRelations(ids),
+    onSuccess: (r) => {
+      setConfirming(false)
+      qc.invalidateQueries()
+      notify({
+        kind: 'success',
+        title: t('Dépendances validées', 'Dependencies verified'),
+        message: t(`${r.verified} dépendance(s) portent désormais votre validation. Leur confiance a été recalculée.`,
+          `${r.verified} dependency(ies) now carry your validation. Their confidence has been recomputed.`),
+      })
+    },
+    onError: (e) => notify({ kind: 'error', title: t('Validation groupée impossible', 'Bulk validation failed'), message: (e as Error).message.slice(0, 160) }),
+  })
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2">
+        <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t(`Confirmer pour les ${ids.length} ?`, `Confirm for all ${ids.length}?`)}
+        </span>
+        <button onClick={() => run.mutate()} disabled={run.isPending} className="flex items-center gap-1 rounded-sm px-2.5 py-1"
+          style={{ background: 'var(--nx-success)', color: 'var(--nx-on-cyan)', fontSize: 12, fontWeight: 600 }}>
+          {run.isPending ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {t('Oui, valider', 'Yes, verify')}
+        </button>
+        <button onClick={() => setConfirming(false)} style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+      </div>
+    )
+  }
+  return (
+    <button onClick={() => setConfirming(true)} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1"
+      style={{ borderColor: 'var(--nx-border)', color: CYAN_T, fontSize: 12, fontWeight: 600 }}>
+      <CheckCheck size={13} /> {t(`Tout valider (${ids.length})`, `Verify all (${ids.length})`)}
+    </button>
+  )
+}
 
 /**
  * Une dépendance à revoir : d'où vient son score (décomposition des preuves) et

@@ -16,8 +16,11 @@ const CYAN_T = 'var(--nx-cyan-text)'
 
 type T = (fr: string, en: string) => string
 
-/** Libellé et raison d'être de chaque étape : l'utilisateur sait QUOI faire et POURQUOI. */
-const STEP_TEXT: Record<string, { title: [string, string]; why: [string, string] }> = {
+/**
+ * Libellé, raison d'être et, quand l'ordre compte, MARCHE À SUIVRE de chaque
+ * étape : l'utilisateur sait quoi faire, pourquoi, et dans quel ordre.
+ */
+const STEP_TEXT: Record<string, { title: [string, string]; why: [string, string]; how?: [string, string] }> = {
   profile: {
     title: ['Compléter le profil de l’organisation', 'Complete the organisation profile'],
     why: ['Devise et chiffres de référence : sans eux, les montants ne sont pas à votre échelle.', 'Currency and reference figures: without them, amounts are not at your scale.'],
@@ -33,6 +36,8 @@ const STEP_TEXT: Record<string, { title: [string, string]; why: [string, string]
   dependencies: {
     title: ['Relier les dépendances', 'Connect the dependencies'],
     why: ['« A a besoin de B » : sans ces liens, impossible de voir comment une panne se propage.', '“A needs B”: without these links, there is no way to see how an outage spreads.'],
+    how: ['Après un import, passez par Dépendances inférées : Lenexux propose les liens manquants à partir de ce que vous venez de charger.',
+      'After an import, go to Inferred dependencies: Lenexux proposes the missing links from what you have just loaded.'],
   },
   suppliers: {
     title: ['Identifier vos fournisseurs clés', 'Identify your key suppliers'],
@@ -49,6 +54,8 @@ const STEP_TEXT: Record<string, { title: [string, string]; why: [string, string]
   validate: {
     title: ['Valider les dépendances importantes', 'Validate the important dependencies'],
     why: ['Une dépendance confirmée par un humain rend les analyses fiables et défendables.', 'A dependency confirmed by a person makes analyses reliable and defensible.'],
+    how: ['Troisième temps, dans Confiance & audit : les liens proposés y attendent votre accord, un par un ou tous à la fois.',
+      'Third step, in Confidence & Audit: the proposed links wait for your approval there, one by one or all at once.'],
   },
   simulation: {
     title: ['Lancer une première simulation', 'Run a first simulation'],
@@ -171,6 +178,9 @@ function StepCard({ s, t, onGo }: { s: SetupStep; t: T; onGo: () => void }) {
           {s.target > 1 && <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>{Math.min(s.current, s.target)}/{s.target}</span>}
         </span>
         {text && <span className="mt-0.5 block text-xs" style={{ color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{t(...text.why)}</span>}
+        {text?.how && !s.done && (
+          <span className="mt-1 block text-xs" style={{ color: 'var(--nx-cyan-text)', lineHeight: 1.5 }}>{t(...text.how)}</span>
+        )}
       </span>
     </button>
   )

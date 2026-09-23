@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle, Boxes, Brain, Database, Layers, MapPin, Play, Search, Server,
-  ShieldAlert, Users,
+  AlertTriangle, Boxes, Brain, Database, Layers, Loader2, MapPin, Pencil, Play, Search, Server,
+  ShieldAlert, Trash2, Users, X,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
-import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel } from '../lib/labels'
+import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel, ENTITY_TYPE_KEYS } from '../lib/labels'
+import { notify } from '../lib/notify'
 import type { GraphEntityRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -79,16 +80,17 @@ export function Assets() {
 
       {/* Détail */}
       <div className="min-w-0 flex-1 overflow-y-auto" style={{ background: 'var(--nx-panel)' }}>
-        {selected ? <AssetDetail asset={selected} /> : <div className="p-6" style={{ color: 'var(--nx-text-muted)' }}>{t('Aucun actif. Importez des données depuis la Vue d’ensemble.', 'No assets. Import data from the Overview.')}</div>}
+        {selected ? <AssetDetail key={selected.id} asset={selected} onDeleted={() => setSelId(null)} /> : <div className="p-6" style={{ color: 'var(--nx-text-muted)' }}>{t('Aucun actif. Importez des données depuis la Vue d’ensemble.', 'No assets. Import data from the Overview.')}</div>}
       </div>
     </div>
   )
 }
 
-function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
+function AssetDetail({ asset, onDeleted }: { asset: GraphEntityRecord; onDeleted: () => void }) {
   const navigate = useNavigate()
   const { t } = useLang()
   const [tab, setTab] = useState('Overview')
+  const [editing, setEditing] = useState(false)
   const tabLabel = (k: string) => k === 'Overview' ? t('Aperçu', 'Overview') : k === 'Dependencies' ? t('Dépendances', 'Dependencies') : k === 'Dependents' ? t('Dépendants', 'Dependents') : t('Risques', 'Risks')
   const risk = useQuery({ queryKey: ['risk', asset.id], queryFn: () => api.entityRisk(asset.id) })
   const deps = useQuery({ queryKey: ['deps', asset.id], queryFn: () => api.dependencies(asset.id) })
@@ -118,11 +120,13 @@ function AssetDetail({ asset }: { asset: GraphEntityRecord }) {
             </div>
             <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(asset.entityType, t)} · {asset.sourceSystem ?? t('source inconnue', 'unknown source')}</p>
           </div>
-          <div className="flex gap-6">
+          <div className="flex items-start gap-6">
             <Stat label={t('SCORE DE RISQUE', 'RISK SCORE')} value={score !== undefined ? score.toFixed(0) : '—'} suffix="/100" color={score !== undefined ? bandColor(score) : 'var(--nx-text)'} />
             <Stat label={t('CONFIANCE', 'CONFIDENCE')} value={String(confidence)} suffix="%" color={CYAN_T} />
+            <AssetActions asset={asset} editing={editing} onEdit={() => setEditing((v) => !v)} onDeleted={onDeleted} />
           </div>
         </div>
+        {editing && <AssetEditor asset={asset} onClose={() => setEditing(false)} />}
         {/* Tabs */}
         <div className="mt-4 flex gap-6 overflow-x-auto">
           {tabs.map((tb) => (
@@ -284,5 +288,147 @@ function EntityList({ title, items }: { title: string; items: { id: string; name
         </div>
       )}
     </Panel>
+  )
+}
+
+
+/** Boutons de correction et de suppression d'un actif, avec confirmation. */
+function AssetActions({ asset, editing, onEdit, onDeleted }: { asset: GraphEntityRecord; editing: boolean; onEdit: () => void; onDeleted: () => void }) {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const [confirming, setConfirming] = useState(false)
+
+  const del = useMutation({
+    mutationFn: () => api.deleteEntity(asset.id),
+    onSuccess: () => {
+      setConfirming(false)
+      onDeleted()
+      qc.invalidateQueries()
+      notify({
+        kind: 'success',
+        title: t('Actif supprimé', 'Asset deleted'),
+        message: t(`« ${asset.name} » et ses dépendances ont été retirés du graphe.`, `“${asset.name}” and its dependencies were removed from the graph.`),
+      })
+    },
+    onError: (e) => {
+      const code = (e as Error).message
+      notify({
+        kind: 'error',
+        title: t('Suppression impossible', 'Could not delete'),
+        message: code === '403'
+          ? t('Seul un administrateur peut supprimer un actif.', 'Only an administrator can delete an asset.')
+          : t('L’actif n’a pas pu être supprimé.', 'The asset could not be deleted.'),
+      })
+    },
+  })
+
+  if (confirming) {
+    return (
+      <div className="flex max-w-xs flex-col items-end gap-1.5">
+        <span className="text-right" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t('Supprimer définitivement cet actif et ses dépendances ?', 'Permanently delete this asset and its dependencies?')}
+        </span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => del.mutate()} disabled={del.isPending} className="flex items-center gap-1 rounded-sm px-2.5 py-1"
+            style={{ background: ERR, color: 'var(--nx-on-cyan)', fontSize: 12, fontWeight: 600 }}>
+            {del.isPending ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} {t('Supprimer', 'Delete')}
+          </button>
+          <button onClick={() => setConfirming(false)} style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={onEdit} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1"
+        style={{ borderColor: 'var(--nx-border)', color: editing ? CYAN_T : 'var(--nx-text)', fontSize: 12, fontWeight: 600 }}>
+        {editing ? <X size={13} /> : <Pencil size={13} />} {editing ? t('Fermer', 'Close') : t('Modifier', 'Edit')}
+      </button>
+      <button onClick={() => setConfirming(true)} className="flex items-center gap-1.5 rounded-sm border px-2.5 py-1"
+        style={{ borderColor: 'color-mix(in srgb, var(--nx-danger) 35%, transparent)', color: ERR, fontSize: 12, fontWeight: 600 }}>
+        <Trash2 size={13} /> {t('Supprimer', 'Delete')}
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Correction d'un actif. Un import ou une extraction se trompe parfois de nom,
+ * de type ou de criticité : on rectifie ici, sans refaire l'import.
+ */
+function AssetEditor({ asset, onClose }: { asset: GraphEntityRecord; onClose: () => void }) {
+  const { t } = useLang()
+  const qc = useQueryClient()
+  const [name, setName] = useState(asset.name)
+  const [type, setType] = useState(asset.entityType)
+  const [crit, setCrit] = useState(asset.criticality)
+  const [desc, setDesc] = useState(asset.description ?? '')
+  useEffect(() => { setName(asset.name); setType(asset.entityType); setCrit(asset.criticality); setDesc(asset.description ?? '') }, [asset])
+
+  const save = useMutation({
+    mutationFn: () => api.updateEntity(asset.id, { name: name.trim(), entityType: type, criticality: crit, description: desc.trim() || null }),
+    onSuccess: (updated) => {
+      qc.invalidateQueries()
+      onClose()
+      notify({
+        kind: 'success',
+        title: t('Actif mis à jour', 'Asset updated'),
+        message: t(`« ${updated.name} » : criticité ${updated.criticality}, type ${entityTypeLabel(updated.entityType, t)}.`,
+          `“${updated.name}”: criticality ${updated.criticality}, type ${entityTypeLabel(updated.entityType, t)}.`),
+      })
+    },
+    onError: (e) => notify({
+      kind: 'error',
+      title: t('Mise à jour impossible', 'Could not update'),
+      message: (e as Error).message === '403'
+        ? t('Seul un administrateur peut modifier un actif.', 'Only an administrator can edit an asset.')
+        : (e as Error).message.slice(0, 160),
+    }),
+  })
+
+  const invalid = name.trim().length === 0
+  return (
+    <div className="mt-4 rounded-sm border p-4" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface-container)' }}>
+      <div className="grid gap-3 md:grid-cols-2">
+        <Field label={t('Nom', 'Name')}>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-sm border bg-transparent px-2 py-1.5 outline-none"
+            style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontSize: 13 }} />
+        </Field>
+        <Field label={t('Type', 'Type')}>
+          <select value={type} onChange={(e) => setType(e.target.value)} className="w-full rounded-sm border px-2 py-1.5 outline-none"
+            style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-surface)', color: 'var(--nx-text)', fontSize: 13 }}>
+            {(ENTITY_TYPE_KEYS.includes(type) ? ENTITY_TYPE_KEYS : [type, ...ENTITY_TYPE_KEYS]).map((k) => (
+              <option key={k} value={k}>{entityTypeLabel(k, t)}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label={t(`Criticité : ${crit} sur 100`, `Criticality: ${crit} of 100`)}
+          help={t('Ce que coûte son arrêt : 80 et plus, l’activité s’arrête ; en dessous de 40, elle continue.', 'What its outage costs: 80 and above, operations stop; below 40, they carry on.')}>
+          <input type="range" min={0} max={100} value={crit} onChange={(e) => setCrit(Number(e.target.value))} className="w-full" style={{ accentColor: bandColor(crit) }} />
+        </Field>
+        <Field label={t('Description', 'Description')}>
+          <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t('À quoi sert cet actif', 'What this asset is for')}
+            className="w-full rounded-sm border bg-transparent px-2 py-1.5 outline-none"
+            style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontSize: 13 }} />
+        </Field>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        <button onClick={() => save.mutate()} disabled={invalid || save.isPending} className="flex items-center gap-1.5 rounded-sm px-3 py-1.5 disabled:opacity-60"
+          style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
+          {save.isPending && <Loader2 size={13} className="animate-spin" />} {t('Enregistrer', 'Save')}
+        </button>
+        <button onClick={onClose} style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Annuler', 'Cancel')}</button>
+      </div>
+    </div>
+  )
+}
+
+function Field({ label, help, children }: { label: string; help?: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span style={{ fontFamily: mono, fontSize: 10.5, textTransform: 'uppercase', color: 'var(--nx-label)' }}>{label}</span>
+      {children}
+      {help && <span style={{ fontSize: 11.5, color: 'var(--nx-text-muted)' }}>{help}</span>}
+    </label>
   )
 }

@@ -33,6 +33,12 @@ public interface IGraphRepository
     Task<bool> ReactivateEntityAsync(Guid tenantId, Guid id, CancellationToken ct = default);
 
     /// <summary>Définit (ou retire, si null/≤0) le coût d'arrêt réel par heure d'une entité.</summary>
+    /// <summary>
+    /// Met à jour ce qu'un utilisateur peut corriger sur un actif : son nom, son
+    /// type, sa criticité, sa description. Les champs laissés à null ne bougent pas.
+    /// </summary>
+    Task<bool> UpdateEntityAsync(Guid tenantId, Guid id, string? name, string? entityType, int? criticality, string? description, CancellationToken ct = default);
+
     Task<bool> SetCostPerHourAsync(Guid tenantId, Guid id, double? costPerHour, CancellationToken ct = default);
 
     /// <summary>Liste les entités mises de côté (validité close), pour les afficher et les réactiver.</summary>
