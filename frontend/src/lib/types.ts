@@ -740,3 +740,23 @@ export interface AiUsage {
   charCap: number
   capReached: boolean
 }
+
+/** Une part de l'indice de résilience : son score, son poids, où agir. */
+export interface ResiliencePart {
+  key: string
+  score: number
+  weight: number
+  label: string
+  detail: string
+  route: string
+}
+
+/** L'indice, ses parts, et l'écart depuis le dernier relevé d'un autre jour. */
+export interface Resilience {
+  total: number
+  parts: ResiliencePart[]
+  summary: string
+  previous: { total: number; day: string } | null
+  delta: number | null
+  history: { day: string; total: number }[]
+}

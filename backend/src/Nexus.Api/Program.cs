@@ -72,6 +72,7 @@ builder.Services.AddScoped<Nexus.Api.Impact.ImpactConfigStore>();
 builder.Services.AddScoped<Nexus.Api.Collectors.CollectorStore>();
 builder.Services.AddScoped<Nexus.Api.Organization.OrganizationStore>();
 builder.Services.AddScoped<Nexus.Api.Workspace.WorkspaceStore>();
+builder.Services.AddScoped<Nexus.Api.History.ResilienceStore>();
 builder.Services.AddScoped<Nexus.Api.Organization.SetupProgressService>();
 builder.Services.AddScoped<Nexus.Api.Organization.NotificationService>();
 builder.Services.AddScoped<Nexus.AI.Decisions.DecisionAssistant>();

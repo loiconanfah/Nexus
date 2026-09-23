@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertOctagon, AlertTriangle, ArrowRight, Blocks, DownloadCloud, HelpCircle, History, Network,
-  Package, PieChart, Radar, ScanText, Upload,
+  AlertOctagon, AlertTriangle, ArrowRight, Blocks, ChevronDown, ChevronUp, DownloadCloud, HelpCircle,
+  History, Network, Package, PieChart, Radar, ScanText, Upload,
 } from 'lucide-react'
 import { CompanyOverview3D } from '../components/CompanyOverview3D'
 import { api } from '../lib/api'
@@ -115,7 +116,7 @@ export function Dashboard() {
             {org.data?.profile && <><span className="mx-2 opacity-50">|</span> {t('Secteur', 'Industry')}: {t(...(SECTOR_LABELS[org.data.profile.sector] ?? [org.data.profile.sector, org.data.profile.sector]))}</>}
           </p>
         </div>
-        <ResiliencePanel score={data.organizationHealthScore} />
+        <ResiliencePanel fallback={data.organizationHealthScore} />
       </section>
 
       {/* Métriques */}
@@ -142,23 +143,68 @@ export function Dashboard() {
 
 /* ---------- Sous-composants ---------- */
 
-function ResiliencePanel({ score }: { score: number }) {
-  const { t } = useLang()
+/**
+ * L'indice de résilience, ses quatre parts et l'écart depuis le dernier relevé.
+ *
+ * Un nombre seul ne dit rien. Un nombre qui MONTE quand on a validé des
+ * dépendances, et qui nomme la part la plus faible avec le lien vers l'écran où
+ * la corriger, donne une raison de revenir la semaine suivante.
+ */
+function ResiliencePanel({ fallback }: { fallback: number }) {
+  const { t, lang } = useLang()
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const { data } = useQuery({ queryKey: ['resilience', lang], queryFn: () => api.resilience(lang) })
+
+  const score = data?.total ?? fallback
   const color = score >= 75 ? 'var(--nx-success)' : score >= 50 ? 'var(--nx-warning)' : ERR
+  const delta = data?.delta ?? null
+
   return (
-    <div className="flex items-center gap-4 rounded-sm border px-5 py-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-      <div>
-        <p className="mb-1" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Résilience opérationnelle', 'Operational Resilience')}</p>
-        <div className="flex items-baseline gap-2">
-          <span style={{ fontFamily: geist, fontSize: 32, lineHeight: 1, color }}>{score}</span>
-          <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>/100</span>
+    <div className="flex flex-col gap-2 rounded-sm border px-5 py-3" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
+      <div className="flex items-center gap-4">
+        <div>
+          <p className="mb-1" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text-muted)' }}>{t('Résilience opérationnelle', 'Operational Resilience')}</p>
+          <div className="flex items-baseline gap-2">
+            <span style={{ fontFamily: geist, fontSize: 32, lineHeight: 1, color }}>{score}</span>
+            <span style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>/100</span>
+            {delta !== null && delta !== 0 && (
+              <span style={{ fontFamily: mono, fontSize: 12.5, fontWeight: 600, color: delta > 0 ? 'var(--nx-success)' : ERR }}>
+                {delta > 0 ? '+' : ''}{delta} {t('depuis le', 'since')} {data?.previous ? new Date(data.previous.day).toLocaleDateString(lang === 'en' ? 'en-CA' : 'fr-CA', { day: 'numeric', month: 'short' }) : ''}
+              </span>
+            )}
+          </div>
         </div>
+        <svg width="48" height="48" className="-rotate-90">
+          <circle cx="24" cy="24" r="20" fill="none" stroke="var(--nx-surface-high)" strokeWidth="3" />
+          <circle cx="24" cy="24" r="20" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round"
+            strokeDasharray={`${(score / 100) * 2 * Math.PI * 20} ${2 * Math.PI * 20}`} />
+        </svg>
+        {data && data.parts.length > 0 && (
+          <button onClick={() => setOpen((v: boolean) => !v)} className="self-start rounded-sm p-1" style={{ color: 'var(--nx-text-muted)' }}
+            title={t('Détail de l’indice', 'Index breakdown')} aria-label={t('Détail de l’indice', 'Index breakdown')}>
+            {open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        )}
       </div>
-      <svg width="48" height="48" className="-rotate-90">
-        <circle cx="24" cy="24" r="20" fill="none" stroke="var(--nx-surface-high)" strokeWidth="3" />
-        <circle cx="24" cy="24" r="20" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round"
-          strokeDasharray={`${(score / 100) * 2 * Math.PI * 20} ${2 * Math.PI * 20}`} />
-      </svg>
+
+      {open && data && (
+        <div className="flex flex-col gap-2 border-t pt-2" style={{ borderColor: 'var(--nx-border)', minWidth: 360 }}>
+          <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)', lineHeight: 1.5 }}>{data.summary}</p>
+          {data.parts.map((p) => (
+            <button key={p.key} onClick={() => navigate(p.route)} className="flex flex-col gap-1 text-left">
+              <span className="flex items-center justify-between" style={{ fontSize: 12.5, color: 'var(--nx-text)' }}>
+                <span>{p.label} <span style={{ color: 'var(--nx-outline)', fontFamily: mono, fontSize: 11 }}>{p.weight} %</span></span>
+                <span style={{ fontFamily: mono, fontWeight: 600, color: p.score >= 75 ? 'var(--nx-success)' : p.score >= 50 ? 'var(--nx-warning)' : ERR }}>{p.score}</span>
+              </span>
+              <span className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: 'var(--nx-surface-high)' }}>
+                <span className="block h-full rounded-full transition-all" style={{ width: `${p.score}%`, background: p.score >= 75 ? 'var(--nx-success)' : p.score >= 50 ? 'var(--nx-warning)' : ERR }} />
+              </span>
+              <span style={{ fontSize: 11.5, color: 'var(--nx-text-muted)' }}>{p.detail}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
