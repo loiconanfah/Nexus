@@ -38,9 +38,12 @@ public sealed class ActionRecommendationController(
         string Title, string Why, IReadOnlyList<string> Steps, string ExpectedGain, string Source);
 
     [HttpPost("recommend")]
-    public async Task<IActionResult> Recommend([FromBody] RecommendRequest req, CancellationToken ct)
+    public async Task<IActionResult> Recommend([FromBody] RecommendRequest? req, CancellationToken ct)
     {
         if (!TryGetTenant(out var tenant, out var error)) return error;
+        // Un corps absent ou un identifiant illisible doit donner une réponse
+        // claire, pas le rapport de validation brut du cadriciel.
+        if (req is null || req.EntityId == Guid.Empty) return BadRequest(new { error = "entity_required" });
         var lang = req.Lang == "en" ? "en" : "fr";
 
         var entity = await repository.GetEntityAsync(tenant, req.EntityId, ct);

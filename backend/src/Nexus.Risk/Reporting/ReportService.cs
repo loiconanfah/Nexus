@@ -40,7 +40,7 @@ public sealed class ReportService(
             {
                 var r = await riskAnalyzer.AssessEntityAsync(tenantId, e.Id, ct: ct);
                 return r is null ? null : new ReportRiskItem(e.Name, e.EntityType, r.Assessment.Score,
-                    r.Assessment.Band.ToString(), r.DirectDependents, r.BlastRadius, r.HasRedundancy);
+                    r.Assessment.Band.ToString(), r.DirectDependents, r.BlastRadius, r.HasRedundancy, e.Id);
             }
             finally { gate.Release(); }
         }));
@@ -48,7 +48,7 @@ public sealed class ReportService(
         var topRisks = risks.OrderByDescending(r => r.Score).Take(8).ToList();
 
         var spofItems = spofs.Take(10).Select(s => new ReportRiskItem(
-            s.Entity.Name, s.Entity.EntityType, s.Score, "—", s.DirectDependents, s.BlastRadius, false)).ToList();
+            s.Entity.Name, s.Entity.EntityType, s.Score, "—", s.DirectDependents, s.BlastRadius, false, s.Entity.Id)).ToList();
 
         // Concentration fournisseurs (même raisonnement : une requête par fournisseur).
         var supplierResults = await Task.WhenAll(entities.Where(e => e.EntityType == "Supplier").Select(async sup =>
@@ -57,7 +57,7 @@ public sealed class ReportService(
             try
             {
                 var deps = await queries.GetDirectDependentsAsync(tenantId, sup.Id, ct);
-                return deps.Count == 0 ? null : new ReportSupplier(sup.Name, deps.Count, deps.Select(d => d.Name).ToList());
+                return deps.Count == 0 ? null : new ReportSupplier(sup.Name, deps.Count, deps.Select(d => d.Name).ToList(), sup.Id);
             }
             finally { gate.Release(); }
         }));
@@ -74,7 +74,8 @@ public sealed class ReportService(
             .Where(g => byId.ContainsKey(g.Key))
             .Select(g => new ReportHumanDependency(
                 byId[g.Key].Name,
-                g.Where(h => byId.ContainsKey(h.SystemId)).Select(h => byId[h.SystemId].Name).Distinct().ToList()))
+                g.Where(h => byId.ContainsKey(h.SystemId)).Select(h => byId[h.SystemId].Name).Distinct().ToList(),
+                g.Key))
             .ToList();
 
         // Dépendances non documentées / incertaines.

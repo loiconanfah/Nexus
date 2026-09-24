@@ -191,6 +191,8 @@ export interface SupplierIntel {
 
 export interface Incident {
   id: string
+  /** L'identifiant de l'élément concerné. `id` n'est qu'une clé d'affichage. */
+  entityId: string
   category: 'spof' | 'supplier' | 'human'
   severity: 'CRITICAL' | 'HIGH' | 'MODERATE'
   probability: number

@@ -30,6 +30,7 @@ public sealed class IncidentsController(
             incidents.Add(new
             {
                 id = $"spof-{s.Name}",
+                entityId = s.Id,
                 category = "spof",
                 severity = sev,
                 probability = Math.Min(99, (int)s.Score),
@@ -49,6 +50,7 @@ public sealed class IncidentsController(
             incidents.Add(new
             {
                 id = $"supplier-{sup.Name}",
+                entityId = sup.Id,
                 category = "supplier",
                 severity = sup.DependentSystems >= 2 ? "HIGH" : "MODERATE",
                 probability = Math.Min(90, 40 + 15 * sup.DependentSystems),
@@ -68,6 +70,7 @@ public sealed class IncidentsController(
             incidents.Add(new
             {
                 id = $"human-{h.Person}",
+                entityId = h.Id,
                 category = "human",
                 severity = h.KnownSystems.Count >= 2 ? "HIGH" : "MODERATE",
                 probability = 55,

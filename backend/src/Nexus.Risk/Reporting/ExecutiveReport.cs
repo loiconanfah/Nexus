@@ -2,11 +2,11 @@
 
 public sealed record ReportRiskItem(
     string Name, string EntityType, double Score, string Band,
-    int Dependents, int BlastRadius, bool HasRedundancy);
+    int Dependents, int BlastRadius, bool HasRedundancy, Guid Id = default);
 
-public sealed record ReportSupplier(string Name, int DependentSystems, IReadOnlyList<string> Dependents);
+public sealed record ReportSupplier(string Name, int DependentSystems, IReadOnlyList<string> Dependents, Guid Id = default);
 
-public sealed record ReportHumanDependency(string Person, IReadOnlyList<string> KnownSystems);
+public sealed record ReportHumanDependency(string Person, IReadOnlyList<string> KnownSystems, Guid Id = default);
 
 public sealed record ReportUndocumented(string Source, string Target, string Type, double Confidence, string Status);
 

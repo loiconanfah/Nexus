@@ -81,7 +81,10 @@ export function Incidents() {
       <div className="grid gap-3 lg:grid-cols-2">
         {list.map((i) => {
           const s = SEV[i.severity]
-          const entityId = i.id.split('-').slice(1).join('-')
+          // L'identifiant vient de l'API. Il était auparavant reconstitué en
+          // découpant « spof-<nom> », ce qui donnait un NOM : la simulation et la
+          // proposition de plan recevaient donc un identifiant invalide.
+          const entityId = i.entityId
           return (
             <div key={i.id} className="flex flex-col gap-3 rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)', borderLeft: `3px solid ${s.color}` }}>
               <div className="flex items-start justify-between gap-3">
