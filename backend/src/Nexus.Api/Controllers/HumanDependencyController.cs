@@ -26,7 +26,7 @@ namespace Nexus.Api.Controllers;
 /// par l'unité d'organisation. Chaque rattachement dit par quel lien il a été
 /// établi : un rattachement indirect n'est pas présenté comme un fait direct.
 /// </summary>
-[Route("api/v1/human-dependency")]
+[Route("api/v1/human-dependencies")]
 public sealed class HumanDependencyController(
     ITenantProvider tenantProvider,
     IGraphRepository repository) : NexusController(tenantProvider)

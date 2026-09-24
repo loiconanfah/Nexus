@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\Nexus.Connectors\Nexus.Connectors.csproj" />
     <ProjectReference Include="..\..\src\Nexus.Ingestion\Nexus.Ingestion.csproj" />
     <ProjectReference Include="..\..\src\Nexus.AI\Nexus.AI.csproj" />
+    <ProjectReference Include="..\..\src\Nexus.Api\Nexus.Api.csproj" />
   </ItemGroup>
 
 </Project>
