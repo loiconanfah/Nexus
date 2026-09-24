@@ -384,15 +384,21 @@ export interface AuditData {
 export interface HumanPerson {
   id: string
   name: string
+  /** Le poste tel que le document l'écrit, à défaut un libellé générique. */
   role: string
   knownSystems: string[]
+  /** Les mêmes systèmes AVEC leur identifiant, pour pouvoir agir dessus. */
+  systems?: { id: string; name: string; criticality: number }[]
   criticalSystems: number
   soleKnowledgeSystems: number
   backupExperts: number
   riskLevel: 'CRITICAL' | 'HIGH' | 'MODERATE'
   documentationPercent: number
+  /** Rattachements établis par l'unité plutôt que par un lien direct. */
+  indirectSystems?: number
 }
-export interface HumanEdge { person: string; system: string; systemCritical: boolean; relation: string }
+/** `direct` à faux : rattachement déduit de l'unité, pas écrit tel quel. */
+export interface HumanEdge { person: string; system: string; systemCritical: boolean; relation: string; direct?: boolean }
 export interface HumanDependencies {
   summary: { criticalKnowledgeAreas: number; singleKnowledgeOwners: number; undocumentedProcesses: number; keyDependencyEmployees: number }
   people: HumanPerson[]

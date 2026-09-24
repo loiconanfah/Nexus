@@ -78,7 +78,12 @@ export function HumanDependency() {
         <div className="min-h-[320px] flex-1 rounded-sm border" style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)' }}>
           {selected && <KnowledgeGraph data={data} person={selected} onPerson={setSelId} onSystem={(name) => navigate(`/simulations?name=${encodeURIComponent(name)}`)} />}
         </div>
-        {selected && <Profile person={selected} onSimulate={() => navigate(`/simulations?asset=${selected.knownSystems[0] ?? ''}&name=${encodeURIComponent(selected.knownSystems[0] ?? '')}`)} />}
+        {/* Le premier système AVEC son identifiant : passer son nom ouvrait une
+            simulation sur un paramètre qui ne désignait rien. */}
+        {selected && <Profile person={selected} onSimulate={() => {
+          const first = selected.systems?.[0]
+          if (first) navigate(`/simulations?asset=${first.id}&name=${encodeURIComponent(first.name)}`)
+        }} />}
       </div>
 
       {/* Directory */}

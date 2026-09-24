@@ -72,6 +72,9 @@ public sealed class HumanDependencyController(
                     // libellé générique : mieux vaut « Responsable informatique ».
                     role = HumanKnowledgeMap.Job(person.Description) ?? "Knowledge Holder",
                     knownSystems = systems.Select(s => s.Name).ToList(),
+                    // Les systèmes AVEC leur identifiant : sans lui, l'écran ne peut
+                    // que passer un nom là où une simulation attend un identifiant.
+                    systems = systems.Select(s => new { s.Id, s.Name, s.Criticality }).ToList(),
                     criticalSystems = systems.Count(s => s.Criticality >= 80),
                     soleKnowledgeSystems = soleSystems,
                     backupExperts = minBackup,
