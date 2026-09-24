@@ -18,7 +18,6 @@ public sealed class ReportService(
     /// <summary>Évaluations menées de front (borne la charge sur Neo4j).</summary>
     private const int MaxConcurrency = 12;
 
-    private static readonly HashSet<string> HumanRelations = new(StringComparer.OrdinalIgnoreCase) { "KNOWS", "MAINTAINS" };
 
     public async Task<ExecutiveReport> GenerateAsync(Guid tenantId, CancellationToken ct = default)
     {
@@ -65,13 +64,17 @@ public sealed class ReportService(
         var suppliers = supplierResults.Where(s => s is not null).Select(s => s!)
             .OrderByDescending(s => s.DependentSystems).ToList();
 
-        // Dépendances humaines (KNOWS / MAINTAINS depuis une Person).
-        var humanByPerson = relations
-            .Where(e => HumanRelations.Contains(e.Type) && byId.TryGetValue(e.Source, out var p) && p.EntityType == "Person")
-            .GroupBy(e => e.Source)
+        // Dépendances humaines. Le rapport ne regardait que KNOWS / MAINTAINS avec
+        // la personne en source, et restait donc vide sur les référentiels réels,
+        // qui écrivent le lien à l'envers ou le font passer par une unité. La même
+        // lecture que l'écran de dépendance humaine s'applique ici, sinon les deux
+        // se contrediraient.
+        var humanByPerson = HumanKnowledgeMap.Build(entities, relations)
+            .GroupBy(h => h.PersonId)
+            .Where(g => byId.ContainsKey(g.Key))
             .Select(g => new ReportHumanDependency(
                 byId[g.Key].Name,
-                g.Where(e => byId.ContainsKey(e.Target)).Select(e => byId[e.Target].Name).Distinct().ToList()))
+                g.Where(h => byId.ContainsKey(h.SystemId)).Select(h => byId[h.SystemId].Name).Distinct().ToList()))
             .ToList();
 
         // Dépendances non documentées / incertaines.

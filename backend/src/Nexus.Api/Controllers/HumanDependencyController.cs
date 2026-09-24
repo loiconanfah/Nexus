@@ -1,19 +1,36 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Nexus.Api.Tenancy;
 using Nexus.Graph;
+using Nexus.Risk;
 
 namespace Nexus.Api.Controllers;
 
 /// <summary>
-/// Human Dependency Engine (article 28) : identifie la connaissance critique
-/// détenue par trop peu de personnes (relations KNOWS / MAINTAINS).
+/// Dépendance humaine (article 29) : la connaissance opérationnelle réellement
+/// détenue par trop peu de personnes.
+///
+/// Cet écran restait VIDE sur des documents d'entreprise réels, pour deux
+/// raisons qui n'avaient rien à voir avec les données.
+///
+/// 1. Il n'acceptait que KNOWS et MAINTAINS, avec la personne en SOURCE. Or un
+///    référentiel d'entreprise n'écrit jamais « Samuel connaît le core banking » :
+///    il écrit « l'unité informatique est responsable PER-006 » et « le core
+///    banking appartient à l'unité informatique ». La personne est donc la CIBLE
+///    du lien, et le rattachement passe par son unité.
+/// 2. Le poste n'était pas exploité : chaque personne s'affichait comme
+///    « Knowledge Holder », alors que le document dit « Responsable
+///    informatique ». Un écran de dépendance humaine sans les métiers ne se lit
+///    pas : c'est le poste qui dit si la personne est remplaçable.
+///
+/// On accepte donc les deux directions, les liens de responsabilité, et UN saut
+/// par l'unité d'organisation. Chaque rattachement dit par quel lien il a été
+/// établi : un rattachement indirect n'est pas présenté comme un fait direct.
 /// </summary>
-[Route("api/v1/human-dependencies")]
+[Route("api/v1/human-dependency")]
 public sealed class HumanDependencyController(
     ITenantProvider tenantProvider,
     IGraphRepository repository) : NexusController(tenantProvider)
 {
-    private static readonly HashSet<string> HumanRelations = new(StringComparer.OrdinalIgnoreCase) { "KNOWS", "MAINTAINS" };
     private static readonly HashSet<string> DocRelations = new(StringComparer.OrdinalIgnoreCase) { "DOCUMENTED_BY" };
 
     [HttpGet]
@@ -25,25 +42,22 @@ public sealed class HumanDependencyController(
         var relations = await repository.GetRelationsAsync(tenant, ct: ct);
         var byId = entities.ToDictionary(e => e.Id);
 
-        // Relations de connaissance humaine dont la source est une Person.
-        var humanRels = relations
-            .Where(r => HumanRelations.Contains(r.Type) && byId.TryGetValue(r.Source, out var p) && p.EntityType == "Person")
-            .ToList();
 
-        // Combien de personnes connaissent chaque système.
-        var knowersBySystem = humanRels
-            .GroupBy(r => r.Target)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.Source).Distinct().Count());
+        var holds = HumanKnowledgeMap.Build(entities, relations);
 
-        // Systèmes documentés (DOCUMENTED_BY sortant).
+
+        var knowersBySystem = holds
+            .GroupBy(h => h.SystemId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.PersonId).Distinct().Count());
+
         var documented = relations.Where(r => DocRelations.Contains(r.Type)).Select(r => r.Source).ToHashSet();
 
-        var people = humanRels
-            .GroupBy(r => r.Source)
+        var people = holds
+            .GroupBy(h => h.PersonId)
             .Select(g =>
             {
                 var person = byId[g.Key];
-                var systems = g.Where(x => byId.ContainsKey(x.Target)).Select(x => byId[x.Target]).ToList();
+                var systems = g.Where(x => byId.ContainsKey(x.SystemId)).Select(x => byId[x.SystemId]).ToList();
                 var soleSystems = systems.Count(s => knowersBySystem.GetValueOrDefault(s.Id, 1) <= 1);
                 var minBackup = systems.Count == 0 ? 0 : systems.Min(s => Math.Max(0, knowersBySystem.GetValueOrDefault(s.Id, 1) - 1));
                 var documentedCount = systems.Count(s => documented.Contains(s.Id));
@@ -54,22 +68,32 @@ public sealed class HumanDependencyController(
                 {
                     id = person.Id,
                     name = person.Name,
-                    role = "Knowledge Holder",
+                    // Le POSTE, tel que le document l'écrit. À défaut seulement, le
+                    // libellé générique : mieux vaut « Responsable informatique ».
+                    role = HumanKnowledgeMap.Job(person.Description) ?? "Knowledge Holder",
                     knownSystems = systems.Select(s => s.Name).ToList(),
                     criticalSystems = systems.Count(s => s.Criticality >= 80),
                     soleKnowledgeSystems = soleSystems,
                     backupExperts = minBackup,
                     riskLevel = risk,
                     documentationPercent = docPercent,
+                    indirectSystems = g.Count(x => !x.Direct),
                 };
             })
             .OrderByDescending(p => p.soleKnowledgeSystems)
             .ThenByDescending(p => p.criticalSystems)
             .ToList();
 
-        var edges = humanRels
-            .Where(r => byId.ContainsKey(r.Source) && byId.ContainsKey(r.Target))
-            .Select(r => new { person = byId[r.Source].Name, system = byId[r.Target].Name, systemCritical = byId[r.Target].Criticality >= 80, relation = r.Type })
+        var edges = holds
+            .Where(h => byId.ContainsKey(h.PersonId) && byId.ContainsKey(h.SystemId))
+            .Select(h => new
+            {
+                person = byId[h.PersonId].Name,
+                system = byId[h.SystemId].Name,
+                systemCritical = byId[h.SystemId].Criticality >= 80,
+                relation = h.Via,
+                direct = h.Direct,
+            })
             .ToList();
 
         return Ok(new
