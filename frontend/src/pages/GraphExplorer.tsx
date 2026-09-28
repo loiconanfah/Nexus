@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Background, BackgroundVariant, Handle, Panel, Position, ReactFlow, ReactFlowProvider,
@@ -8,13 +8,17 @@ import {
 import '@xyflow/react/dist/style.css'
 import {
   Boxes, ChevronsDownUp, ChevronsUpDown, Crosshair, Database, FileText, Group, Mail,
-  Maximize2, Minimize2, Network, RotateCcw, ScanSearch, Server, Share2, Sparkles, Users, Workflow, X,
+  Maximize2, Minimize2, Network, RotateCcw, ScanSearch, Server, Share2, SlidersHorizontal, Sparkles,
+  Loader2, Users, Workflow, X,
 } from 'lucide-react'
 import { api } from '../lib/api'
 import { layoutClustered, layoutGraph } from '../lib/layout'
 import { useLang } from '../lib/i18n'
 import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel } from '../lib/labels'
-import type { GraphEntityRecord } from '../lib/types'
+import { SavedViews } from '../components/SavedViews'
+import { notify } from '../lib/notify'
+import { useMoney } from '../lib/money'
+import type { GraphEntityRecord, ScopeSimulation, ViewConfig } from '../lib/types'
 
 const Graph3D = lazy(() => import('../components/Graph3D').then((m) => ({ default: m.Graph3D })))
 
@@ -135,6 +139,14 @@ function GraphInner() {
   const [arrange, setArrange] = useState<'clusters' | 'flow'>('clusters')
   // Le plan n'est pas figé : ce que l'utilisateur déplace reste où il l'a mis.
   const [moved, setMoved] = useState<Record<string, { x: number; y: number }>>({})
+  // Les critères du graphe courant, et la vue enregistrée qui les porte. Un
+  // graphe entier est illisible passé quelques centaines d'éléments : une vue
+  // nommée (« chaîne paiement », « périmètre agences ») est ce qui rend le plan
+  // utilisable au quotidien.
+  const [cfg, setCfg] = useState<ViewConfig>({})
+  const [viewId, setViewId] = useState<string | null>(null)
+  const [viewName, setViewName] = useState<string | null>(null)
+  const [panel, setPanel] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const [fs, setFs] = useState(false)
 
@@ -155,9 +167,39 @@ function GraphInner() {
     if (node) { setSelected(node); setQuery(node.name) }
   }, [focusId, data])
 
+  // 0) Le périmètre : ce que la vue retient, avant toute mise en page. Les liens
+  //    dont une extrémité sort du périmètre sont écartés, sinon le plan
+  //    afficherait des arêtes vers le vide.
+  const scoped = useMemo(() => {
+    if (!data) return null
+    const types = cfg.types ?? []
+    const rels = cfg.relationTypes ?? []
+    const keep = data.nodes.filter((n) => {
+      if (types.length && !types.includes(n.entityType)) return false
+      if (cfg.minCriticality != null && n.criticality < cfg.minCriticality) return false
+      return true
+    })
+    const ids = new Set(keep.map((n) => n.id))
+    const edges = data.edges.filter((e) => {
+      if (!ids.has(e.source) || !ids.has(e.target)) return false
+      if (rels.length && !rels.includes(e.type)) return false
+      if (cfg.minConfidence != null && e.confidence < cfg.minConfidence) return false
+      return true
+    })
+    return { nodes: keep, edges }
+  }, [data, cfg])
+
+  // Chaque élément du périmètre mis en panne à son tour : le classement des
+  // pires cas individuels, là où il fallait les essayer un par un.
+  const scope = useMutation({
+    mutationFn: () => api.simulateScope((scoped?.nodes ?? []).map((n) => n.id), viewName),
+    onError: (e) => notify({ kind: 'error', title: t('Simulation impossible', 'Simulation failed'), message: (e as Error).message.slice(0, 160) }),
+  })
+
   // 1) Mise en page STABLE (ne dépend que des données + recherche).
   const laidOut = useMemo(() => {
-    if (!data) return { nodes: [] as Node[], edges: [] as Edge[] }
+    if (!scoped) return { nodes: [] as Node[], edges: [] as Edge[] }
+    const data = scoped
     const q = query.trim().toLowerCase()
     const rfNodes: Node[] = data.nodes.map((n) => ({
       id: n.id, type: 'entity', position: { x: 0, y: 0 },
@@ -183,10 +225,10 @@ function GraphInner() {
       style: { width: c.width, height: c.height, pointerEvents: 'none' as const },
     }))
     return { nodes: [...frames, ...placed], edges: rfEdges }
-  }, [data, query, arrange, t])
+  }, [scoped, query, arrange, t])
 
-  // Un changement de mise en page repart d'une disposition propre.
-  useEffect(() => { setMoved({}) }, [arrange, data])
+  // Un changement de mise en page ou de périmètre repart d'une disposition propre.
+  useEffect(() => { setMoved({}) }, [arrange, scoped])
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setMoved((prev) => {
@@ -263,7 +305,10 @@ function GraphInner() {
             </button>
           )}
           <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
-            {data.nodes.length} {t('nœuds', 'nodes')} · {data.edges.length} {t('liens', 'links')}
+            {scoped?.nodes.length ?? 0} {t('nœuds', 'nodes')} · {scoped?.edges.length ?? 0} {t('liens', 'links')}
+            {(scoped?.nodes.length ?? 0) !== data.nodes.length && (
+              <span style={{ color: 'var(--nx-outline)' }}> {t('sur', 'of')} {data.nodes.length}</span>
+            )}
           </span>
           <button onClick={toggleFullscreen} title={fs ? t('Quitter le plein écran', 'Exit fullscreen') : t('Plein écran', 'Fullscreen')}
             aria-label={fs ? t('Quitter le plein écran', 'Exit fullscreen') : t('Plein écran', 'Fullscreen')}
@@ -272,6 +317,33 @@ function GraphInner() {
             {fs ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
         </div>
+      </div>
+
+      {/* Graphes personnalisés */}
+      <div className="flex flex-col gap-2 rounded-sm border p-2.5" style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <SavedViews kind="graph" current={{ ...cfg, arrange }} active={viewId}
+            onActiveChange={(id) => { setViewId(id); if (id === null) setViewName(null) }}
+            onApply={(c) => { setCfg(c); if (c.arrange) setArrange(c.arrange); setSelected(null); scope.reset() }}
+            onName={setViewName} />
+          <div className="flex items-center gap-2">
+            <button onClick={() => scope.mutate()} disabled={scope.isPending || (scoped?.nodes.length ?? 0) === 0}
+              className="flex items-center gap-1.5 rounded-sm px-2 py-1 disabled:opacity-50"
+              style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontFamily: mono, fontSize: 11.5, textTransform: 'uppercase' }}>
+              {scope.isPending ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+              {t('Simuler ce périmètre', 'Simulate this scope')}
+            </button>
+            <button onClick={() => setPanel((v) => !v)} className="flex items-center gap-1.5 rounded-sm border px-2 py-1"
+              style={{ borderColor: 'var(--nx-border)', color: CYAN_T, fontFamily: mono, fontSize: 11.5, textTransform: 'uppercase' }}>
+              <SlidersHorizontal size={13} /> {panel ? t('Masquer les critères', 'Hide criteria') : t('Critères', 'Criteria')}
+            </button>
+          </div>
+        </div>
+        {panel && data && (
+          <GraphCriteria cfg={cfg} onChange={setCfg} nodes={data.nodes} edges={data.edges}
+            kept={scoped?.nodes.length ?? 0} links={scoped?.edges.length ?? 0} />
+        )}
+        {scope.data && <ScopeResults data={scope.data} onClose={() => scope.reset()} onOpen={(id, name) => navigate(`/simulations?asset=${id}&name=${encodeURIComponent(name)}`)} />}
       </div>
 
       {/* Canevas */}
@@ -294,8 +366,8 @@ function GraphInner() {
         ) : (
           <Suspense fallback={<div className="flex h-full items-center justify-center" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DE L’HOLOGRAMME…', 'LOADING HOLOGRAM…')}</div>}>
             <Graph3D
-              nodes={data.nodes}
-              edges={data.edges.map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
+              nodes={scoped?.nodes ?? []}
+              edges={(scoped?.edges ?? []).map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
               query={query}
               selectedId={selected?.id ?? null}
               onSelect={(id) => setSelected(data.nodes.find((n) => n.id === id) ?? null)}
@@ -440,5 +512,129 @@ export function GraphExplorer() {
     <ReactFlowProvider>
       <GraphInner />
     </ReactFlowProvider>
+  )
+}
+
+
+/**
+ * Les critères d'un graphe personnalisé. Les types proposés sont ceux que le
+ * graphe contient VRAIMENT, pas la liste théorique de l'ontologie : proposer un
+ * filtre qui ne retient rien n'aide personne.
+ */
+function GraphCriteria({ cfg, onChange, nodes, edges, kept, links }: {
+  cfg: ViewConfig
+  onChange: (c: ViewConfig) => void
+  nodes: GraphEntityRecord[]
+  edges: { type: string }[]
+  kept: number
+  links: number
+}) {
+  const { t } = useLang()
+  const types = useMemo(() => [...new Set(nodes.map((n) => n.entityType))].sort(), [nodes])
+  const relTypes = useMemo(() => [...new Set(edges.map((e) => e.type))].sort(), [edges])
+  const set = (patch: Partial<ViewConfig>) => onChange({ ...cfg, ...patch })
+  const toggle = (key: 'types' | 'relationTypes', v: string) => {
+    const cur = cfg[key] ?? []
+    const next = cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]
+    set({ [key]: next.length ? next : undefined } as Partial<ViewConfig>)
+  }
+  const chip = (on: boolean) => ({
+    fontSize: 11.5, fontFamily: mono,
+    color: on ? 'var(--nx-on-cyan)' : 'var(--nx-text-muted)',
+    background: on ? CYAN : 'var(--nx-surface)',
+    border: `1px solid ${on ? CYAN : 'var(--nx-border)'}`,
+  })
+
+  return (
+    <div className="flex flex-col gap-2 border-t pt-2" style={{ borderColor: 'var(--nx-border)' }}>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Types', 'Types')}</span>
+        {types.map((ty) => (
+          <button key={ty} onClick={() => toggle('types', ty)} className="rounded-sm px-2 py-0.5" style={chip((cfg.types ?? []).includes(ty))}>
+            {entityTypeLabel(ty, t)}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>{t('Liens', 'Links')}</span>
+        {relTypes.map((rt) => (
+          <button key={rt} onClick={() => toggle('relationTypes', rt)} className="rounded-sm px-2 py-0.5" style={chip((cfg.relationTypes ?? []).includes(rt))}>
+            {relationTypeLabel(rt, t)}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t('Criticité minimale', 'Minimum criticality')}
+          <input type="number" min={0} max={100} value={cfg.minCriticality ?? ''} placeholder="0"
+            onChange={(e) => set({ minCriticality: e.target.value === '' ? undefined : Number(e.target.value) })}
+            className="w-16 rounded-sm border bg-transparent px-1.5 py-0.5 outline-none"
+            style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }} />
+        </label>
+        <label className="flex items-center gap-1.5" style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t('Confiance minimale', 'Minimum confidence')}
+          <input type="number" min={0} max={100} value={cfg.minConfidence != null ? Math.round(cfg.minConfidence * 100) : ''} placeholder="0"
+            onChange={(e) => set({ minConfidence: e.target.value === '' ? undefined : Number(e.target.value) / 100 })}
+            className="w-16 rounded-sm border bg-transparent px-1.5 py-0.5 outline-none"
+            style={{ borderColor: 'var(--nx-border)', color: 'var(--nx-text)', fontFamily: mono, fontSize: 12 }} />
+        </label>
+        <button onClick={() => onChange({})} style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('Tout effacer', 'Clear all')}</button>
+        <span className="ml-auto" style={{ fontFamily: mono, fontSize: 11.5, color: 'var(--nx-outline)' }}>
+          {kept} {t('nœuds', 'nodes')} · {links} {t('liens', 'links')}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+
+/**
+ * Le classement des pires pannes du périmètre. Chaque élément y a été mis en
+ * panne ISOLÉMENT : ce n'est pas un scénario où tout tombe ensemble, et le dire
+ * évite de faire passer une somme pour une prévision.
+ */
+function ScopeResults({ data, onClose, onOpen }: {
+  data: ScopeSimulation
+  onClose: () => void
+  onOpen: (id: string, name: string) => void
+}) {
+  const { t } = useLang()
+  const money = useMoney()
+  return (
+    <div className="flex flex-col gap-2 border-t pt-2" style={{ borderColor: 'var(--nx-border)' }}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--nx-label)' }}>
+          {data.name
+            ? t(`Pires pannes de « ${data.name} »`, `Worst outages in “${data.name}”`)
+            : t('Pires pannes de ce périmètre', 'Worst outages in this scope')}
+        </span>
+        <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>
+          {t(`${data.simulated} élément(s) simulé(s) séparément`, `${data.simulated} element(s) simulated separately`)}
+          {data.truncated && t(`, sur ${data.requested} : les plus critiques d'abord`, `, of ${data.requested}: most critical first`)}
+        </span>
+        <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={14} /></button>
+      </div>
+      <div className="flex flex-col divide-y" style={{ borderColor: 'var(--nx-border)', maxHeight: 220, overflowY: 'auto' }}>
+        {data.results.map((r, i) => (
+          <button key={r.id} onClick={() => onOpen(r.id, r.name)} className="flex items-baseline justify-between gap-3 py-1.5 text-left">
+            <span className="flex min-w-0 items-baseline gap-2">
+              <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-outline)' }}>{i + 1}</span>
+              <span className="truncate" style={{ fontSize: 13, color: 'var(--nx-text)' }}>{r.name}</span>
+              <span className="truncate" style={{ fontSize: 11.5, color: 'var(--nx-text-muted)' }}>
+                {r.affected} {t('touchés', 'affected')}{r.top.length > 0 && ` · ${r.top.join(', ')}`}
+              </span>
+            </span>
+            <span className="shrink-0" style={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: 'var(--nx-danger)' }}>
+              {money.compact(r.hourlyCost)}<span style={{ color: 'var(--nx-text-muted)', fontWeight: 400 }}> /h</span>
+            </span>
+          </button>
+        ))}
+        {data.results.length === 0 && (
+          <span className="py-2" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
+            {t('Aucun élément de ce périmètre n’entraîne de cascade.', 'No element in this scope triggers a cascade.')}
+          </span>
+        )}
+      </div>
+    </div>
   )
 }

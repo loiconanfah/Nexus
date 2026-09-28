@@ -19,12 +19,14 @@ const CYAN_T = 'var(--nx-cyan-text)'
  * utile doit servir aux collègues plutôt que de mourir avec le compte qui l'a
  * construit.
  */
-export function SavedViews({ kind, current, onApply, active, onActiveChange }: {
+export function SavedViews({ kind, current, onApply, active, onActiveChange, onName }: {
   kind: 'risk' | 'graph'
   current: ViewConfig
   onApply: (config: ViewConfig) => void
   active: string | null
   onActiveChange: (id: string | null) => void
+  /** Le nom de la vue appliquée, quand l'écran veut l'afficher ailleurs. */
+  onName?: (name: string | null) => void
 }) {
   const { t } = useLang()
   const qc = useQueryClient()
@@ -39,6 +41,7 @@ export function SavedViews({ kind, current, onApply, active, onActiveChange }: {
     onSuccess: (v) => {
       done()
       onActiveChange(v.id)
+      onName?.(v.name)
       notify({
         kind: 'success',
         title: t('Vue enregistrée', 'View saved'),
@@ -77,7 +80,7 @@ export function SavedViews({ kind, current, onApply, active, onActiveChange }: {
         return (
           <span key={v.id} className="flex items-center gap-1 rounded-sm border px-2 py-1"
             style={{ borderColor: on ? CYAN : 'var(--nx-border)', background: on ? 'color-mix(in srgb, var(--nx-cyan) 10%, transparent)' : 'var(--nx-surface)' }}>
-            <button onClick={() => { onApply(v.config); onActiveChange(v.id) }}
+            <button onClick={() => { onApply(v.config); onActiveChange(v.id); onName?.(v.name) }}
               style={{ fontSize: 12.5, color: on ? CYAN_T : 'var(--nx-text)' }}>{v.name}</button>
             {on && (
               <button onClick={() => save.mutate(v)} disabled={save.isPending}

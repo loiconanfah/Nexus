@@ -840,3 +840,23 @@ export interface ViewConfig {
   minConfidence?: number
   arrange?: 'clusters' | 'flow'
 }
+
+/** Le classement des pires pannes d'un périmètre, chacune simulée isolément. */
+export interface ScopeSimulation {
+  name: string | null
+  requested: number
+  simulated: number
+  truncated: boolean
+  currency: string
+  totalHourlyCost: number
+  results: {
+    id: string
+    name: string
+    type: string
+    criticality: number
+    affected: number
+    hourlyCost: number
+    worstCaseCost: number
+    top: string[]
+  }[]
+}
