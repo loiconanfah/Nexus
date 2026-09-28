@@ -1,6 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport, ActionRecommendation, ActionStep } from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport, ActionRecommendation, ActionStep, SavedView, ViewConfig } from './types'
 
 const BASE = '/api/v1'
 
@@ -157,6 +157,23 @@ export const api = {
   /** Mode incident : la cascade, le coût, qui appeler, les secours, les plans. */
   incident: (id: string) =>
     fetch(`${BASE}/incident/${id}`, { headers: headers(false) }).then(handle<IncidentReport>),
+
+  // ── Vues enregistrées : tableaux de risques et graphes personnalisés ──
+
+  views: (kind: 'risk' | 'graph') =>
+    fetch(`${BASE}/views?kind=${kind}`, { headers: headers(false) }).then(handle<SavedView[]>),
+
+  createView: (kind: 'risk' | 'graph', name: string, config: ViewConfig) =>
+    fetch(`${BASE}/views`, { method: 'POST', headers: headers(), body: JSON.stringify({ kind, name, config }) })
+      .then(handle<SavedView>),
+
+  updateView: (id: string, kind: 'risk' | 'graph', name: string, config: ViewConfig) =>
+    fetch(`${BASE}/views/${id}`, { method: 'PUT', headers: headers(), body: JSON.stringify({ kind, name, config }) })
+      .then(handle<SavedView>),
+
+  deleteView: (id: string) =>
+    fetch(`${BASE}/views/${id}`, { method: 'DELETE', headers: headers(false) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
 
   workspaceSummary: () =>
     fetch(`${BASE}/workspace/summary`, { headers: headers(false) }).then(handle<WorkspaceSummary>),

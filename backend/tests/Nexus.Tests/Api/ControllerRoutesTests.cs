@@ -49,6 +49,7 @@ public class ControllerRoutesTests
         "api/v1/simulations",
         "api/v1/suppliers",
         "api/v1/users",
+        "api/v1/views",
         "api/v1/workspace",
         "health",
     ];

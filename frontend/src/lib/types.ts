@@ -812,3 +812,31 @@ export interface IncidentReport {
   plans: { id: string; name: string; entityType: string; description?: string | null }[]
   suppliers: { id: string; name: string; description?: string | null }[]
 }
+
+/**
+ * Une vue enregistrée : tableau de risques ou graphe personnalisé. Elle ne
+ * contient que des CRITÈRES, jamais un résultat, et reste donc juste quand le
+ * graphe change. Elle appartient à l'espace, pas à son auteur.
+ */
+export interface SavedView {
+  id: string
+  kind: 'risk' | 'graph'
+  name: string
+  updatedAt: string
+  config: ViewConfig
+}
+
+/** Les critères. Tous facultatifs : une vue vide montre tout. */
+export interface ViewConfig {
+  types?: string[]
+  bands?: string[]
+  minCriticality?: number
+  minScore?: number
+  redundancy?: 'with' | 'without'
+  search?: string
+  columns?: string[]
+  sort?: { key: string; dir: 'asc' | 'desc' }
+  relationTypes?: string[]
+  minConfidence?: number
+  arrange?: 'clusters' | 'flow'
+}
