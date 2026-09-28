@@ -417,7 +417,7 @@ function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onCl
         <button onClick={onView} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 13, fontWeight: 500 }}><Network size={16} /> {t('Voir les dépendances', 'View Dependencies')}</button>
       </div>
 
-      <FixedItModal open={fixOpen} onClose={() => setFixOpen(false)} targetId={row.id} targetName={row.name} />
+      {fixOpen && <FixedItModal open onClose={() => setFixOpen(false)} targetId={row.id} targetName={row.name} />}
 
       <ActionModal
         open={actionOpen}

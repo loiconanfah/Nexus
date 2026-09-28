@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { BookOpen, FileDown, Server, ShieldPlus, User } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { FixedItModal } from '../components/FixedItModal'
 import { personRoleLabel, riskLevelLabel } from '../lib/labels'
 import { HubSpoke, PickerList, type Spoke } from '../components/HubSpoke'
 import { ActionModal } from '../components/ActionModal'
@@ -184,6 +185,10 @@ function KnowledgeGraph({ data, person, onPerson, onSystem }: {
 function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () => void }) {
   const { t } = useLang()
   const c = RISK_COLOR[person.riskLevel]
+  // La correction porte sur le SYSTÈME, jamais sur la personne : on ne « corrige »
+  // pas quelqu'un, on fait en sorte qu'il ne soit plus seul à savoir.
+  const [fix, setFix] = useState<{ id: string; name: string } | null>(null)
+  const systems = person.systems ?? []
   return (
     <aside className="flex w-full shrink-0 flex-col gap-5 rounded-sm border p-5 lg:w-[320px]" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--nx-text-muted)' }}>{t('Profil de dépendance', 'Dependency Profile')}</h3>
@@ -198,12 +203,32 @@ function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () =
 
       <div>
         <h4 className="mb-2 border-b pb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>{t('Domaines de savoir clés', 'Core Knowledge Areas')}</h4>
-        <div className="flex flex-wrap gap-2">
-          {person.knownSystems.map((s) => (
-            <span key={s} className="flex items-center gap-1 rounded border px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, borderColor: 'var(--nx-border)', background: 'var(--nx-surface)', color: 'var(--nx-text)' }}><Server size={11} /> {s}</span>
+        <div className="flex flex-col gap-1">
+          {systems.length === 0 && person.knownSystems.map((s) => (
+            <span key={s} className="flex w-fit items-center gap-1 rounded border px-2 py-0.5" style={{ fontFamily: mono, fontSize: 11, borderColor: 'var(--nx-border)', background: 'var(--nx-surface)', color: 'var(--nx-text)' }}><Server size={11} /> {s}</span>
+          ))}
+          {systems.map((sys) => (
+            <div key={sys.id} className="flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-1" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text)' }}>
+                <Server size={11} /> <span className="truncate">{sys.name}</span>
+                {sys.criticality >= 80 && <span style={{ color: ERR }}>·</span>}
+              </span>
+              <button onClick={() => setFix({ id: sys.id, name: sys.name })}
+                title={t('Déclarer qu’une seconde personne sait le faire fonctionner', 'Declare that a second person can run it')}
+                className="shrink-0 rounded-sm border px-1.5 py-0.5"
+                style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', color: 'var(--nx-success)', fontFamily: mono, fontSize: 10 }}>
+                {t('corrigé', 'fixed')}
+              </button>
+            </div>
           ))}
         </div>
       </div>
+
+      {fix && (
+        <FixedItModal open onClose={() => setFix(null)} targetId={fix.id} targetName={fix.name}
+          suggest="second_person" only={['second_person', 'procedure', 'owner']}
+          reason={t(`${person.name} est seul à savoir le faire fonctionner.`, `${person.name} is the only one who can run it.`)} />
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <MiniStat label={t('SYSTÈMES CRITIQUES', 'CRITICAL SYSTEMS')} value={person.criticalSystems || person.knownSystems.length} color={c} />

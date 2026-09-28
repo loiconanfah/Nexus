@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Play, Truck } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
+import { FixedItModal } from '../components/FixedItModal'
 import { HubSpoke, PickerList, type Spoke } from '../components/HubSpoke'
 import type { Supplier, SupplierIntel } from '../lib/types'
 
@@ -142,6 +143,10 @@ function NetworkMap({ data, selected, onSupplier }: { data: SupplierIntel; selec
 function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimulate: () => void }) {
   const { t } = useLang()
   const c = bandColor(supplier.riskScore)
+  // Le défaut est la concentration, et elle ne se corrige pas sur le fournisseur :
+  // c'est le SYSTÈME qui dépend de lui qui gagne une seconde source.
+  const [fix, setFix] = useState<{ id: string; name: string } | null>(null)
+  const refs = supplier.dependentRefs ?? []
   const critPct = supplier.dependencies === 0 ? 0 : Math.round(100 * supplier.criticalServices / supplier.dependencies)
   return (
     <aside className="flex w-full shrink-0 flex-col gap-4 rounded-sm border p-5 lg:w-[320px]" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
@@ -164,6 +169,34 @@ function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimula
         <Row label={t('Fournisseurs alternatifs', 'Alternative Suppliers')} value={supplier.alternatives === 0 ? t('Aucun', 'None') : String(supplier.alternatives)} danger={supplier.alternatives === 0} />
         <Row label={t('Concentration', 'Concentration')} value={`${supplier.concentrationPercent}%`} />
       </div>
+
+      {refs.length > 0 && supplier.alternatives === 0 && (
+        <div className="flex flex-col gap-1">
+          <h4 className="border-b pb-1" style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase', color: 'var(--nx-text-muted)', borderColor: 'var(--nx-border)' }}>
+            {t('Qualifier une seconde source', 'Qualify a second source')}
+          </h4>
+          <p style={{ fontSize: 11.5, color: 'var(--nx-text-muted)', lineHeight: 1.45 }}>
+            {t('Aucun fournisseur alternatif ne partage ces dépendances. La correction se déclare sur le système qui en a trouvé une.',
+              'No alternative supplier shares these dependencies. The correction is declared on the system that found one.')}
+          </p>
+          {refs.slice(0, 6).map((d) => (
+            <div key={d.id} className="flex items-center justify-between gap-2">
+              <span className="truncate" style={{ fontFamily: mono, fontSize: 11, color: d.criticality >= 80 ? ERR : 'var(--nx-text)' }}>{d.name}</span>
+              <button onClick={() => setFix({ id: d.id, name: d.name })}
+                className="shrink-0 rounded-sm border px-1.5 py-0.5"
+                style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', color: 'var(--nx-success)', fontFamily: mono, fontSize: 10 }}>
+                {t('corrigé', 'fixed')}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {fix && (
+        <FixedItModal open onClose={() => setFix(null)} targetId={fix.id} targetName={fix.name}
+          suggest="supplier" only={['supplier', 'backup', 'procedure']}
+          reason={t(`Dépend de ${supplier.name}, sans fournisseur alternatif.`, `Depends on ${supplier.name}, with no alternative supplier.`)} />
+      )}
 
       <button onClick={onSimulate} className="mt-auto flex w-full items-center justify-center gap-2 rounded-sm py-2.5" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600, boxShadow: '0 0 10px color-mix(in srgb, var(--nx-cyan) 20%, transparent)' }}><Play size={16} /> {t('Simuler la défaillance', 'Simulate Supplier Failure')}</button>
     </aside>

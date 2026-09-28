@@ -157,7 +157,7 @@ function Report({ data, onOpen }: { data: NonNullable<ReturnType<typeof useIncid
         </Panel>
       </div>
 
-      <FixedItModal open={fixOpen} onClose={() => setFixOpen(false)} targetId={data.entity.id} targetName={data.entity.name} />
+      {fixOpen && <FixedItModal open onClose={() => setFixOpen(false)} targetId={data.entity.id} targetName={data.entity.name} />}
 
       <Panel title={t('Ce qui tombe avec', 'What falls with it')} icon={<AlertOctagon size={14} />}>
         <table className="w-full text-left">

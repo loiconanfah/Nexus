@@ -22,16 +22,26 @@ const CYAN = 'var(--nx-cyan)'
  * la condition pour qu'un score bouge. La dernière option n'écrit rien et
  * l'assume, parce qu'une note ne rend pas une organisation plus résiliente.
  */
-export function FixedItModal({ open, onClose, targetId, targetName }: {
+/**
+ * Monté à l'ouverture, démonté à la fermeture : son état part donc toujours de la
+ * correction que le contexte suggère, sans avoir à le réinitialiser dans un effet.
+ */
+export function FixedItModal({ open, onClose, targetId, targetName, suggest, only, reason }: {
   open: boolean
   onClose: () => void
   targetId: string
   targetName: string
+  /** La correction que le contexte rend probable, pré-sélectionnée. */
+  suggest?: string
+  /** Les corrections qui ont un sens ici. « Autre » reste toujours offerte. */
+  only?: string[]
+  /** Le défaut auquel on répond, rappelé en tête. */
+  reason?: string
 }) {
   const { t } = useLang()
   const qc = useQueryClient()
   const money = useMoney()
-  const [kind, setKind] = useState('backup')
+  const [kind, setKind] = useState(suggest ?? 'backup')
   const [withName, setWithName] = useState('')
   const [note, setNote] = useState('')
 
@@ -43,8 +53,11 @@ export function FixedItModal({ open, onClose, targetId, targetName }: {
     { key: 'second_person', fr: 'Une seconde personne sait le faire fonctionner', en: 'A second person can run it', askFr: 'Qui ?', askEn: 'Who?' },
     { key: 'note', fr: 'Autre, sans changement dans la carte', en: 'Other, no change to the map', askFr: '', askEn: '' },
   ]
-  const chosen = KINDS.find((k) => k.key === kind)!
-  const needsName = kind !== 'note'
+  // Restreindre la liste à ce qui a un sens ici vaut mieux que de tout proposer :
+  // un écran de dépendance humaine n'a pas à offrir « second fournisseur ».
+  const offered = only?.length ? KINDS.filter((k) => only.includes(k.key) || k.key === 'note') : KINDS
+  const chosen = KINDS.find((k) => k.key === kind) ?? offered[0]
+  const needsName = chosen.key !== 'note'
 
   const apply = useMutation({
     mutationFn: () => api.applyRemediation({
@@ -93,12 +106,13 @@ export function FixedItModal({ open, onClose, targetId, targetName }: {
           <div>
             <h3 style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{t('J’ai corrigé ça', 'I fixed this')}</h3>
             <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{targetName}</p>
+            {reason && <p className="mt-0.5" style={{ fontSize: 12, color: 'var(--nx-warning)' }}>{reason}</p>}
           </div>
           <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          {KINDS.map((k) => (
+          {offered.map((k) => (
             <label key={k.key} className="flex cursor-pointer items-start gap-2" style={{ fontSize: 13, color: 'var(--nx-text)' }}>
               <input type="radio" name="fix" checked={kind === k.key} onChange={() => setKind(k.key)}
                 className="mt-0.5" style={{ accentColor: CYAN }} />

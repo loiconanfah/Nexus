@@ -180,6 +180,8 @@ export interface Supplier {
   connectedAssets: number
   concentrationPercent: number
   dependents: string[]
+  /** Les mêmes dépendants AVEC leur identifiant, les plus critiques d'abord. */
+  dependentRefs?: { id: string; name: string; criticality: number }[]
   alternatives: number
 }
 export interface SupplierEdge { supplier: string; asset: string; assetCritical: boolean }

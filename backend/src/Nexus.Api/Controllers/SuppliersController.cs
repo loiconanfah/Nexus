@@ -54,6 +54,13 @@ public sealed class SuppliersController(
                 connectedAssets = blast.Count,
                 concentrationPercent = entityCount == 0 ? 0 : (int)Math.Round(100.0 * dependents.Count / entityCount),
                 dependents = dependents.Select(d => d.Name).ToList(),
+                // Les mêmes, AVEC leur identifiant : sans lui, un écran qui veut
+                // agir sur un dépendant ne peut que passer un nom là où une API
+                // attend un identifiant.
+                dependentRefs = dependents
+                    .OrderByDescending(d => d.Criticality)
+                    .Select(d => new { d.Id, d.Name, d.Criticality })
+                    .ToList(),
             });
         }
 
@@ -70,7 +77,7 @@ public sealed class SuppliersController(
             return new
             {
                 r.id, r.name, r.riskScore, r.riskBand, r.criticalServices, r.dependencies,
-                r.connectedAssets, r.concentrationPercent, r.dependents, alternatives = others,
+                r.connectedAssets, r.concentrationPercent, r.dependents, r.dependentRefs, alternatives = others,
             };
         }).ToList();
 
