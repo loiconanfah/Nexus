@@ -75,6 +75,12 @@ builder.Services.AddScoped<Nexus.Api.Workspace.WorkspaceStore>();
 builder.Services.AddScoped<Nexus.Api.History.ResilienceStore>();
 builder.Services.AddScoped<Nexus.Api.Views.SavedViewStore>();
 builder.Services.AddScoped<Nexus.Api.Remediations.RemediationStore>();
+// Branchements vers les systèmes des clients : le chiffrement des accès est un
+// singleton (la clé vient de l'environnement), le reste suit la requête.
+builder.Services.AddSingleton<Nexus.Api.Integrations.SecretBox>();
+builder.Services.AddScoped<Nexus.Api.Integrations.IntegrationStore>();
+builder.Services.AddScoped<Nexus.Api.Integrations.IntegrationRunner>();
+builder.Services.AddHostedService<Nexus.Api.Integrations.IntegrationScheduler>();
 builder.Services.AddScoped<Nexus.Api.Organization.SetupProgressService>();
 builder.Services.AddScoped<Nexus.Api.Organization.NotificationService>();
 builder.Services.AddScoped<Nexus.AI.Decisions.DecisionAssistant>();

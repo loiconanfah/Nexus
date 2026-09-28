@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Nexus.Api.History;
 using Nexus.Api.Impact;
 using Nexus.Api.Remediations;
 using Nexus.Api.Tenancy;
@@ -42,7 +41,7 @@ public sealed class RemediationsController(
     RiskAnalyzer riskAnalyzer,
     SpofAnalyzer spofAnalyzer,
     ImpactConfigStore impactConfig,
-    ResilienceStore resilience,
+
     RemediationStore store) : NexusController(tenantProvider)
 {
     private const string Source = "Remediation";

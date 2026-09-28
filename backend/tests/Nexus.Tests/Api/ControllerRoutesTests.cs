@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Nexus.Tests.Api;
@@ -39,6 +39,7 @@ public class ControllerRoutesTests
         "api/v1/imports/analyze",
         "api/v1/incident",
         "api/v1/incidents",
+        "api/v1/integrations",
         "api/v1/inference",
         "api/v1/onboarding",
         "api/v1/organization",

@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
 import { CheckCircle2, Database, FileUp, GitBranch, Layers, Loader2, Sheet, Sparkles, Upload, Wand2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { notify, runningJobs, subscribe } from '../lib/notify'
 import { startImport, type SheetImport } from '../lib/tasks'
-import { CONNECTORS } from '../lib/connectors'
 import { RestLiveImport } from '../components/RestLiveImport'
 import type { FilePreview, ImportResult } from '../lib/types'
 
@@ -89,8 +87,6 @@ function buildAutoProfile(ds: string, m: AutoMap): object {
 export function Onboarding() {
   const { t, lang } = useLang()
   const qc = useQueryClient()
-  const [params] = useSearchParams()
-  const connector = useMemo(() => CONNECTORS.find((c) => c.id === params.get('connector')), [params])
   const [mode, setMode] = useState<Mode>('nodes')
   const [busy, setBusy] = useState(false)
   // Un import en cours reste visible même si l'on revient sur cet écran plus tard.
@@ -235,12 +231,6 @@ export function Onboarding() {
         <p className="mt-1" style={{ fontSize: 13, color: 'var(--nx-text-muted)' }}>{t('Injectez votre parc dans le graphe — le premier graphe se mesure en minutes, pas en mois.', 'Ingest your estate into the graph — time to first graph is minutes, not months.')}</p>
       </div>
 
-      {connector && (
-        <div className="rounded-sm border px-4 py-3" style={{ background: 'color-mix(in srgb, var(--nx-cyan) 6%, transparent)', borderColor: 'color-mix(in srgb, var(--nx-cyan) 30%, transparent)' }}>
-          <span style={{ fontFamily: mono, fontSize: 12, color: CYAN_T }}>{connector.name}</span>
-          <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{t(`Exportez depuis ${connector.name} (${connector.bringsFr}) en CSV, puis déposez-le ci-dessous. Utilisez le mode Auto/IA si vos colonnes diffèrent.`, `Export from ${connector.name} (${connector.bringsEn}) as CSV, then drop it below. Use Auto/AI mode if your columns differ.`)}</p>
-        </div>
-      )}
 
       {/* Choix du mode */}
       <div className="grid gap-3 md:grid-cols-3">

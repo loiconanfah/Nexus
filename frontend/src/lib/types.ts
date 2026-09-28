@@ -887,3 +887,62 @@ export interface RemediationResult {
   counterpart: string | null
   delta: { score: number; index: number; hourlyCost: number; spofRemoved: boolean }
 }
+
+/** Un réglage que le client doit fournir pour brancher un système. */
+export interface ConnectorField {
+  key: string
+  labelFr: string
+  labelEn: string
+  secret: boolean
+  helpFr: string | null
+  helpEn: string | null
+  placeholder: string | null
+  required: boolean
+}
+
+/** Un connecteur réellement interrogé, tel que le serveur le décrit. */
+export interface ConnectorSpec {
+  id: string
+  name: string
+  category: string
+  summaryFr: string
+  summaryEn: string
+  bringsFr: string
+  bringsEn: string
+  docUrl: string
+  /** Vrai : la source vit dans le réseau du client et passe par la sonde. */
+  internalOnly: boolean
+  auth: string
+  datasets: string[]
+  /** Ce que le branchement écrira dans la carte. */
+  writes: { entities: string[]; relations: string[] }
+  fields: ConnectorField[]
+}
+
+export interface ConnectorCatalog {
+  /** Faux : le serveur n'a pas de clé de chiffrement, rien ne peut être conservé. */
+  canStore: boolean
+  connectors: ConnectorSpec[]
+}
+
+/** Un branchement enregistré. */
+export interface IntegrationRecord {
+  id: string
+  vendorId: string
+  vendorName: string
+  label: string
+  settings: Record<string, string>
+  intervalMinutes: number
+  nextRunAt: string | null
+  lastRunAt: string | null
+  lastOutcome: string | null
+  healthy: boolean
+  createdBy: string | null
+  createdAt: string
+}
+
+export interface IntegrationRunResult {
+  result: ImportResult
+  warnings: string[]
+  summary: string
+}

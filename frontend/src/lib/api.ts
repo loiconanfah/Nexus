@@ -1,6 +1,6 @@
 import { getTenantId } from './tenant'
 import { getToken, handleUnauthorized } from './auth'
-import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport, ActionRecommendation, ActionStep, SavedView, ViewConfig, ScopeSimulation, RemediationRecord, RemediationResult } from './types'
+import type { ActionBoard, ActionStatus, AiAnswer, DecisionResponse, EnterpriseModel, ImpactAnalysis, ImpactConfig, ImpactTuning, ModelVersion, InferenceResult, ProposedRelation, RestSource, RestPreview, ScenarioSummary, AuditData, Collector, CollectorCreated, CollectorJob, ConfidenceExplain, VerifyResult, WorkspaceUsers, WorkspaceRole, EntityRisk, ExecutiveReport, ExtractedEntity, ExtractedRelation, GraphData, GraphEntityRecord, HistoryData, HumanDependencies, ImportResult, IncidentBoard, Snapshot, Overview, PropagationResult, RiskRow, ScenarioType, SimExplain, SimExplainPayload, AttackExplain, AttackExplainPayload, SupplierIntel, OrganizationState, OrganizationInput, OrganizationProfile, CalibrationPreview, SetupProgress, Notice, DecisionSpec, DecisionReport, DecisionDraft, ParsedDocument, DocumentPlan, ChunkExtraction, DocumentAnalysis, FilePreview, WorkspaceSummary, WorkspaceResetResult, WorkspaceRestoreResult, AiUsage, Resilience, IncidentReport, ActionRecommendation, ActionStep, SavedView, ViewConfig, ScopeSimulation, RemediationRecord, RemediationResult, ConnectorCatalog, IntegrationRecord, IntegrationRunResult } from './types'
 
 const BASE = '/api/v1'
 
@@ -173,6 +173,33 @@ export const api = {
   /** Le journal des corrections : la preuve de ce qui a été fait, et de son effet. */
   remediations: (limit = 50) =>
     fetch(`${BASE}/remediations?limit=${limit}`, { headers: headers(false) }).then(handle<RemediationRecord[]>),
+
+  // ── Branchements vers les systèmes du client ──
+
+  /** Ce que Lenexux sait interroger, et ce qu'il faut saisir pour chacun. */
+  connectorCatalog: () =>
+    fetch(`${BASE}/integrations/catalog`, { headers: headers(false) }).then(handle<ConnectorCatalog>),
+
+  integrations: () =>
+    fetch(`${BASE}/integrations`, { headers: headers(false) }).then(handle<IntegrationRecord[]>),
+
+  /** Essaie les accès sans rien écrire dans la carte. */
+  testIntegration: (body: { vendorId?: string; settings?: Record<string, string>; id?: string }) =>
+    fetch(`${BASE}/integrations/test`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ ok: boolean; detail: string | null; vendor: string }>),
+
+  /** Interroge la source et écrit dans la carte, maintenant. */
+  runIntegration: (body: { vendorId?: string; settings?: Record<string, string>; id?: string }) =>
+    fetch(`${BASE}/integrations/run`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<IntegrationRunResult>),
+
+  saveIntegration: (body: { vendorId: string; label?: string; settings: Record<string, string>; intervalMinutes: number; id?: string }) =>
+    fetch(`${BASE}/integrations`, { method: 'POST', headers: headers(), body: JSON.stringify(body) })
+      .then(handle<{ id: string; label: string; intervalMinutes: number; nextRunAt: string | null; vendorName: string }>),
+
+  deleteIntegration: (id: string) =>
+    fetch(`${BASE}/integrations/${id}`, { method: 'DELETE', headers: headers(false) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)) }),
 
   views: (kind: 'risk' | 'graph') =>
     fetch(`${BASE}/views?kind=${kind}`, { headers: headers(false) }).then(handle<SavedView[]>),
