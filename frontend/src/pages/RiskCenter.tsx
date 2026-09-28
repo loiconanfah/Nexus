@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel, bandLabel, relationTypeLabel } from '../lib/labels'
 import { ActionModal } from '../components/ActionModal'
+import { FixedItModal } from '../components/FixedItModal'
 import { SavedViews } from '../components/SavedViews'
 import type { RiskBand, RiskRow, ViewConfig } from '../lib/types'
 
@@ -321,6 +322,7 @@ function RiskFilters({ cfg, types, onChange, count, total }: {
 function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onClose: () => void; onSimulate: () => void; onView: () => void }) {
   const { t } = useLang()
   const [actionOpen, setActionOpen] = useState(false)
+  const [fixOpen, setFixOpen] = useState(false)
   const risk = useQuery({ queryKey: ['risk', row.id], queryFn: () => api.entityRisk(row.id) })
   // Le détail qui manquait : les dépendances nommées, dans les deux sens. Un
   // score sans elles ne se vérifie pas, et ne se discute donc pas.
@@ -411,8 +413,11 @@ function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onCl
       <div className="flex flex-col gap-2">
         <button onClick={onSimulate} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 500 }}><Sparkles size={16} /> {t('Simuler', 'Simulate')}</button>
         <button onClick={() => setActionOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: CYAN_T, borderColor: 'var(--nx-border)', fontSize: 13, fontWeight: 500 }}><ListPlus size={16} /> {t('Créer une action', 'Create Action')}</button>
+        <button onClick={() => setFixOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: 'var(--nx-success)', borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', fontSize: 13, fontWeight: 500 }}><CheckCircle2 size={16} /> {t('J’ai corrigé ça', 'I fixed this')}</button>
         <button onClick={onView} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 13, fontWeight: 500 }}><Network size={16} /> {t('Voir les dépendances', 'View Dependencies')}</button>
       </div>
+
+      <FixedItModal open={fixOpen} onClose={() => setFixOpen(false)} targetId={row.id} targetName={row.name} />
 
       <ActionModal
         open={actionOpen}

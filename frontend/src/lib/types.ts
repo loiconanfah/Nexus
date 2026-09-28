@@ -860,3 +860,28 @@ export interface ScopeSimulation {
     top: string[]
   }[]
 }
+
+/** Une correction déclarée, avec la mesure avant et après. */
+export interface RemediationRecord {
+  id: string
+  kind: string
+  targetId: string
+  targetName: string
+  note: string | null
+  appliedBy: string | null
+  appliedAt: string
+  scoreBefore: number
+  scoreAfter: number
+  indexBefore: number
+  indexAfter: number
+  costBefore: number
+  costAfter: number
+  /** Faux : correction notée sans changement dans la carte, donc sans effet. */
+  changedGraph: boolean
+}
+
+export interface RemediationResult {
+  remediation: RemediationRecord
+  counterpart: string | null
+  delta: { score: number; index: number; hourlyCost: number; spofRemoved: boolean }
+}

@@ -69,7 +69,73 @@ export function ActionPlan() {
         </>
       )}
 
+      <Remediations />
+
       <ActionModal open={modal} onClose={() => setModal(false)} />
+    </div>
+  )
+}
+
+/**
+ * Le journal des corrections : ce qui a été fait, et ce que cela a changé.
+ *
+ * C'est la pièce que réclame un régulateur, et la seule récompense visible du
+ * travail fourni. Chaque ligne porte la mesure prise AVANT et APRÈS par les
+ * moteurs des écrans : l'écart n'est pas une promesse, c'est la même mesure
+ * deux fois.
+ */
+function Remediations() {
+  const { t, lang } = useLang()
+  const { data } = useQuery({ queryKey: ['remediations'], queryFn: () => api.remediations(30) })
+  if (!data || data.length === 0) return null
+
+  const label = (k: string) => k === 'backup' ? t('Secours posé', 'Backup added')
+    : k === 'supplier' ? t('Second fournisseur', 'Second supplier')
+    : k === 'procedure' ? t('Procédure écrite', 'Written procedure')
+    : k === 'owner' ? t('Responsable nommé', 'Owner named')
+    : k === 'second_person' ? t('Seconde personne formée', 'Second person trained')
+    : t('Note', 'Note')
+
+  return (
+    <div className="flex flex-col gap-2">
+      <h3 className="flex items-baseline gap-2" style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>
+        {t('Corrections appliquées', 'Corrections applied')}
+        <span style={{ fontSize: 11.5, textTransform: 'none', color: 'var(--nx-text-muted)' }}>
+          {t('mesurées avant et après', 'measured before and after')}
+        </span>
+      </h3>
+      <div className="flex flex-col divide-y rounded-sm border" style={{ borderColor: 'var(--nx-border)' }}>
+        {data.map((r) => {
+          const gain = r.scoreBefore - r.scoreAfter
+          return (
+            <div key={r.id} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2">
+              <span className="flex min-w-0 flex-col">
+                <span style={{ fontSize: 13, color: 'var(--nx-text)' }}>
+                  {r.targetName} <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-outline)' }}>{label(r.kind)}</span>
+                </span>
+                <span style={{ fontSize: 11.5, color: 'var(--nx-text-muted)' }}>
+                  {new Date(r.appliedAt).toLocaleDateString(lang === 'en' ? 'en-CA' : 'fr-CA', { day: 'numeric', month: 'short' })}
+                  {r.appliedBy ? ` · ${r.appliedBy}` : ''}{r.note ? ` · ${r.note}` : ''}
+                </span>
+              </span>
+              {r.changedGraph ? (
+                <span className="flex items-baseline gap-3" style={{ fontFamily: mono, fontSize: 12 }}>
+                  <span style={{ color: 'var(--nx-text-muted)' }}>
+                    {t('score', 'score')} {r.scoreBefore} → <span style={{ color: gain > 0 ? 'var(--nx-success)' : 'var(--nx-text)' }}>{r.scoreAfter}</span>
+                  </span>
+                  <span style={{ color: r.indexAfter >= r.indexBefore ? 'var(--nx-success)' : 'var(--nx-danger)' }}>
+                    {t('indice', 'index')} {r.indexAfter >= r.indexBefore ? '+' : ''}{r.indexAfter - r.indexBefore}
+                  </span>
+                </span>
+              ) : (
+                <span style={{ fontFamily: mono, fontSize: 11.5, color: 'var(--nx-outline)' }}>
+                  {t('note seule, aucun score modifié', 'note only, no score changed')}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

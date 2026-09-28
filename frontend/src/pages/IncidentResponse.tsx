@@ -5,6 +5,7 @@ import { AlertOctagon, BookOpen, LifeBuoy, Loader2, Phone, Search, Truck } from 
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { useMoney } from '../lib/money'
+import { FixedItModal } from '../components/FixedItModal'
 import { entityTypeLabel, relationTypeLabel } from '../lib/labels'
 
 const mono = 'var(--font-mono)'
@@ -84,6 +85,7 @@ export function IncidentResponse() {
 function Report({ data, onOpen }: { data: NonNullable<ReturnType<typeof useIncident>>; onOpen: (id: string, name: string) => void }) {
   const { t } = useLang()
   const money = useMoney()
+  const [fixOpen, setFixOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,9 +96,13 @@ function Report({ data, onOpen }: { data: NonNullable<ReturnType<typeof useIncid
             <h3 style={{ fontFamily: geist, fontSize: 26, color: 'var(--nx-text)' }}>{data.entity.name}</h3>
             <p style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>{entityTypeLabel(data.entity.type, t)} · {t('criticité', 'criticality')} {data.entity.criticality}</p>
           </div>
-          <div className="flex gap-8">
+          <div className="flex items-start gap-8">
             <Figure label={t('Éléments touchés', 'Affected elements')} value={String(data.affectedCount)} />
             <Figure label={t('Coût par heure', 'Cost per hour')} value={money.compact(data.estimatedHourlyCost)} color={ERR} />
+            <button onClick={() => setFixOpen(true)} className="mt-3 flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5"
+              style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', color: 'var(--nx-success)', fontSize: 12.5, fontWeight: 600 }}>
+              <LifeBuoy size={13} /> {t('J’ai corrigé ça', 'I fixed this')}
+            </button>
           </div>
         </div>
       </div>
@@ -150,6 +156,8 @@ function Report({ data, onOpen }: { data: NonNullable<ReturnType<typeof useIncid
             ))}
         </Panel>
       </div>
+
+      <FixedItModal open={fixOpen} onClose={() => setFixOpen(false)} targetId={data.entity.id} targetName={data.entity.name} />
 
       <Panel title={t('Ce qui tombe avec', 'What falls with it')} icon={<AlertOctagon size={14} />}>
         <table className="w-full text-left">

@@ -43,6 +43,7 @@ public class ControllerRoutesTests
         "api/v1/onboarding",
         "api/v1/organization",
         "api/v1/overview",
+        "api/v1/remediations",
         "api/v1/reports",
         "api/v1/resilience",
         "api/v1/risks",
