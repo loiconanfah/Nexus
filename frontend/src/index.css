@@ -282,6 +282,35 @@ body {
   50% { box-shadow: 0 0 10px 2px rgba(0, 229, 255, 0.3); }
 }
 
+/* Bouton « J'ai corrigé ça ».
+   Mis en avant parce que c'est le seul geste du produit qui annonce un PROGRÈS,
+   au milieu d'écrans qui ne signalent que des défauts. L'effet reste sobre, une
+   lueur lente et un léger soulèvement au survol : le produit se lit devant un
+   comité de direction, pas dans un jeu. */
+.nx-fix {
+  animation: nx-fix-glow 2.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition: transform 140ms ease, filter 140ms ease;
+}
+.nx-fix:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+.nx-fix:active { transform: translateY(0); }
+@keyframes nx-fix-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(74, 222, 128, 0.35); }
+}
+/* Le même geste en petit, sur une ligne de liste : pas d'animation permanente,
+   qui serait du bruit répété autant de fois qu'il y a de lignes. */
+.nx-fix-small {
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+.nx-fix-small:hover {
+  background: var(--nx-success);
+  color: var(--nx-on-cyan);
+  transform: translateY(-1px);
+}
+
 /* Pulsation des nœuds du graphe */
 .nx-node-pulse {
   animation: nx-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;

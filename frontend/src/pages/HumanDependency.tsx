@@ -215,8 +215,8 @@ function Profile({ person, onSimulate }: { person: HumanPerson; onSimulate: () =
               </span>
               <button onClick={() => setFix({ id: sys.id, name: sys.name })}
                 title={t('Déclarer qu’une seconde personne sait le faire fonctionner', 'Declare that a second person can run it')}
-                className="shrink-0 rounded-sm border px-1.5 py-0.5"
-                style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', color: 'var(--nx-success)', fontFamily: mono, fontSize: 10 }}>
+                className="nx-fix-small shrink-0 rounded-sm border px-2 py-0.5"
+                style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 45%, transparent)', color: 'var(--nx-success)', fontFamily: mono, fontSize: 10.5 }}>
                 {t('corrigé', 'fixed')}
               </button>
             </div>

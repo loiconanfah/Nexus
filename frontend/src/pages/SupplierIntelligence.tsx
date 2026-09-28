@@ -183,8 +183,8 @@ function SupplierDetail({ supplier, onSimulate }: { supplier: Supplier; onSimula
             <div key={d.id} className="flex items-center justify-between gap-2">
               <span className="truncate" style={{ fontFamily: mono, fontSize: 11, color: d.criticality >= 80 ? ERR : 'var(--nx-text)' }}>{d.name}</span>
               <button onClick={() => setFix({ id: d.id, name: d.name })}
-                className="shrink-0 rounded-sm border px-1.5 py-0.5"
-                style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', color: 'var(--nx-success)', fontFamily: mono, fontSize: 10 }}>
+                className="nx-fix-small shrink-0 rounded-sm border px-2 py-0.5"
+                style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 45%, transparent)', color: 'var(--nx-success)', fontFamily: mono, fontSize: 10.5 }}>
                 {t('corrigé', 'fixed')}
               </button>
             </div>

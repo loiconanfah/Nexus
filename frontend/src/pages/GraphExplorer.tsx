@@ -45,11 +45,14 @@ function typeIcon(type: string, size = 14) {
   return <Server size={size} />
 }
 
-type NodeData = { rec: GraphEntityRecord; dim: boolean }
+type NodeData = { rec: GraphEntityRecord; dim: boolean; fixed?: boolean }
+
+/** Une relation écrite par une correction déclarée (voir le journal des corrections). */
+const FIXED = (e: { sourceSystem?: string | null }) => e.sourceSystem === 'Remediation'
 
 function EntityNode({ data, selected }: NodeProps) {
   const { t } = useLang()
-  const { rec, dim } = data as NodeData
+  const { rec, dim, fixed } = data as NodeData
   const c = bandColor(rec.criticality)
   return (
     <div
@@ -57,7 +60,7 @@ function EntityNode({ data, selected }: NodeProps) {
       style={{
         width: 190,
         background: selected ? 'var(--nx-surface)' : 'var(--nx-surface-container)',
-        border: `${selected ? 2 : 1}px solid ${selected ? CYAN : 'var(--nx-border)'}`,
+        border: `${selected ? 2 : 1}px solid ${fixed ? 'var(--nx-success)' : selected ? CYAN : 'var(--nx-border)'}`,
         borderLeft: `2px solid ${c}`,
         boxShadow: selected ? '0 0 15px color-mix(in srgb, var(--nx-cyan) 15%, transparent)' : 'none',
         opacity: dim ? 0.25 : 1,
@@ -201,15 +204,23 @@ function GraphInner() {
     if (!scoped) return { nodes: [] as Node[], edges: [] as Edge[] }
     const data = scoped
     const q = query.trim().toLowerCase()
+    // Les éléments qu'une correction a touchés, pour les marquer eux aussi.
+    const fixed = new Set<string>()
+    for (const e of data.edges) if (FIXED(e)) { fixed.add(e.source); fixed.add(e.target) }
     const rfNodes: Node[] = data.nodes.map((n) => ({
       id: n.id, type: 'entity', position: { x: 0, y: 0 },
-      data: { rec: n, dim: !!q && !n.name.toLowerCase().includes(q) } as NodeData,
+      data: { rec: n, dim: !!q && !n.name.toLowerCase().includes(q), fixed: fixed.has(n.id) } as NodeData,
     }))
     const rfEdges: Edge[] = data.edges.map((e) => ({
       id: e.id, source: e.source, target: e.target,
       label: e.type === 'DEPENDS_ON' ? undefined : e.type,
       animated: true,
-      style: { stroke: e.status === 'AiSuggested' ? 'var(--nx-orange)' : 'var(--nx-cyan)', strokeWidth: 1.5, opacity: e.confidence < 0.5 ? 0.4 : 0.65, strokeDasharray: e.status === 'AiSuggested' ? '4 3' : undefined },
+      // Une relation née d'une correction déclarée se voit en VERT, pleine et plus
+      // épaisse : c'est la trace du travail fait, et le seul endroit où le plan
+      // montre un progrès plutôt qu'un problème.
+      style: FIXED(e)
+        ? { stroke: 'var(--nx-success)', strokeWidth: 2.6, opacity: 0.95 }
+        : { stroke: e.status === 'AiSuggested' ? 'var(--nx-orange)' : 'var(--nx-cyan)', strokeWidth: 1.5, opacity: e.confidence < 0.5 ? 0.4 : 0.65, strokeDasharray: e.status === 'AiSuggested' ? '4 3' : undefined },
       labelStyle: { fill: 'var(--nx-text-muted)', fontSize: 9, fontFamily: 'JetBrains Mono' },
       labelBgStyle: { fill: 'var(--nx-panel)' },
     }))
@@ -261,7 +272,14 @@ function GraphInner() {
       const conn = e.source === selId || e.target === selId
       return {
         ...e, animated: conn, zIndex: conn ? 10 : 0,
-        style: { ...e.style, stroke: conn ? 'var(--nx-cyan)' : e.style?.stroke, strokeWidth: conn ? 2.4 : 1.5, opacity: conn ? 0.95 : 0.05 },
+        // Le vert d'une correction résiste à la mise en avant : il dit un fait,
+        // pas un état de sélection.
+        style: {
+          ...e.style,
+          stroke: e.style?.stroke === 'var(--nx-success)' ? 'var(--nx-success)' : conn ? 'var(--nx-cyan)' : e.style?.stroke,
+          strokeWidth: conn ? 2.4 : e.style?.strokeWidth ?? 1.5,
+          opacity: conn ? 0.95 : 0.05,
+        },
         labelStyle: { ...(e.labelStyle as object), opacity: conn ? 1 : 0.08 },
       }
     })
@@ -298,6 +316,10 @@ function GraphInner() {
             <ViewTab active={arrange === 'clusters'} onClick={() => setArrange('clusters')} icon={<Group size={14} />} label={t('Par familles', 'By family')} />
             <ViewTab active={arrange === 'flow'} onClick={() => setArrange('flow')} icon={<Workflow size={14} />} label={t('Par dépendances', 'By dependency')} />
           </div>
+          <span className="flex items-center gap-1.5" style={{ fontFamily: mono, fontSize: 11, color: 'var(--nx-text-muted)' }}>
+            <span className="h-0.5 w-4 rounded-full" style={{ background: 'var(--nx-success)' }} />
+            {t('corrigé', 'fixed')}
+          </span>
           {Object.keys(moved).length > 0 && (
             <button onClick={() => setMoved({})} className="flex items-center gap-1.5 rounded-sm border px-2 py-1.5"
               style={{ borderColor: 'var(--nx-border)', background: 'var(--nx-panel)', color: 'var(--nx-cyan-text)', fontSize: 12 }}>
@@ -367,7 +389,7 @@ function GraphInner() {
           <Suspense fallback={<div className="flex h-full items-center justify-center" style={{ fontFamily: mono, fontSize: 12, color: 'var(--nx-text-muted)' }}>{t('CHARGEMENT DE L’HOLOGRAMME…', 'LOADING HOLOGRAM…')}</div>}>
             <Graph3D
               nodes={scoped?.nodes ?? []}
-              edges={(scoped?.edges ?? []).map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence }))}
+              edges={(scoped?.edges ?? []).map((e) => ({ id: e.id, source: e.source, target: e.target, type: e.type, status: e.status, confidence: e.confidence, sourceSystem: e.sourceSystem }))}
               query={query}
               selectedId={selected?.id ?? null}
               onSelect={(id) => setSelected(data.nodes.find((n) => n.id === id) ?? null)}

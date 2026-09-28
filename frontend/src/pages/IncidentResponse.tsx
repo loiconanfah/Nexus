@@ -99,9 +99,9 @@ function Report({ data, onOpen }: { data: NonNullable<ReturnType<typeof useIncid
           <div className="flex items-start gap-8">
             <Figure label={t('Éléments touchés', 'Affected elements')} value={String(data.affectedCount)} />
             <Figure label={t('Coût par heure', 'Cost per hour')} value={money.compact(data.estimatedHourlyCost)} color={ERR} />
-            <button onClick={() => setFixOpen(true)} className="mt-3 flex items-center gap-1.5 rounded-sm border px-2.5 py-1.5"
-              style={{ borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', color: 'var(--nx-success)', fontSize: 12.5, fontWeight: 600 }}>
-              <LifeBuoy size={13} /> {t('J’ai corrigé ça', 'I fixed this')}
+            <button onClick={() => setFixOpen(true)} className="nx-fix mt-3 flex items-center gap-1.5 rounded-sm px-3 py-2"
+              style={{ background: 'var(--nx-success)', color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 600 }}>
+              <LifeBuoy size={14} /> {t('J’ai corrigé ça', 'I fixed this')}
             </button>
           </div>
         </div>

@@ -411,9 +411,12 @@ function PriorityRisk({ row, onClose, onSimulate, onView }: { row: RiskRow; onCl
 
       {/* Actions */}
       <div className="flex flex-col gap-2">
-        <button onClick={onSimulate} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ background: CYAN, color: 'var(--nx-on-cyan)', fontSize: 13, fontWeight: 500 }}><Sparkles size={16} /> {t('Simuler', 'Simulate')}</button>
+        <button onClick={onSimulate} className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: CYAN_T, borderColor: 'color-mix(in srgb, var(--nx-cyan) 35%, transparent)', fontSize: 13, fontWeight: 500 }}><Sparkles size={16} /> {t('Simuler', 'Simulate')}</button>
         <button onClick={() => setActionOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: CYAN_T, borderColor: 'var(--nx-border)', fontSize: 13, fontWeight: 500 }}><ListPlus size={16} /> {t('Créer une action', 'Create Action')}</button>
-        <button onClick={() => setFixOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-sm border py-2" style={{ color: 'var(--nx-success)', borderColor: 'color-mix(in srgb, var(--nx-success) 35%, transparent)', fontSize: 13, fontWeight: 500 }}><CheckCircle2 size={16} /> {t('J’ai corrigé ça', 'I fixed this')}</button>
+        <button onClick={() => setFixOpen(true)} className="nx-fix flex w-full items-center justify-center gap-2 rounded-sm py-2.5"
+          style={{ background: 'var(--nx-success)', color: 'var(--nx-on-cyan)', fontSize: 13.5, fontWeight: 600 }}>
+          <CheckCircle2 size={17} /> {t('J’ai corrigé ça', 'I fixed this')}
+        </button>
         <button onClick={onView} className="flex w-full items-center justify-center gap-2 rounded-sm py-2" style={{ color: 'var(--nx-text-muted)', fontSize: 13, fontWeight: 500 }}><Network size={16} /> {t('Voir les dépendances', 'View Dependencies')}</button>
       </div>
 

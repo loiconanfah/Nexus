@@ -132,7 +132,7 @@ function renderSimFrame(
   }
 }
 
-export interface Graph3DEdge { id: string; source: string; target: string; type?: string; status?: string; confidence?: number }
+export interface Graph3DEdge { id: string; source: string; target: string; type?: string; status?: string; confidence?: number; sourceSystem?: string | null }
 
 export type SimAction =
   | 'fail' | 'error' | 'remove' | 'cyber' | 'power'
@@ -397,12 +397,18 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const a = posById.get(e.source), b = posById.get(e.target)
       if (!a || !b) continue
       const suggested = e.status === 'AiSuggested'
+      // Née d'une correction déclarée : vert, franc, comme sur le plan 2D. Une
+      // même couleur doit dire la même chose dans les deux vues.
+      const fixed = e.sourceSystem === 'Remediation'
       const lgeo = new THREE.BufferGeometry().setFromPoints([a.position.clone(), b.position.clone()])
       // Sur fond clair, le cyan néon et une faible opacité rendaient les liens
       // presque invisibles : teinte plus profonde et trait plus marqué.
       const weak = (e.confidence ?? 1) < 0.5
-      const baseOpacity = light ? (weak ? 0.4 : 0.75) : (weak ? 0.22 : 0.4)
-      const baseColor = new THREE.Color(suggested ? (light ? '#c2410c' : '#e08a3c') : (light ? '#0e7490' : CYAN))
+      const baseOpacity = fixed ? (light ? 0.9 : 0.8) : light ? (weak ? 0.4 : 0.75) : (weak ? 0.22 : 0.4)
+      const baseColor = new THREE.Color(
+        fixed ? (light ? '#15803d' : '#4ade80')
+          : suggested ? (light ? '#c2410c' : '#e08a3c')
+            : (light ? '#0e7490' : CYAN))
       const line = new THREE.Line(lgeo, new THREE.LineBasicMaterial({
         color: baseColor.clone(), transparent: true, opacity: baseOpacity,
       }))
