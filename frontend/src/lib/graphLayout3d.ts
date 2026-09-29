@@ -71,11 +71,6 @@ function sphereDirection(index: number, total: number): [number, number, number]
   return [Math.cos(theta) * r, y, Math.sin(theta) * r]
 }
 
-/** Rayon d'une grappe : elle grossit avec son effectif, sans exploser. */
-export function clusterRadius(count: number) {
-  return 34 + Math.sqrt(Math.max(1, count)) * 26
-}
-
 /**
  * Place les nœuds par familles.
  *
@@ -85,7 +80,7 @@ export function clusterRadius(count: number) {
  * précisément à éviter.
  */
 export function clusteredLayout(nodes: LayoutNode[], options: LayoutOptions = {}): ClusteredLayout {
-  const margin = options.margin ?? 46
+  const margin = options.margin ?? 56
   const positions = new Map<string, Placed>()
   if (nodes.length === 0) return { positions, clusters: [], radius: 200 }
 
@@ -100,15 +95,45 @@ export function clusteredLayout(nodes: LayoutNode[], options: LayoutOptions = {}
   const ordered = [...families.entries()]
     .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
 
-  const spread = (clusterRadius(nodes.length / ordered.length) + margin)
-    * Math.max(1.5, Math.sqrt(ordered.length))
+  // ── 1. La disposition INTERNE de chaque famille, autour de son propre centre.
+  //
+  // Elle est calculée avant de placer les familles, parce que c'est elle qui
+  // donne le vrai rayon d'une grappe. L'estimer à l'avance, comme on le faisait,
+  // produisait des grappes trop petites pour leur contenu : les billes se
+  // touchaient et il devenait impossible d'en viser une.
+  const locals = new Map<string, Local[]>()
+  const radii = new Map<string, number>()
+
+  for (const [key, members] of ordered) {
+    const sorted = [...members].sort((a, b) => b.criticality - a.criticality || a.id.localeCompare(b.id))
+    const count = sorted.length
+    // Un rayon de départ proportionnel à la RACINE CUBIQUE de l'effectif :
+    // c'est ainsi que croît le volume nécessaire, pas en racine carrée.
+    const ball = 30 + Math.cbrt(count) * 46
+
+    const local: Local[] = sorted.map((n, i) => {
+      const [dx, dy, dz] = sphereDirection(i, count)
+      // Le plus critique au cœur, le reste vers la périphérie.
+      const depth = count <= 1 ? 0 : Math.cbrt((i + 0.45) / count)
+      const r = ball * depth
+      return { id: n.id, x: dx * r, y: dy * r, z: dz * r, radius: nodeRadius(n.criticality) }
+    })
+
+    spreadNodes(local)
+    locals.set(key, local)
+    radii.set(key, local.reduce((max, n) => Math.max(max, Math.hypot(n.x, n.y, n.z) + n.radius), 40))
+  }
+
+  // ── 2. Les familles, posées sur une sphère aplatie puis écartées.
+  const widest = Math.max(...radii.values())
+  const spread = (widest + margin) * Math.max(1.5, Math.sqrt(ordered.length))
 
   const clusters: Cluster[] = ordered.map(([key, members], index) => {
     const [dx, dy, dz] = sphereDirection(index, ordered.length)
     return {
       key,
       count: members.length,
-      radius: clusterRadius(members.length),
+      radius: radii.get(key)!,
       // Un peu aplati : une galaxie se lit mieux qu'une boule parfaite, et l'on
       // garde un haut et un bas stables pour s'orienter.
       x: dx * spread,
@@ -119,29 +144,77 @@ export function clusteredLayout(nodes: LayoutNode[], options: LayoutOptions = {}
 
   relax(clusters, margin)
 
-  for (const [key, members] of ordered) {
-    const centre = clusters.find((c) => c.key === key)!
-    // Le plus critique au cœur de sa famille.
-    const sorted = [...members].sort((a, b) => b.criticality - a.criticality || a.id.localeCompare(b.id))
-    sorted.forEach((n, i) => {
-      const [dx, dy, dz] = sphereDirection(i, sorted.length)
-      // Racine cubique : les nœuds occupent le VOLUME de la grappe au lieu de
-      // s'entasser sur sa coque.
-      const depth = sorted.length <= 1 ? 0 : Math.cbrt((i + 0.35) / sorted.length)
-      const r = centre.radius * depth
+  // ── 3. Les positions finales : le local, translaté par le centre.
+  for (const cluster of clusters) {
+    for (const n of locals.get(cluster.key) ?? []) {
       positions.set(n.id, {
-        x: centre.x + dx * r,
-        y: centre.y + dy * r,
-        z: centre.z + dz * r,
-        cluster: key,
+        x: cluster.x + n.x,
+        y: cluster.y + n.y,
+        z: cluster.z + n.z,
+        cluster: cluster.key,
       })
-    })
+    }
   }
 
   const radius = clusters.reduce(
     (max, c) => Math.max(max, Math.hypot(c.x, c.y, c.z) + c.radius), 200)
 
   return { positions, clusters, radius }
+}
+
+/** Une bille pendant le calcul : sa place dans sa famille, et sa taille. */
+interface Local {
+  id: string
+  x: number
+  y: number
+  z: number
+  radius: number
+}
+
+/**
+ * Le rayon d'une bille, selon sa criticité.
+ *
+ * Défini ICI et pas dans le rendu : l'espacement doit être calculé avec la
+ * taille réelle des billes, sinon la carte paraît aérée dans le calcul et
+ * serrée à l'écran. Le rendu importe cette fonction plutôt que de refaire le
+ * calcul de son côté.
+ */
+export function nodeRadius(criticality: number) {
+  return 6 + (Math.min(100, Math.max(0, criticality)) / 100) * 8
+}
+
+/**
+ * Écarte les billes d'une même famille jusqu'à ce qu'aucune n'en touche une
+ * autre.
+ *
+ * C'est ce qui manquait : une distribution régulière sur le papier laisse
+ * quand même des paires collées, parce que le rayon croît moins vite que le
+ * nombre de voisins. On vise l'espace de DEUX billes entre deux billes, de quoi
+ * en viser une à la souris et lire son auréole.
+ */
+function spreadNodes(local: Local[]) {
+  if (local.length < 2) return
+  for (let pass = 0; pass < 40; pass++) {
+    let moved = false
+    for (let i = 0; i < local.length; i++) {
+      for (let j = i + 1; j < local.length; j++) {
+        const a = local[i], b = local[j]
+        const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+        const distance = Math.hypot(dx, dy, dz) || 0.001
+        // 1,9 fois les rayons : l'auréole d'un élément critique monte à 1,65 fois
+        // sa bille, et deux auréoles qui se recouvrent se lisent comme une seule.
+        const wanted = (a.radius + b.radius) * 1.9 + 8
+        if (distance >= wanted) continue
+
+        const push = (wanted - distance) / 2
+        const ux = dx / distance, uy = dy / distance, uz = dz / distance
+        a.x -= ux * push; a.y -= uy * push; a.z -= uz * push
+        b.x += ux * push; b.y += uy * push; b.z += uz * push
+        moved = true
+      }
+    }
+    if (!moved) break
+  }
 }
 
 /** Écarte les grappes qui se chevauchent, en quelques passes. */

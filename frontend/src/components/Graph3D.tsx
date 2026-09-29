@@ -11,7 +11,7 @@ import {
   disposeObject, type IconCmp,
 } from '../lib/holoThree'
 import { brandFor, familyColor, inkOn } from '../lib/assetLook'
-import { clusteredLayout } from '../lib/graphLayout3d'
+import { clusteredLayout, nodeRadius } from '../lib/graphLayout3d'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
@@ -592,7 +592,9 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const brand = brandFor(n.name, n.entityType)
       const baseHex = brand ? brand.hex : familyColor(n.entityType, light)
       const col = new THREE.Color(baseHex)
-      const r = 6 + (n.criticality / 100) * 8
+      // La MEME taille que celle utilisee pour calculer l'espacement : la
+      // calculer deux fois, c'est se garantir une carte serree un jour.
+      const r = nodeRadius(n.criticality)
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(r, 24, 24),
         new THREE.MeshStandardMaterial({
