@@ -16,56 +16,71 @@ import { NotificationBell, SetupBar } from './SetupCenter'
 import { Toasts } from './Toasts'
 
 type NavItem = { to: string; fr: string; en: string; icon: typeof LayoutDashboard }
+/*
+  L'ordre des sections suit le chemin réel d'un utilisateur, et non l'ordre dans
+  lequel les écrans ont été construits : d'où viennent les données, à quoi
+  ressemble la carte, ce qui cloche dedans, ce qui se passerait si, et ce qu'on
+  fait. Un menu regroupé par date d'arrivée des fonctions oblige chacun à
+  reconstruire ce chemin de tête, à chaque visite.
+*/
 const NAV: { fr: string; en: string; items: NavItem[] }[] = [
   {
-    fr: 'Intelligence', en: 'Intelligence',
+    fr: 'Pilotage', en: 'Overview',
     items: [
       { to: '/', fr: 'Accueil', en: 'Home', icon: Home },
       { to: '/dashboard', fr: 'Tableau de bord', en: 'Dashboard', icon: LayoutDashboard },
-      { to: '/enterprise', fr: 'Modèle d’entreprise', en: 'Enterprise Model', icon: Building2 },
-      { to: '/decision', fr: 'Décision & simulation', en: 'Decision & Sim', icon: Sparkles },
-      { to: '/impact', fr: 'Impact transversal', en: 'Cross-system Impact', icon: Waypoints },
-      { to: '/graph', fr: 'Graphe', en: 'Graph', icon: Network },
-      { to: '/twin', fr: 'Jumeau numérique', en: 'Digital Twin', icon: Radio },
-      { to: '/history', fr: 'Historique du jumeau', en: 'Twin History', icon: History },
-    ],
-  },
-  {
-    fr: 'Analyse', en: 'Analysis',
-    items: [
-      { to: '/dependencies', fr: 'Dépendances', en: 'Dependencies', icon: GitBranch },
-      { to: '/risks', fr: 'Risques', en: 'Risks', icon: AlertTriangle },
-      { to: '/incident', fr: 'Mode incident', en: 'Incident mode', icon: AlertOctagon },
-      { to: '/incidents', fr: 'Alerte anticipée', en: 'Early-Warning', icon: Radar },
-      { to: '/attacks', fr: 'Simulation d’attaque', en: 'Attack Simulation', icon: ShieldAlert },
-      { to: '/change', fr: 'Impact de changement', en: 'Change Impact', icon: GitPullRequest },
-      { to: '/audit', fr: 'Confiance & audit', en: 'Confidence & Audit', icon: FileSearch },
-    ],
-  },
-  {
-    fr: 'Résilience', en: 'Resilience',
-    items: [
-      { to: '/suppliers', fr: 'Fournisseurs', en: 'Suppliers', icon: Truck },
-      { to: '/human', fr: 'Dép. humaines', en: 'Human Deps', icon: Users },
-      { to: '/actions', fr: 'Plan d’action', en: 'Action Plan', icon: ClipboardList },
-      { to: '/simulations', fr: 'Simulations', en: 'Simulations', icon: Zap },
-    ],
-  },
-  {
-    fr: 'Connaissance', en: 'Knowledge',
-    items: [
       { to: '/ai', fr: 'Analyste IA', en: 'AI Analyst', icon: Sparkles },
       { to: '/reports', fr: 'Rapports', en: 'Reports', icon: ScrollText },
     ],
   },
   {
-    fr: 'Données', en: 'Data',
+    // D'où viennent les données. En tête, parce qu'une carte vide ne sert à rien.
+    fr: 'Sources', en: 'Sources',
     items: [
-      { to: '/assets', fr: 'Actifs', en: 'Assets', icon: Boxes },
-      { to: '/onboarding', fr: 'Import de fichiers', en: 'File Import', icon: Upload },
+      { to: '/integrations', fr: 'Connecteurs', en: 'Connectors', icon: Blocks },
+      { to: '/onboarding', fr: 'Import de fichiers', en: 'File import', icon: Upload },
       { to: '/documents', fr: 'Documents', en: 'Documents', icon: ScanText },
-      { to: '/inference', fr: 'Dépendances inférées', en: 'Inferred Deps', icon: GitBranch },
-      { to: '/integrations', fr: 'Connecteurs', en: 'Integrations', icon: Blocks },
+      { to: '/inference', fr: 'Dépendances inférées', en: 'Inferred deps', icon: GitBranch },
+      { to: '/assets', fr: 'Actifs', en: 'Assets', icon: Boxes },
+    ],
+  },
+  {
+    fr: 'La carte', en: 'The map',
+    items: [
+      { to: '/graph', fr: 'Graphe', en: 'Graph', icon: Network },
+      { to: '/dependencies', fr: 'Dépendances', en: 'Dependencies', icon: Waypoints },
+      { to: '/enterprise', fr: 'Modèle d’entreprise', en: 'Enterprise model', icon: Building2 },
+      { to: '/twin', fr: 'Jumeau numérique', en: 'Digital twin', icon: Radio },
+      { to: '/history', fr: 'Historique du jumeau', en: 'Twin history', icon: History },
+    ],
+  },
+  {
+    // Ce qui cloche dans la carte.
+    fr: 'Fragilités', en: 'Weak points',
+    items: [
+      { to: '/risks', fr: 'Risques', en: 'Risks', icon: AlertTriangle },
+      { to: '/human', fr: 'Dépendances humaines', en: 'Human deps', icon: Users },
+      { to: '/suppliers', fr: 'Fournisseurs', en: 'Suppliers', icon: Truck },
+      { to: '/incidents', fr: 'Alerte anticipée', en: 'Early warning', icon: Radar },
+      { to: '/audit', fr: 'Confiance & audit', en: 'Confidence & audit', icon: FileSearch },
+    ],
+  },
+  {
+    // Ce qui se passerait si. Rien n'est écrit dans la carte depuis ces écrans.
+    fr: 'Épreuves', en: 'What-if',
+    items: [
+      { to: '/impact', fr: 'Impact transversal', en: 'Cross-system impact', icon: Zap },
+      { to: '/simulations', fr: 'Simulations', en: 'Simulations', icon: Radar },
+      { to: '/attacks', fr: 'Simulation d’attaque', en: 'Attack simulation', icon: ShieldAlert },
+      { to: '/change', fr: 'Impact de changement', en: 'Change impact', icon: GitPullRequest },
+      { to: '/decision', fr: 'Décision & simulation', en: 'Decision & sim', icon: Sparkles },
+    ],
+  },
+  {
+    fr: 'Action', en: 'Action',
+    items: [
+      { to: '/actions', fr: 'Plan d’action', en: 'Action plan', icon: ClipboardList },
+      { to: '/incident', fr: 'Mode incident', en: 'Incident mode', icon: AlertOctagon },
     ],
   },
 ]

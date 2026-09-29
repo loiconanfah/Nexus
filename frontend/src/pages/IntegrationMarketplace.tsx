@@ -8,6 +8,7 @@ import {
 import { api } from '../lib/api'
 import { useLang } from '../lib/i18n'
 import { notify } from '../lib/notify'
+import { VendorLogo } from '../components/VendorLogo'
 import type { ConnectorSpec, IntegrationRecord } from '../lib/types'
 
 const mono = 'var(--font-mono)'
@@ -20,6 +21,7 @@ const CATEGORIES: { key: string; fr: string; en: string }[] = [
   { key: 'cloud', fr: 'Nuages', en: 'Clouds' },
   { key: 'cmdb', fr: 'Référentiel de configuration', en: 'Configuration management' },
   { key: 'observability', fr: 'Topologie observée', en: 'Observed topology' },
+  { key: 'delivery', fr: 'Livraison et savoir', en: 'Delivery and knowledge' },
   { key: 'platform', fr: 'Plateforme interne', en: 'Internal platform' },
 ]
 
@@ -191,9 +193,10 @@ function Branched({ record, busy, onRefresh, onEdit, onDelete }: {
         borderColor: record.healthy ? 'var(--nx-border)' : 'color-mix(in srgb, var(--nx-danger) 45%, transparent)',
       }}>
       <div className="flex min-w-0 items-start gap-3">
-        <span className="mt-0.5 flex h-2 w-2 shrink-0 rounded-full"
-          style={{ background: record.healthy ? 'var(--nx-success)' : 'var(--nx-danger)' }} />
+        <VendorLogo id={record.vendorId} size={32} />
         <div className="min-w-0">
+          <span className="float-right ml-2 mt-1.5 flex h-2 w-2 rounded-full"
+            style={{ background: record.healthy ? 'var(--nx-success)' : 'var(--nx-danger)' }} />
           <div className="flex flex-wrap items-center gap-2">
             <span style={{ fontFamily: geist, fontSize: 14.5, color: 'var(--nx-text)' }}>{record.label}</span>
             <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>{record.vendorName}</span>
@@ -239,10 +242,13 @@ function Card({ spec, connected, onConnect }: { spec: ConnectorSpec; connected: 
     <div className="flex flex-col gap-3 rounded-sm border p-4"
       style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
       <div className="flex items-start justify-between gap-2">
-        <div>
+        <div className="flex min-w-0 items-start gap-2.5">
+          <VendorLogo id={spec.id} />
+          <div className="min-w-0">
           <h3 style={{ fontFamily: geist, fontSize: 15.5, color: 'var(--nx-text)' }}>{spec.name}</h3>
           <div style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>
             {lang === 'fr' ? spec.bringsFr : spec.bringsEn}
+          </div>
           </div>
         </div>
         {connected > 0 && (
@@ -387,11 +393,14 @@ function ConnectForm({ spec, existing, canStore, onClose }: {
       <div className="flex w-full max-w-xl flex-col gap-4 rounded-md border p-5"
         style={{ background: 'var(--nx-panel)', borderColor: 'var(--nx-border)' }}>
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex items-start gap-3">
+            <VendorLogo id={spec.id} size={40} />
+            <div>
             <h3 style={{ fontFamily: geist, fontSize: 20, color: 'var(--nx-text)' }}>{spec.name}</h3>
             <p className="mt-0.5" style={{ fontSize: 12.5, color: 'var(--nx-text-muted)' }}>
               {lang === 'fr' ? spec.summaryFr : spec.summaryEn}
             </p>
+            </div>
           </div>
           <button onClick={onClose} style={{ color: 'var(--nx-text-muted)' }}><X size={18} /></button>
         </div>

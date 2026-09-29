@@ -33,6 +33,9 @@ public static class VendorCatalog
         ServiceNow(), Freshservice(),
         Datadog(), Dynatrace(),
         Kubernetes(),
+        // Les sources du monde de la livraison, déclarées à part pour garder
+        // chaque fichier lisible.
+        .. VendorCatalogDelivery.All,
     ];
 
     public static VendorRecipe? Find(string? id)

@@ -258,7 +258,11 @@ public sealed class VendorApiConnector : IConnector
                 case PageMode.NextLink:
                     var next = VendorJson.Scalar(response.Root, dataset.NextPath);
                     if (string.IsNullOrWhiteSpace(next)) yield break;
-                    url = next!;
+                    // Certains éditeurs (Atlassian) renvoient un lien RELATIF :
+                    // il faut le recoller à l'hôte, sinon la deuxième page échoue.
+                    url = Uri.TryCreate(next, UriKind.Absolute, out _)
+                        ? next!
+                        : new Uri(new Uri(pagedUrl), next!).ToString();
                     break;
                 case PageMode.BodyToken:
                     pageToken = VendorJson.Scalar(response.Root, dataset.NextPath);

@@ -326,6 +326,72 @@ def check_kubernetes():
     return good
 
 
+def check_atlassian():
+    """ATL_SITE, ATL_EMAIL, ATL_API_TOKEN"""
+    site = env("ATL_SITE")
+    pair = f"{env('ATL_EMAIL')}:{env('ATL_API_TOKEN')}"
+    head = {"Authorization": "Basic " + base64.b64encode(pair.encode()).decode()}
+    good = True
+
+    url = f"https://{site}.atlassian.net/rest/api/3/project/search?maxResults=10&expand=lead"
+    status, payload, _ = fetch(url, head)
+    good &= report("Jira / projets", url, status, payload, "values", ["key", "name", "lead.displayName"])
+
+    url = f"https://{site}.atlassian.net/wiki/api/v2/pages?limit=10"
+    status, payload, _ = fetch(url, head)
+    good &= report("Confluence / pages", url, status, payload, "results", ["id", "title"])
+    return good
+
+
+def check_github():
+    """GH_ORG, GH_TOKEN"""
+    org = env("GH_ORG")
+    head = {"Authorization": f"Bearer {env('GH_TOKEN')}", "X-GitHub-Api-Version": "2022-11-28"}
+    good = True
+
+    url = f"https://api.github.com/orgs/{org}/repos?per_page=10"
+    status, payload, _ = fetch(url, head)
+    good &= report("GitHub / depots", url, status, payload, None, ["name", "full_name"])
+
+    url = f"https://api.github.com/orgs/{org}/teams?per_page=10"
+    status, payload, _ = fetch(url, head)
+    good &= report("GitHub / equipes", url, status, payload, None, ["name", "slug"])
+    return good
+
+
+def check_gitlab():
+    """GL_HOST (ex. https://gitlab.com), GL_GROUP_ID, GL_TOKEN"""
+    host = env("GL_HOST").rstrip("/")
+    url = f"{host}/api/v4/groups/{env('GL_GROUP_ID')}/projects?include_subgroups=true&per_page=10"
+    status, payload, _ = fetch(url, {"PRIVATE-TOKEN": env("GL_TOKEN")})
+    return report("GitLab / projets", url, status, payload, None,
+                  ["name", "path_with_namespace", "namespace.name"])
+
+
+def check_backstage():
+    """BS_BASE_URL, BS_TOKEN"""
+    base = env("BS_BASE_URL").rstrip("/")
+    url = f"{base}/api/catalog/entities?filter=kind=component&limit=10"
+    status, payload, _ = fetch(url, {"Authorization": f"Bearer {env('BS_TOKEN')}"})
+    ok = report("Backstage / composants", url, status, payload, None,
+                ["metadata.name", "spec.owner"])
+    if status == 200 and isinstance(payload, list) and payload:
+        declared = sum(1 for c in payload if (c.get("spec") or {}).get("dependsOn"))
+        print(f"  {DIM}composants declarant des dependances : {declared} sur {len(payload)}"
+              f" (sans dependsOn, Backstage n'apporte qu'un inventaire){END}")
+    return ok
+
+
+def check_gcp():
+    """Non couvert ici : le JWT signe demande une bibliotheque externe."""
+    print(f"\n{DIM}Google Cloud{END}")
+    print("  Ce script n'implemente pas la signature RS256 du compte de service.")
+    print("  Verifiez d'abord vos droits :  gcloud asset search-all-resources --scope=projects/<projet>")
+    print("  Puis, dans l'ecran Connecteurs, « Essayer l'acces ».")
+    print(f"  {DIM}Role requis : roles/cloudasset.viewer sur le projet.{END}")
+    return True
+
+
 def check_aws():
     """Non couvert ici : la signature AWS est le code a eprouver, pas ce script."""
     print(f"\n{DIM}Amazon Web Services{END}")
@@ -359,6 +425,11 @@ CHECKS = {
     "kubernetes": check_kubernetes,
     "aws": check_aws,
     "google": check_google,
+    "gcp": check_gcp,
+    "atlassian": check_atlassian,
+    "github": check_github,
+    "gitlab": check_gitlab,
+    "backstage": check_backstage,
 }
 
 

@@ -23,9 +23,9 @@ public class VendorCatalogTests
          "azure.sub", "azure.rg", "path.last"];
 
     [Fact]
-    public void Ten_connectors_are_published_with_distinct_identifiers()
+    public void Fifteen_connectors_are_published_with_distinct_identifiers()
     {
-        Assert.Equal(10, VendorCatalog.All.Count);
+        Assert.Equal(15, VendorCatalog.All.Count);
         Assert.Equal(VendorCatalog.All.Count, VendorCatalog.All.Select(r => r.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count());
         Assert.All(VendorCatalog.All, r => Assert.False(string.IsNullOrWhiteSpace(r.Name)));
         Assert.All(VendorCatalog.All, r => Assert.StartsWith("https://", r.DocUrl));

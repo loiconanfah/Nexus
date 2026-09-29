@@ -138,15 +138,20 @@ public sealed class VendorAuthenticator(HttpClient http, VendorAuth auth, IReadO
 
         var now = DateTimeOffset.UtcNow;
         var header = Base64Url("""{"alg":"RS256","typ":"JWT"}""");
-        var claims = Base64Url(JsonSerializer.Serialize(new Dictionary<string, object>
+        var payload = new Dictionary<string, object>
         {
             ["iss"] = email,
-            ["sub"] = subject,
             ["scope"] = Render(auth.Scope),
             ["aud"] = Render(auth.TokenUrl),
             ["iat"] = now.ToUnixTimeSeconds(),
             ["exp"] = now.AddMinutes(30).ToUnixTimeSeconds(),
-        }));
+        };
+        // « sub » n'existe que pour la délégation à l'échelle du domaine, où le
+        // compte de service emprunte l'identité d'un administrateur (Workspace).
+        // Sur Google Cloud, le compte de service agit pour LUI-MÊME, et Google
+        // rejette le jeton si le champ est présent mais vide.
+        if (!string.IsNullOrWhiteSpace(subject)) payload["sub"] = subject;
+        var claims = Base64Url(JsonSerializer.Serialize(payload));
 
         using var rsa = RSA.Create();
         try { rsa.ImportFromPem(privateKey.Replace("\\n", "\n")); }

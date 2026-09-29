@@ -448,6 +448,126 @@ public class VendorConnectorTests
         Assert.Equal("prod", records[0].Get("metadata.namespace"));
     }
 
+    // ── Backstage, GitHub, GitLab, Atlassian, Google Cloud ──
+
+    [Fact]
+    public async Task Backstage_reads_the_dependencies_teams_declare_themselves()
+    {
+        const string catalog = """
+        [{"metadata":{"name":"paiement-api","uid":"u1","description":"API de paiement"},
+          "spec":{"owner":"group:default/equipe-paiements","dependsOn":["resource:default/oracle-db","component:default/notification"]}}]
+        """;
+        var api = new FakeApi().Add("/api/catalog/entities", catalog).Add("/api/catalog/entities", catalog);
+        var settings = new Dictionary<string, string>
+        {
+            ["baseUrl"] = "https://backstage.exemple.com", ["token"] = "t",
+        };
+
+        var connector = Connect("backstage", api, settings);
+        var components = await ReadAsync(connector, "components");
+        var deps = await ReadAsync(connector, "component-deps");
+
+        Assert.Single(components);
+        Assert.Equal("paiement-api", components[0].Get("metadata.name"));
+        Assert.Equal("group:default/equipe-paiements", components[0].Get("spec.owner"));
+
+        // La référence porte son genre et son espace de noms : seul le nom compte
+        // pour retrouver le composant déjà présent dans la carte.
+        Assert.Equal(2, deps.Count);
+        Assert.Equal("oracle-db", deps[0].Get("target"));
+        Assert.Equal("notification", deps[1].Get("target"));
+    }
+
+    [Fact]
+    public async Task Github_repositories_are_attached_to_the_team_that_owns_them()
+    {
+        var api = new FakeApi()
+            .Add("/orgs/acme/teams?", """[{"id":1,"name":"Équipe paiements","slug":"paiements"}]""")
+            .Add("/teams/paiements/repos", """[{"id":9,"name":"paiement-api","full_name":"acme/paiement-api","description":"API"}]""");
+
+        var settings = new Dictionary<string, string> { ["org"] = "acme", ["token"] = "t" };
+        var records = await ReadAsync(Connect("github", api, settings), "team-repos");
+
+        Assert.Single(records);
+        Assert.Equal("paiement-api", records[0].Get("name"));
+        Assert.Equal("Équipe paiements", records[0].Get("parent.name"));
+    }
+
+    [Fact]
+    public async Task Gitlab_projects_carry_their_group_without_a_second_call()
+    {
+        var api = new FakeApi().Add("/api/v4/groups/42/projects", """
+        [{"id":7,"name":"paiement-api","path_with_namespace":"acme/paiement-api",
+          "description":"API","namespace":{"id":42,"name":"Acme Paiements"}}]
+        """);
+        var settings = new Dictionary<string, string>
+        {
+            ["host"] = "https://gitlab.com", ["groupId"] = "42", ["token"] = "t",
+        };
+
+        var records = await ReadAsync(Connect("gitlab", api, settings), "projects");
+
+        Assert.Single(records);
+        Assert.Equal("Acme Paiements", records[0].Get("namespace.name"));
+        Assert.Single(api.Requested);
+    }
+
+    [Fact]
+    public async Task Atlassian_follows_a_relative_next_link()
+    {
+        var api = new FakeApi()
+            .Add("/wiki/api/v2/pages?limit", """
+            {"results":[{"id":"p1","title":"Procédure de bascule"}],
+             "_links":{"next":"/wiki/api/v2/pages?limit=100&cursor=suite"}}
+            """)
+            .Add("cursor=suite", """{"results":[{"id":"p2","title":"Plan de reprise"}]}""");
+
+        var settings = new Dictionary<string, string>
+        {
+            ["site"] = "acme", ["email"] = "lecteur@acme.com", ["apiToken"] = "t",
+        };
+        var records = await ReadAsync(Connect("atlassian", api, settings), "pages");
+
+        Assert.Equal(2, records.Count);
+        // Le lien relatif doit être recollé à l'hôte, sinon la deuxième page échoue.
+        Assert.StartsWith("https://acme.atlassian.net/wiki/", api.Requested[^1]);
+    }
+
+    [Fact]
+    public async Task Google_cloud_names_a_resource_even_without_a_display_name()
+    {
+        var api = new FakeApi()
+            .Add("oauth2.googleapis.com/token", """{"access_token":"t","expires_in":3600}""")
+            .Add("searchAllResources", """
+            {"results":[
+              {"name":"//compute.googleapis.com/projects/p/zones/z/instances/vm-paiement",
+               "assetType":"compute.googleapis.com/Instance","location":"northamerica-northeast1"}
+            ]}
+            """);
+
+        var settings = new Dictionary<string, string>
+        {
+            ["projectId"] = "p",
+            ["serviceAccountEmail"] = "lenexux@p.iam.gserviceaccount.com",
+            ["privateKey"] = TestKey(),
+        };
+        var records = await ReadAsync(Connect("gcp", api, settings), "resources");
+
+        Assert.Single(records);
+        // displayName absent : le nom complet fait foi, et son dernier segment
+        // sert d'alias lisible.
+        Assert.Equal("//compute.googleapis.com/projects/p/zones/z/instances/vm-paiement", records[0].Get("resourceName"));
+        Assert.Equal("vm-paiement", records[0].Get("shortName"));
+        Assert.Equal("Google Cloud", records[0].Get("cloud"));
+    }
+
+    /// <summary>Une clé RSA jetable : le JWT doit être signé pour que l'appel parte.</summary>
+    private static string TestKey()
+    {
+        using var rsa = System.Security.Cryptography.RSA.Create(2048);
+        return rsa.ExportPkcs8PrivateKeyPem();
+    }
+
     // ── Refus explicites ──
 
     [Fact]

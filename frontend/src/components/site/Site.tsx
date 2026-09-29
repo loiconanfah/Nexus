@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, ArrowUpRight, ChevronDown, Menu, X } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, ChevronDown, Menu, Moon, Sun, X } from 'lucide-react'
 import { useLang } from '../../lib/i18n'
 import { Logo } from '../Logo'
 import { reopenConsent } from '../CookieConsent'
 import { SOCIAL, type Social } from '../../lib/social'
+import { setSiteTheme, useSiteTheme } from '../../lib/site-theme'
 
 /*
   Habillage commun du site vitrine (accueil public, blog, vidéos, solutions) :
@@ -14,20 +15,37 @@ import { SOCIAL, type Social } from '../../lib/social'
 
 const mono = 'var(--font-mono)'
 
+/** Bascule clair / sombre du site vitrine. */
+function SiteThemeButton() {
+  const { t } = useLang()
+  const theme = useSiteTheme()
+  const light = theme === 'light'
+  return (
+    <button
+      onClick={() => setSiteTheme(light ? 'dark' : 'light')}
+      className="flex h-[30px] w-[30px] items-center justify-center border"
+      style={{ borderColor: 'var(--slb-line-2)', color: 'var(--slb-muted)' }}
+      aria-label={light ? t('Passer en thème sombre', 'Switch to dark theme') : t('Passer en thème clair', 'Switch to light theme')}
+      title={light ? t('Thème sombre', 'Dark theme') : t('Thème clair', 'Light theme')}>
+      {light ? <Moon size={14} /> : <Sun size={14} />}
+    </button>
+  )
+}
+
 export const DARK_VARS: React.CSSProperties = {
-  ['--nx-bg' as string]: '#050506',
-  ['--nx-panel' as string]: '#0d0d11',
-  ['--nx-surface' as string]: '#0a0a0d',
-  ['--nx-surface-container' as string]: '#121216',
-  ['--nx-surface-high' as string]: '#1b1b21',
-  ['--nx-surface-highest' as string]: '#26262e',
-  ['--nx-border' as string]: '#26262e',
-  ['--nx-outline' as string]: '#6b6b78',
-  ['--nx-text' as string]: '#f3f3f6',
-  ['--nx-text-muted' as string]: '#a2a2b0',
-  ['--nx-cyan' as string]: '#22d3ee',
-  ['--nx-cyan-text' as string]: '#7fe8f7',
-  ['--nx-on-cyan' as string]: '#070714',
+  ['--nx-bg' as string]: 'var(--slb-bg)',
+  ['--nx-panel' as string]: 'var(--slb-surface)',
+  ['--nx-surface' as string]: 'var(--slb-surface)',
+  ['--nx-surface-container' as string]: 'var(--slb-surface-2)',
+  ['--nx-surface-high' as string]: 'var(--slb-surface-2)',
+  ['--nx-surface-highest' as string]: 'var(--slb-line-2)',
+  ['--nx-border' as string]: 'var(--slb-line-2)',
+  ['--nx-outline' as string]: 'var(--slb-faint)',
+  ['--nx-text' as string]: 'var(--slb-text)',
+  ['--nx-text-muted' as string]: 'var(--slb-muted)',
+  ['--nx-cyan' as string]: 'var(--slb-cyan)',
+  ['--nx-cyan-text' as string]: 'var(--slb-cyan-text)',
+  ['--nx-on-cyan' as string]: 'var(--slb-on-cyan)',
 }
 
 type T = (fr: string, en: string) => string
@@ -44,6 +62,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { to: '#probleme', label: ['Le problème', 'The problem'], desc: ['Pourquoi personne ne voit toute la chaîne', 'Why nobody sees the whole chain'] },
       { to: '#fonctionnement', label: ['Comment ça marche', 'How it works'], desc: ['Cartographier, révéler, simuler, chiffrer', 'Map, reveal, simulate, quantify'] },
       { to: '#minute', label: ['En une minute', 'In one minute'], desc: ['Une panne racontée de bout en bout', 'An outage told end to end'] },
+      { to: '#connecteurs', label: ['Connecteurs', 'Connectors'], desc: ['Quinze sources lues et relues toutes seules', 'Fifteen sources read and re-read on their own'] },
       { to: '#produit', label: ['Visite du produit', 'Product tour'], desc: ['Les écrans, tels qu’ils sont', 'The screens, as they are'] },
       { to: '#plateforme', label: ['La plateforme', 'The platform'], desc: ['Moteurs, sécurité, intégrations', 'Engines, security, integrations'] },
     ],
@@ -84,6 +103,9 @@ function useGo() {
 }
 
 export function SiteHeader() {
+  // Le logotype est encré en blanc sur fond sombre : en thème clair il
+  // disparaîtrait purement et simplement.
+  const siteTheme = useSiteTheme()
   const { lang, setLang, t } = useLang()
   const navigate = useNavigate()
   const go = useGo()
@@ -106,7 +128,7 @@ export function SiteHeader() {
   return (
     <header className="slb-nav" ref={ref}>
       <a href="/welcome" onClick={(e) => { e.preventDefault(); navigate('/welcome') }} aria-label={t('Lenexux, accueil', 'Lenexux, home')} className="flex items-center">
-        <Logo size={34} variant="dark" wordSize={20} />
+        <Logo size={34} variant={siteTheme === 'light' ? 'light' : 'dark'} wordSize={20} />
       </a>
 
       <nav className="slb-nav-links" aria-label={t('Navigation principale', 'Main navigation')}>
@@ -115,7 +137,7 @@ export function SiteHeader() {
             <button className="slb-dd-trigger" aria-expanded={open === g.key} aria-haspopup="true"
               // Au survol le menu est déjà ouvert : le clic (ou le toucher) l'ouvre, sans le refermer.
               onClick={() => setOpen(g.key)} onFocus={() => setOpen(g.key)}
-              style={{ color: activeGroup === g.key ? '#fff' : undefined }}>
+              style={{ color: activeGroup === g.key ? 'var(--slb-text)' : undefined }}>
               {t(...g.label)} <ChevronDown size={13} className="slb-dd-chev" />
             </button>
             {open === g.key && (
@@ -134,12 +156,13 @@ export function SiteHeader() {
       </nav>
 
       <div className="flex items-center gap-2">
-        <div className="flex items-center border" style={{ borderColor: '#2a2a33' }}>
+        <div className="flex items-center border" style={{ borderColor: 'var(--slb-line-2)' }}>
           {(['fr', 'en'] as const).map((l) => (
             <button key={l} onClick={() => setLang(l)} className="px-2 py-1"
-              style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: lang === l ? '#070714' : '#a2a2b0', background: lang === l ? '#22d3ee' : 'transparent' }}>{l}</button>
+              style={{ fontFamily: mono, fontSize: 11, textTransform: 'uppercase', color: lang === l ? 'var(--slb-on-cyan)' : 'var(--slb-muted)', background: lang === l ? 'var(--slb-cyan)' : 'transparent' }}>{l}</button>
           ))}
         </div>
+        <SiteThemeButton />
         <span className="hidden sm:inline-flex"><BoxBtn onClick={() => navigate('/demo')} label={t('Démo', 'Demo')} small /></span>
         <span className="hidden sm:inline-flex"><BoxBtn onClick={() => navigate('/login')} label={t('Se connecter', 'Sign in')} small primary /></span>
         <button className="slb-burger" aria-label={t('Menu', 'Menu')} aria-expanded={mobile} onClick={() => setMobile((o) => !o)}>
@@ -157,8 +180,8 @@ export function SiteHeader() {
               ))}
             </div>
           ))}
-          <a href="/demo" onClick={(e) => { e.preventDefault(); navigate('/demo') }} style={{ color: '#7fe8f7' }}>{t('Explorer la démo', 'Explore the demo')}</a>
-          <a href="/login" onClick={(e) => { e.preventDefault(); navigate('/login') }} style={{ color: '#7fe8f7' }}>{t('Se connecter', 'Sign in')}</a>
+          <a href="/demo" onClick={(e) => { e.preventDefault(); navigate('/demo') }} style={{ color: 'var(--slb-cyan-text)' }}>{t('Explorer la démo', 'Explore the demo')}</a>
+          <a href="/login" onClick={(e) => { e.preventDefault(); navigate('/login') }} style={{ color: 'var(--slb-cyan-text)' }}>{t('Se connecter', 'Sign in')}</a>
         </div>
       )}
     </header>
@@ -166,6 +189,7 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
+  const siteTheme = useSiteTheme()
   const { t } = useLang()
   const navigate = useNavigate()
   const go = useGo()
@@ -173,15 +197,15 @@ export function SiteFooter() {
     <a key={to} href={to.startsWith('#') ? `/welcome${to}` : to} onClick={(e) => { e.preventDefault(); go(to) }} className="slb-foot-link">{label}</a>
   )
   return (
-    <footer className="border-t px-6 pb-10 pt-14" style={{ borderColor: '#1c1c22', background: '#050506' }}>
+    <footer className="border-t px-6 pb-10 pt-14" style={{ borderColor: 'var(--slb-line)', background: 'var(--slb-bg)' }}>
       <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-3">
-          <Logo size={26} variant="dark" wordSize={16} />
-          <p style={{ fontSize: 13, color: '#8a8a98', lineHeight: 1.6, maxWidth: 280 }}>
+          <Logo size={26} variant={siteTheme === 'light' ? 'light' : 'dark'} wordSize={16} />
+          <p style={{ fontSize: 13, color: 'var(--slb-muted)', lineHeight: 1.6, maxWidth: 280 }}>
             {t('L’intelligence des dépendances et de l’impact opérationnel. Une solution SplitsPay Inc.', 'Dependency and operational impact intelligence. A SplitsPay Inc. solution.')}
           </p>
           <SocialLinks />
-          <button onClick={() => navigate('/login')} className="flex w-fit items-center gap-1" style={{ fontFamily: mono, fontSize: 11, color: '#7fe8f7' }}>
+          <button onClick={() => navigate('/login')} className="flex w-fit items-center gap-1" style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-cyan-text)' }}>
             {t('Se connecter', 'Sign in')} <ArrowUpRight size={13} />
           </button>
         </div>
@@ -192,7 +216,7 @@ export function SiteFooter() {
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t pt-6" style={{ borderColor: '#17171f', fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>
+      <div className="mx-auto mt-10 flex max-w-6xl flex-wrap items-center justify-between gap-3 border-t pt-6" style={{ borderColor: 'var(--slb-surface-2)', fontFamily: mono, fontSize: 11, color: 'var(--slb-faint)' }}>
         <span>© {new Date().getFullYear()} SplitsPay Inc.</span>
         <div className="flex flex-wrap gap-4">
           {link('/legal?doc=terms', t('Conditions', 'Terms'))}
@@ -231,8 +255,10 @@ function SocialIcon({ s }: { s: Social }) {
 
 /** Page du site vitrine : habillage, en-tête et pied de page communs. */
 export function SitePage({ children }: { children: ReactNode }) {
+  const theme = useSiteTheme()
   return (
-    <div className="slb h-full overflow-y-auto" style={{ ...DARK_VARS, background: '#050506', color: '#f3f3f6', fontFamily: 'var(--font-inter)' }}>
+    <div className="slb h-full overflow-y-auto" data-site-theme={theme}
+      style={{ ...DARK_VARS, background: 'var(--slb-bg)', color: 'var(--slb-text)', fontFamily: 'var(--font-inter)' }}>
       <style>{SILBER_CSS}</style>
       <SiteHeader />
       {children}
@@ -245,7 +271,7 @@ export function SitePage({ children }: { children: ReactNode }) {
 export function PageHero({ eyebrow, title, sub, t, children }: { eyebrow: string; title: string; sub?: string; t?: T; children?: ReactNode }) {
   void t
   return (
-    <section className="relative overflow-hidden border-b px-6 pb-14 pt-16 md:pt-24" style={{ borderColor: '#14141a' }}>
+    <section className="relative overflow-hidden border-b px-6 pb-14 pt-16 md:pt-24" style={{ borderColor: 'var(--slb-line)' }}>
       <div className="slb-light slb-light-soft" aria-hidden><span className="slb-silk slb-silk-2" /></div>
       <div className="relative z-10 mx-auto flex max-w-6xl flex-col">
         <Eyebrow>{eyebrow}</Eyebrow>
@@ -273,73 +299,129 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
 
 // ── CSS bespoke (style Silber AI) ─────────────────────────────────────────────
 export const SILBER_CSS = `
+/*
+  La palette du site vitrine. Sombre par defaut, claire sur demande du visiteur.
+
+  Les deux jeux portent les MEMES noms : aucun ecran n'a donc a connaitre le
+  theme, et une couleur oubliee se voit tout de suite au lieu de se fondre dans
+  le decor. Le cyan de la marque ne change pas, seule sa declinaison lisible sur
+  fond clair est assombrie, sans quoi elle disparaitrait sur du blanc.
+*/
+.slb {
+  --slb-bg: #050506;
+  --slb-surface: #0c0c12;
+  --slb-surface-2: #16161d;
+  --slb-line: #1c1c22;
+  --slb-line-2: #2a2a33;
+  --slb-text: #f3f3f6;
+  --slb-text-2: #c8c8d2;
+  --slb-text-3: #b4b4c0;
+  --slb-muted: #a2a2b0;
+  --slb-faint: #6b6b78;
+  --slb-cyan: #22d3ee;
+  --slb-cyan-text: #7fe8f7;
+  --slb-cyan-deep: #0aa5bd;
+  --slb-on-cyan: #070714;
+  --slb-red: #d15b54;
+  --slb-amber: #e0a458;
+  --slb-amber-soft: #f5d76e;
+  --slb-violet: #8a6bff;
+  --slb-violet-soft: #c4b5ff;
+  --slb-nav-bg: rgba(5,5,6,.78);
+  --slb-veil: rgba(255,255,255,.035);
+  --slb-shadow: rgba(0,0,0,.5);
+}
+.slb[data-site-theme="light"] {
+  --slb-bg: #ffffff;
+  --slb-surface: #f7f8fb;
+  --slb-surface-2: #eceef4;
+  --slb-line: #e4e6ec;
+  --slb-line-2: #d0d3dd;
+  --slb-text: #0f1014;
+  --slb-text-2: #33343e;
+  --slb-text-3: #454650;
+  --slb-muted: #5c5e6b;
+  --slb-faint: #7b7d8b;
+  --slb-cyan: #22d3ee;
+  --slb-cyan-text: #0c7086;
+  --slb-cyan-deep: #0aa5bd;
+  --slb-on-cyan: #04252e;
+  --slb-red: #b23a32;
+  --slb-amber: #96620f;
+  --slb-amber-soft: #7d5a12;
+  --slb-violet: #6b4ad6;
+  --slb-violet-soft: #5a3cc0;
+  --slb-nav-bg: rgba(255,255,255,.85);
+  --slb-veil: rgba(0,0,0,.03);
+  --slb-shadow: rgba(15,16,20,.14);
+}
 .slb { scroll-behavior: smooth; }
 .slb a { color: inherit; }
 
 .slb-nav { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; gap: 12px; background: rgba(5,5,6,.78); backdrop-filter: blur(10px); border-bottom: 1px solid #14141a; }
+  padding: 14px 16px; gap: 12px; background: var(--slb-nav-bg); backdrop-filter: blur(10px); border-bottom: 1px solid var(--slb-line); }
 @media (min-width: 640px) { .slb-nav { padding: 16px 24px; gap: 16px; } }
 .slb { overflow-x: hidden; }
-.slb-nav-links { display: none; gap: 6px; font-size: 13.5px; color: #c8c8d2; }
+.slb-nav-links { display: none; gap: 6px; font-size: 13.5px; color: var(--slb-text-2); }
 @media (min-width: 980px) { .slb-nav-links { display: flex; } }
 .slb-dd { position: relative; }
-.slb-dd-trigger { display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px; color: #c8c8d2; border-radius: 6px; }
-.slb-dd-trigger:hover, .slb-dd-trigger[aria-expanded="true"] { color: #fff; background: #111118; }
+.slb-dd-trigger { display: inline-flex; align-items: center; gap: 5px; padding: 8px 12px; color: var(--slb-text-2); border-radius: 6px; }
+.slb-dd-trigger:hover, .slb-dd-trigger[aria-expanded="true"] { color: var(--slb-text); background: var(--slb-surface-2); }
 .slb-dd-trigger[aria-expanded="true"] .slb-dd-chev { transform: rotate(180deg); }
 .slb-dd-chev { transition: transform .15s ease; opacity: .7; }
 .slb-dd-panel { position: absolute; top: 100%; left: 0; margin-top: 6px; min-width: 300px; padding: 8px; display: flex; flex-direction: column;
-  background: #0c0c12; border: 1px solid #23232c; border-radius: 10px; box-shadow: 0 18px 40px rgba(0,0,0,.5); }
+  background: var(--slb-surface); border: 1px solid var(--slb-line-2); border-radius: 10px; box-shadow: 0 18px 40px var(--slb-shadow); }
 .slb-dd-panel::before { content: ""; position: absolute; left: 0; right: 0; top: -8px; height: 8px; }
 .slb-dd-item { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 7px; }
-.slb-dd-item:hover { background: #15151d; }
-.slb-dd-title { font-size: 14px; color: #f3f3f6; font-weight: 500; }
-.slb-dd-desc { font-size: 12.5px; color: #8a8a98; }
-.slb-burger { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid #2a2a33; color: #c8c8d2; }
+.slb-dd-item:hover { background: var(--slb-surface-2); }
+.slb-dd-title { font-size: 14px; color: var(--slb-text); font-weight: 500; }
+.slb-dd-desc { font-size: 12.5px; color: var(--slb-muted); }
+.slb-burger { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--slb-line-2); color: var(--slb-text-2); }
 @media (min-width: 980px) { .slb-burger { display: none; } }
 .slb-mobile-menu { position: absolute; top: 100%; left: 0; right: 0; display: flex; flex-direction: column; padding: 8px 20px 18px; max-height: 80vh; overflow-y: auto;
-  background: #0b0b12; border-bottom: 1px solid #2a2a33; box-shadow: 0 12px 24px rgba(0,0,0,0.4); }
-.slb-mobile-group { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid #17171f; }
-.slb-mobile-head { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #6b6b78; padding: 6px 2px; }
-.slb-mobile-menu a { padding: 9px 2px; font-size: 15px; color: #d5d5df; }
-.slb-mobile-menu a:hover { color: #fff; }
+  background: var(--slb-surface); border-bottom: 1px solid var(--slb-line-2); box-shadow: 0 12px 24px var(--slb-shadow); }
+.slb-mobile-group { display: flex; flex-direction: column; padding: 8px 0; border-bottom: 1px solid var(--slb-surface-2); }
+.slb-mobile-head { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--slb-faint); padding: 6px 2px; }
+.slb-mobile-menu a { padding: 9px 2px; font-size: 15px; color: var(--slb-text-2); }
+.slb-mobile-menu a:hover { color: var(--slb-text); }
 @media (min-width: 980px) { .slb-mobile-menu { display: none; } }
 
-.slb-foot-head { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: #6b6b78; margin-bottom: 4px; }
-.slb-foot-link { font-size: 13px; color: #a2a2b0; text-align: left; }
-.slb-foot-link:hover { color: #fff; }
-.slb-social { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid #26262e; color: #b9b9c6; transition: color .15s, border-color .15s; }
-.slb-social:hover { color: #fff; border-color: #3a3a47; }
+.slb-foot-head { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--slb-faint); margin-bottom: 4px; }
+.slb-foot-link { font-size: 13px; color: var(--slb-muted); text-align: left; }
+.slb-foot-link:hover { color: var(--slb-text); }
+.slb-social { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 8px; border: 1px solid var(--slb-line-2); color: var(--slb-text-3); transition: color .15s, border-color .15s; }
+.slb-social:hover { color: var(--slb-text); border-color: var(--slb-line-2); }
 
 /* Boutons encadres a deux parties (label | fleche) facon Silber */
-.slb-btn { display: inline-flex; align-items: stretch; border: 1px solid #2e2e38; background: #0f0f14; color: #f3f3f6; }
+.slb-btn { display: inline-flex; align-items: stretch; border: 1px solid var(--slb-line-2); background: var(--slb-surface); color: var(--slb-text); }
 .slb-btn-label { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; font-family: var(--font-mono); font-size: 12.5px; letter-spacing: .04em; text-transform: uppercase; }
-.slb-btn-arrow { display: inline-flex; align-items: center; padding: 0 12px; border-left: 1px solid #2e2e38; color: #7fe8f7; transition: background .16s; }
-.slb-btn:hover .slb-btn-arrow { background: #17171f; }
-.slb-btn-primary { background: #22d3ee; border-color: #22d3ee; color: #070714; }
-.slb-btn-primary .slb-btn-arrow { border-left-color: rgba(7,7,20,.25); color: #070714; }
+.slb-btn-arrow { display: inline-flex; align-items: center; padding: 0 12px; border-left: 1px solid var(--slb-line-2); color: var(--slb-cyan-text); transition: background .16s; }
+.slb-btn:hover .slb-btn-arrow { background: var(--slb-surface-2); }
+.slb-btn-primary { background: var(--slb-cyan); border-color: var(--slb-cyan); color: var(--slb-on-cyan); }
+.slb-btn-primary .slb-btn-arrow { border-left-color: rgba(7,7,20,.25); color: var(--slb-on-cyan); }
 .slb-btn-primary:hover .slb-btn-arrow { background: rgba(7,7,20,.12); }
 .slb-btn-sm .slb-btn-label { padding: 8px 12px; font-size: 11px; }
 .slb-btn-sm .slb-btn-arrow { padding: 0 8px; }
 
 /* Eyebrow encadre */
-.slb-eyebrow { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; border: 1px solid #2a2a33;
-  padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: #b9b9c6; margin-bottom: 26px; }
-.slb-eyebrow-mark { color: #8a6bff; }
+.slb-eyebrow { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; border: 1px solid var(--slb-line-2);
+  padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--slb-text-3); margin-bottom: 26px; }
+.slb-eyebrow-mark { color: var(--slb-violet); }
 
 /* Label de section */
-.slb-label { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #2a2a33; padding: 5px 11px;
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #7fe8f7; }
+.slb-label { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--slb-line-2); padding: 5px 11px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--slb-cyan-text); }
 
-.slb-h1 { font-weight: 600; letter-spacing: -.03em; line-height: 1.02; color: #fbfbfe; font-size: clamp(2.6rem, 7.4vw, 6.4rem); }
-.slb-accent { background: linear-gradient(100deg, #22d3ee 0%, #0aa5bd 60%, #7fe8f7 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.slb-h2 { margin-top: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.06; color: #f7f7fb; font-size: clamp(1.9rem, 3.6vw, 3.2rem); max-width: 22ch; }
-.slb-sub { max-width: 620px; margin-top: 26px; font-size: clamp(1rem, 1.3vw, 1.18rem); line-height: 1.6; color: #a2a2b0; }
+.slb-h1 { font-weight: 600; letter-spacing: -.03em; line-height: 1.02; color: var(--slb-text); font-size: clamp(2.6rem, 7.4vw, 6.4rem); }
+.slb-accent { background: linear-gradient(100deg, var(--slb-cyan) 0%, var(--slb-cyan-deep) 60%, var(--slb-cyan-text) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.slb-h2 { margin-top: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.06; color: var(--slb-text); font-size: clamp(1.9rem, 3.6vw, 3.2rem); max-width: 22ch; }
+.slb-sub { max-width: 620px; margin-top: 26px; font-size: clamp(1rem, 1.3vw, 1.18rem); line-height: 1.6; color: var(--slb-muted); }
 
 /* HERO */
-.slb-hero { position: relative; overflow: hidden; min-height: 92vh; display: flex; align-items: center; background: #050506; }
+.slb-hero { position: relative; overflow: hidden; min-height: 92vh; display: flex; align-items: center; background: var(--slb-bg); }
 .slb-hero-inner { position: relative; z-index: 10; width: 100%; max-width: 1180px; margin: 0 auto; padding: 40px 24px; display: flex; flex-direction: column; }
 .slb-grid { position: absolute; inset: 0; z-index: 1;
-  background-image: linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 12.5% 100%;
+  background-image: linear-gradient(90deg, var(--slb-veil) 1px, transparent 1px); background-size: 12.5% 100%;
   mask-image: linear-gradient(180deg, #000 0%, transparent 85%); }
 
 /* Vague de lumiere liquide bleu/violet */
@@ -358,46 +440,46 @@ export const SILBER_CSS = `
 .slb-light-soft .slb-silk { opacity: .45; }
 
 /* Cartes numerotees */
-.slb-numcard { background: #050506; padding: 34px 26px; }
-.slb-numcard-tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: #6b6b78; }
-.slb-numcard-n { font-size: 46px; font-weight: 300; color: #2f2f3a; line-height: 1; }
+.slb-numcard { background: var(--slb-bg); padding: 34px 26px; }
+.slb-numcard-tag { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--slb-faint); }
+.slb-numcard-n { font-size: 46px; font-weight: 300; color: var(--slb-line-2); line-height: 1; }
 
 /* Cellule (persona) */
-.slb-cell { background: #050506; padding: 30px 24px; }
+.slb-cell { background: var(--slb-bg); padding: 30px 24px; }
 
 /* Onglets de la galerie produit */
 .slb-shot-tab { border: 1px solid; padding: 7px 14px; font-family: var(--font-mono); font-size: 11.5px;
   letter-spacing: .04em; text-transform: uppercase; transition: border-color .15s, color .15s; }
-.slb-shot-tab[aria-pressed="false"]:hover { border-color: #3a3a47; color: #f3f3f6; }
+.slb-shot-tab[aria-pressed="false"]:hover { border-color: var(--slb-line-2); color: var(--slb-text); }
 
 /* Chips */
-.slb-chip { border: 1px solid #26262e; padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; color: #b9b9c6; }
+.slb-chip { border: 1px solid var(--slb-line-2); padding: 6px 12px; font-family: var(--font-mono); font-size: 11.5px; color: var(--slb-text-3); }
 
 /* STAT */
-.slb-stat { position: relative; overflow: hidden; padding: 120px 0; background: #050506; }
+.slb-stat { position: relative; overflow: hidden; padding: 120px 0; background: var(--slb-bg); }
 .slb-stat-num { margin-top: 14px; font-weight: 600; letter-spacing: -.03em; line-height: 1; font-size: clamp(3.4rem, 9vw, 8rem);
-  background: linear-gradient(100deg, #22d3ee, #0aa5bd 55%, #7fe8f7); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  background: linear-gradient(100deg, var(--slb-cyan), var(--slb-cyan-deep) 55%, var(--slb-cyan-text)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* CTA */
-.slb-cta { position: relative; overflow: hidden; padding: 130px 0; background: #050506; border-top: 1px solid #14141a; }
+.slb-cta { position: relative; overflow: hidden; padding: 130px 0; background: var(--slb-bg); border-top: 1px solid var(--slb-line); }
 
 .slb-faq summary::-webkit-details-marker { display: none; }
 .slb-faq[open] .slb-faq-chev { transform: rotate(180deg); }
 .slb-faq-chev { transition: transform .2s ease; }
 
 /* Cartes de contenu (blog, vidéos, solutions) */
-.slb-card { display: flex; flex-direction: column; border: 1px solid #1f1f27; background: #0a0a0e; transition: border-color .15s, transform .15s; }
-.slb-card:hover { border-color: #33333f; }
+.slb-card { display: flex; flex-direction: column; border: 1px solid var(--slb-surface-2); background: var(--slb-surface); transition: border-color .15s, transform .15s; }
+.slb-card:hover { border-color: var(--slb-line-2); }
 .slb-card-link:hover { transform: translateY(-2px); }
 
 /* Article */
-.slb-prose { max-width: 720px; margin: 0 auto; font-size: 17px; line-height: 1.75; color: #d0d0da; }
-.slb-prose h2 { margin: 2.2em 0 .6em; font-family: var(--font-geist); font-size: 1.55rem; font-weight: 600; letter-spacing: -.01em; color: #f7f7fb; }
+.slb-prose { max-width: 720px; margin: 0 auto; font-size: 17px; line-height: 1.75; color: var(--slb-text-2); }
+.slb-prose h2 { margin: 2.2em 0 .6em; font-family: var(--font-geist); font-size: 1.55rem; font-weight: 600; letter-spacing: -.01em; color: var(--slb-text); }
 .slb-prose p { margin: 0 0 1.15em; }
 .slb-prose ul { margin: 0 0 1.2em; padding-left: 1.2em; list-style: disc; }
 .slb-prose li { margin: .35em 0; }
-.slb-prose strong { color: #f3f3f6; }
-.slb-prose blockquote { margin: 1.6em 0; padding: 4px 0 4px 18px; border-left: 2px solid #22d3ee; color: #e6e6ee; font-size: 1.1em; }
+.slb-prose strong { color: var(--slb-text); }
+.slb-prose blockquote { margin: 1.6em 0; padding: 4px 0 4px 18px; border-left: 2px solid var(--slb-cyan); color: var(--slb-text-2); font-size: 1.1em; }
 
 @media (prefers-reduced-motion: reduce) { .slb-silk { animation: none; } }
 `

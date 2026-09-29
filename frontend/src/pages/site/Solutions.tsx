@@ -125,9 +125,9 @@ const FAMILIES: { key: Family; label: [string, string]; sub: [string, string] }[
 ]
 
 const STATUS: Record<Status, { fr: string; en: string; bg: string; fg: string }> = {
-  available: { fr: 'Disponible', en: 'Available', bg: 'rgba(34,211,238,.12)', fg: '#7fe8f7' },
-  beta: { fr: 'Bêta', en: 'Beta', bg: 'rgba(138,107,255,.16)', fg: '#c4b5ff' },
-  service: { fr: 'Agence', en: 'Agency', bg: 'rgba(250,204,21,.12)', fg: '#f5d76e' },
+  available: { fr: 'Disponible', en: 'Available', bg: 'rgba(34,211,238,.12)', fg: 'var(--slb-cyan-text)' },
+  beta: { fr: 'Bêta', en: 'Beta', bg: 'rgba(138,107,255,.16)', fg: 'var(--slb-violet-soft)' },
+  service: { fr: 'Agence', en: 'Agency', bg: 'rgba(250,204,21,.12)', fg: 'var(--slb-amber-soft)' },
 }
 
 export function Solutions() {
@@ -162,7 +162,7 @@ export function Solutions() {
         <div className="mt-8 flex flex-wrap gap-2">
           {SOLUTIONS.map((s) => (
             <a key={s.key} href={`#${s.key}`} onClick={(e) => { e.preventDefault(); document.getElementById(s.key)?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="slb-chip" style={{ color: '#d0d0da' }}>{s.name}</a>
+              className="slb-chip" style={{ color: 'var(--slb-text-2)' }}>{s.name}</a>
           ))}
         </div>
       </PageHero>
@@ -171,11 +171,11 @@ export function Solutions() {
         const items = SOLUTIONS.filter((s) => s.family === f.key)
         if (items.length === 0) return null
         return (
-          <section key={f.key} className="border-b px-6 py-16" style={{ borderColor: '#14141a', background: fi % 2 ? '#08080b' : '#050506' }}>
+          <section key={f.key} className="border-b px-6 py-16" style={{ borderColor: 'var(--slb-line)', background: fi % 2 ? 'var(--slb-surface)' : 'var(--slb-bg)' }}>
             <div className="mx-auto flex max-w-6xl flex-col gap-8">
               <div className="flex flex-col gap-2">
                 <div className="slb-label self-start">{t(...f.label)}</div>
-                <p style={{ color: '#a2a2b0' }}>{t(...f.sub)}</p>
+                <p style={{ color: 'var(--slb-muted)' }}>{t(...f.sub)}</p>
               </div>
               {items.map((s, i) => <SolutionCard key={s.key} s={s} reverse={i % 2 === 1} />)}
             </div>
@@ -185,7 +185,7 @@ export function Solutions() {
 
       <section className="px-6 py-14">
         <div className="mx-auto max-w-6xl">
-          <p style={{ fontFamily: mono, fontSize: 12, color: '#8a8a98', letterSpacing: '.04em', lineHeight: 1.7 }}>
+          <p style={{ fontFamily: mono, fontSize: 12, color: 'var(--slb-muted)', letterSpacing: '.04em', lineHeight: 1.7 }}>
             {t('Toutes ces solutions sont conçues et développées par SplitsPay Inc., fondée par Yvan Loic Nanfah Wamba.',
               'All these solutions are designed and built by SplitsPay Inc., founded by Yvan Loic Nanfah Wamba.')}
           </p>
@@ -217,7 +217,7 @@ function SolutionCard({ s, reverse }: { s: Solution; reverse: boolean }) {
   const open = () => (s.internal ? navigate(s.url) : window.open(s.url, '_blank', 'noopener,noreferrer'))
 
   const visual = (
-    <div className="relative flex min-h-[220px] items-center justify-center overflow-hidden" style={{ background: '#0b0b10', border: '1px solid #1c1c24' }}>
+    <div className="relative flex min-h-[220px] items-center justify-center overflow-hidden" style={{ background: 'var(--slb-surface)', border: '1px solid var(--slb-line)' }}>
       {s.image && (
         <img src={s.image} alt={t(`Visuel officiel de ${s.name}`, `${s.name} official visual`)} loading="lazy"
           className="h-full w-full" style={{ objectFit: s.imageFit ?? 'cover', maxHeight: 320, padding: s.imageFit === 'contain' ? 16 : 0 }} />
@@ -233,16 +233,16 @@ function SolutionCard({ s, reverse }: { s: Solution; reverse: boolean }) {
         {visual}
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-3">
-            <h3 style={{ fontFamily: geist, fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', color: '#fbfbfe' }}>{s.name}</h3>
+            <h3 style={{ fontFamily: geist, fontSize: 28, fontWeight: 600, letterSpacing: '-.02em', color: 'var(--slb-text)' }}>{s.name}</h3>
             <span className="rounded-full px-2.5 py-0.5" style={{ fontFamily: mono, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.06em', background: st.bg, color: st.fg }}>{t(st.fr, st.en)}</span>
           </div>
-          <span style={{ fontFamily: mono, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '.06em', color: '#8a8a98' }}>{t(...s.audience)}</span>
-          <p style={{ fontSize: 17, color: '#e6e6ee', lineHeight: 1.45 }}>{t(...s.tagline)}</p>
-          <p style={{ color: '#a2a2b0', lineHeight: 1.65 }}>{t(...s.body)}</p>
+          <span style={{ fontFamily: mono, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '.06em', color: 'var(--slb-muted)' }}>{t(...s.audience)}</span>
+          <p style={{ fontSize: 17, color: 'var(--slb-text-2)', lineHeight: 1.45 }}>{t(...s.tagline)}</p>
+          <p style={{ color: 'var(--slb-muted)', lineHeight: 1.65 }}>{t(...s.body)}</p>
           <ul className="flex flex-col gap-2">
             {s.points.map((p, i) => (
-              <li key={i} className="flex gap-3" style={{ color: '#d0d0da', lineHeight: 1.5, fontSize: 15 }}>
-                <span style={{ fontFamily: mono, fontSize: 12, color: '#22d3ee', paddingTop: 2 }}>{String(i + 1).padStart(2, '0')}</span>{t(...p)}
+              <li key={i} className="flex gap-3" style={{ color: 'var(--slb-text-2)', lineHeight: 1.5, fontSize: 15 }}>
+                <span style={{ fontFamily: mono, fontSize: 12, color: 'var(--slb-cyan)', paddingTop: 2 }}>{String(i + 1).padStart(2, '0')}</span>{t(...p)}
               </li>
             ))}
           </ul>

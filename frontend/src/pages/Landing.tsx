@@ -4,11 +4,12 @@ import {
   ArrowRight, PlayCircle, ShieldCheck,
   Plug, Bot, CheckCircle2, Lock, Shield, Server, AlertTriangle,
   Activity, Briefcase, Landmark, HeartPulse, Building2, Factory, Zap, ChevronDown, KeyRound,
-  Scale, Network, LineChart, Radar, Users, Workflow, Upload, Boxes, EyeOff,
+  Scale, Network, LineChart, Radar, Users, Workflow, Boxes, EyeOff,
 } from 'lucide-react'
 import { useLang } from '../lib/i18n'
 import { usePageMeta } from '../lib/seo'
 import { BoxBtn, Eyebrow, SitePage } from '../components/site/Site'
+import { VendorLogo } from '../components/VendorLogo'
 
 const mono = 'var(--font-mono)'
 const geist = 'var(--font-geist)'
@@ -60,11 +61,11 @@ export function Landing() {
       <Section id="probleme" alt>
         <Label>{t('Le problème', 'The problem')}</Label>
         <SectionH>{t('Chaque outil voit son silo. Personne ne voit l’ensemble.', 'Each tool sees its silo. No one sees the whole.')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.65 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.65 }}>
           {t('Votre ERP connaît les fournisseurs, l’ITSM les serveurs, le RH les personnes, votre plateforme IA les modèles et agents. Mais quand un fournisseur tombe, qu’un employé clé part ou qu’un service cloud est compromis, la question, « qu’est-ce qui casse, jusqu’où, et combien ça coûte ? », traverse tous ces silos. Aucun outil, seul, n’y répond.',
                 'Your ERP knows suppliers, your ITSM knows servers, HR knows people, your AI platform knows models and agents. But when a supplier fails, a key person leaves or a cloud service is compromised, the question, “what breaks, how far, and how much does it cost?”, cuts across all those silos. No single tool answers it.')}
         </p>
-        <div className="mt-12 grid gap-px sm:grid-cols-3" style={{ background: '#1c1c22' }}>
+        <div className="mt-12 grid gap-px sm:grid-cols-3" style={{ background: 'var(--slb-line)' }}>
           <Persona icon={EyeOff} role={t('Angles morts', 'Blind spots')} body={t('Les dépendances transversales (systèmes ↔ fournisseurs ↔ personnes ↔ IA) ne vivent dans aucun outil.', 'Cross-cutting dependencies (systems ↔ suppliers ↔ people ↔ AI) live in no single tool.')} />
           <Persona icon={AlertTriangle} role={t('Surprises coûteuses', 'Costly surprises')} body={t('On découvre un point unique de défaillance le jour où il tombe, pas avant.', 'You discover a single point of failure the day it fails, not before.')} />
           <Persona icon={LineChart} role={t('Décisions à l’aveugle', 'Decisions in the dark')} body={t('Impossible de chiffrer l’impact d’une panne ou d’une décision sans un modèle relié au réel.', 'Impossible to quantify the impact of an outage or a decision without a model tied to reality.')} />
@@ -75,11 +76,11 @@ export function Landing() {
       <Section id="minute">
         <Label>{t('En une minute', 'In one minute')}</Label>
         <SectionH>{t('Un lundi matin, raconté du début à la fin.', 'A Monday morning, told from start to finish.')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
           {t('Si vous ne devez lire qu’une chose sur cette page, lisez ceci. Aucun jargon.',
              'If you read only one thing on this page, read this. No jargon.')}
         </p>
-        <div className="mt-10 flex flex-col gap-px" style={{ background: '#1c1c22' }}>
+        <div className="mt-10 flex flex-col gap-px" style={{ background: 'var(--slb-line)' }}>
           <Beat time="09:02" t={t}
             fr="Votre fournisseur d’identité, celui qui laisse entrer vos employés dans leurs outils, tombe. Personne ne sait encore jusqu’où ça va."
             en="Your identity provider, the one that lets employees into their tools, goes down. Nobody yet knows how far this goes." />
@@ -102,7 +103,7 @@ export function Landing() {
       <Section id="essentiel">
         <Label>{t('L’essentiel', 'The essentials')}</Label>
         <SectionH>{t('Comment Lenexux révèle vos angles morts.', 'How Lenexux reveals your blind spots.')}</SectionH>
-        <div className="mt-14 grid gap-px md:grid-cols-3" style={{ background: '#1c1c22' }}>
+        <div className="mt-14 grid gap-px md:grid-cols-3" style={{ background: 'var(--slb-line)' }}>
           <NumCard n="01" tag={t('Cartographie', 'Mapping')} title={t('Cartographier', 'Map')}
             body={t('Systèmes, fournisseurs et personnes dans un graphe unique et navigable.', 'Systems, suppliers and people in a single, navigable graph.')} />
           <NumCard n="02" tag={t('Analyse', 'Analysis')} title={t('Révéler', 'Reveal')}
@@ -116,21 +117,21 @@ export function Landing() {
       <Section id="fonctionnement" alt>
         <Label>{t('Comment ça marche', 'How it works')}</Label>
         <SectionH>{t('Du fichier brut à la décision chiffrée, en cinq temps.', 'From raw file to quantified decision, in five steps.')}</SectionH>
-        <div className="mt-14 grid gap-px sm:grid-cols-2 lg:grid-cols-5" style={{ background: '#1c1c22' }}>
-          <Step n="1" icon={Upload} title={t('Importer', 'Import')} body={t('CSV, Excel, API REST en direct, ou données collées structurées par l’IA. Aucun accès privilégié.', 'CSV, Excel, live REST API, or pasted data structured by AI. No privileged access.')} />
+        <div className="mt-14 grid gap-px sm:grid-cols-2 lg:grid-cols-5" style={{ background: 'var(--slb-line)' }}>
+          <Step n="1" icon={Plug} title={t('Brancher', 'Connect')} body={t('Quinze éditeurs interrogés par leur API et relus tout seuls, ou vos fichiers. Lecture seule, aucun accès privilégié.', 'Fifteen vendors queried through their API and re-read on their own, or your files. Read-only, no privileged access.')} />
           <Step n="2" icon={Network} title={t('Cartographier', 'Map')} body={t('Systèmes, fournisseurs, personnes et IA deviennent un graphe unique et navigable.', 'Systems, suppliers, people and AI become a single, navigable graph.')} />
           <Step n="3" icon={Radar} title={t('Révéler', 'Reveal')} body={t('Points uniques de défaillance, concentration et rayon d’impact, avec un score expliqué.', 'Single points of failure, concentration and blast radius, with an explained score.')} />
           <Step n="4" icon={Activity} title={t('Simuler', 'Simulate')} body={t('Rejouez une panne, une cyberattaque ou une décision ; l’impact se propage et se chiffre.', 'Replay an outage, a cyberattack or a decision; the impact propagates and is quantified.')} />
           <Step n="5" icon={LineChart} title={t('Décider', 'Decide')} body={t('Mitigations priorisées et rapport exécutif, des chiffres déterministes, jamais inventés.', 'Prioritized mitigations and an executive report, deterministic figures, never invented.')} />
         </div>
-        <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
-          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>
+        <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: 'var(--slb-line-2)', background: 'var(--slb-surface)' }}>
+          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--slb-cyan-text)' }}>
             <PlayCircle size={14} /> {t('Un exemple concret', 'A concrete example')}
           </div>
-          <p className="mt-4 text-lg" style={{ color: '#f3f3f6', lineHeight: 1.6 }}>
+          <p className="mt-4 text-lg" style={{ color: 'var(--slb-text)', lineHeight: 1.6 }}>
             {t('« Que se passe-t-il si nous perdons le fournisseur d’identité ? »', '“What happens if we lose the identity provider?”')}
           </p>
-          <p className="mt-2 max-w-3xl" style={{ color: '#a2a2b0', fontSize: 15, lineHeight: 1.6 }}>
+          <p className="mt-2 max-w-3xl" style={{ color: 'var(--slb-muted)', fontSize: 15, lineHeight: 1.6 }}>
             {t('Lenexux résout la cible dans le graphe, suit la cascade sur plusieurs niveaux, identifie les 8 actifs qui en dépendent sans redondance, chiffre l’impact à 1,70 M$ avec une reprise de 4,9 h, puis propose les mitigations, et l’IA explique le tout en langage clair.',
                 'Lenexux resolves the target in the graph, follows the multi-level cascade, identifies the 8 assets that depend on it without redundancy, quantifies impact at $1.70M with a 4.9 h recovery, then proposes mitigations, and the AI explains it all in plain language.')}
           </p>
@@ -141,10 +142,25 @@ export function Landing() {
       </Section>
 
       {/* ══════════ VOIR LE PRODUIT ══════════ */}
+      {/* ══════════ LES CONNECTEURS ══════════ */}
+      <Section id="connecteurs">
+        <Label>{t('Les connecteurs', 'Connectors')}</Label>
+        <SectionH>{t('Quinze sources, interrogées et relues sans personne.', 'Fifteen sources, queried and re-read with no one at the wheel.')}</SectionH>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
+          {t('Une cartographie qui n’est jamais relue perd sa valeur : la confiance de chaque dépendance décote avec le temps. Ces sources sont interrogées par leur API, en lecture seule, et rafraîchies toutes seules.',
+             'A map that is never re-read loses its value: every dependency’s confidence decays over time. These sources are queried through their API, read-only, and refreshed on their own.')}
+        </p>
+        <ConnectorWall t={t} />
+        <p className="mt-6 max-w-3xl" style={{ color: 'var(--slb-faint)', fontSize: 13.5, lineHeight: 1.6 }}>
+          {t('Les sources qui vivent dans votre réseau, comme un cluster Kubernetes, passent par une sonde installée chez vous : elle SORT en HTTPS et n’exige aucune ouverture de pare-feu entrante. Pour tout le reste, un fichier ou une API JSON suffit.',
+             'Sources that live inside your network, such as a Kubernetes cluster, go through a probe installed on your side: it reaches OUT over HTTPS and needs no inbound firewall rule. For everything else, a file or a JSON API is enough.')}
+        </p>
+      </Section>
+
       <Section id="produit">
         <Label>{t('Voir le produit', 'See the product')}</Label>
         <SectionH>{t('Ce à quoi ça ressemble, vraiment.', 'What it actually looks like.')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
           {t('Captures réelles de la plateforme sur le jeu de démo, aucune maquette.',
              'Real screenshots of the platform on the demo dataset, no mockups.')}
         </p>
@@ -188,7 +204,7 @@ export function Landing() {
       <Section id="plateforme">
         <Label>{t('La plateforme', 'The platform')}</Label>
         <SectionH>{t('Tout ce que Lenexux fait, en un seul endroit.', 'Everything Lenexux does, in one place.')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
           {t('Une couche d’intelligence au-dessus de vos systèmes, pas un remplaçant. Voici les capacités, du graphe à la décision.',
               'An intelligence layer above your systems, not a replacement. Here are the capabilities, from graph to decision.')}
         </p>
@@ -215,18 +231,23 @@ export function Landing() {
           ]} />
           <CapCard icon={Users} title={t('Résilience', 'Resilience')} items={[
             t('Concentration & criticité des fournisseurs', 'Supplier concentration & criticality'),
-            t('Dépendances humaines (« bus factor »)', 'Human dependencies (“bus factor”)'),
-            t('Plan d’action priorisé', 'Prioritized action plan'),
+            t('Dépendances humaines (« bus factor »), poste par poste', 'Human dependencies (“bus factor”), job by job'),
+            t('Indice de résilience suivi jour après jour', 'Resilience index tracked day by day'),
+          ]} />
+          <CapCard icon={Activity} title={t('Corriger, et le prouver', 'Fix it, and prove it')} items={[
+            t('« J’ai corrigé ça » depuis l’endroit du défaut', '“I fixed this” from where the flaw is reported'),
+            t('Score et indice mesurés avant, puis après', 'Score and index measured before, then after'),
+            t('Mode incident, et plan d’action étape par étape', 'Incident mode, and a step-by-step action plan'),
           ]} />
           <CapCard icon={Bot} title={t('IA & connaissance', 'AI & knowledge')} items={[
             t('Analyste IA ancré sur le graphe', 'Graph-grounded AI analyst'),
             t('Dépendances inférées à valider (le moat)', 'Inferred dependencies to validate (the moat)'),
             t('Extraction depuis documents · dépendances IA', 'Document extraction · AI dependencies'),
           ]} />
-          <CapCard icon={Plug} title={t('Données & intégration', 'Data & integration')} items={[
-            t('CSV / Excel · API REST JSON en direct', 'CSV / Excel · live REST JSON API'),
-            t('Import assisté par IA · webhook / MCP', 'AI-assisted import · webhook / MCP'),
-            t('Lecture seule par défaut, anti-SSRF', 'Read-only by default, anti-SSRF'),
+          <CapCard icon={Plug} title={t('Connecteurs & données', 'Connectors & data')} items={[
+            t('15 éditeurs interrogés par leur API, relus tout seuls', '15 vendors queried through their API, re-read on their own'),
+            t('CSV / Excel · API REST JSON · import assisté par IA', 'CSV / Excel · REST JSON API · AI-assisted import'),
+            t('Lecture seule, accès chiffrés, anti-SSRF', 'Read-only, encrypted credentials, anti-SSRF'),
           ]} />
           <CapCard icon={Shield} title={t('Sécurité & isolation', 'Security & isolation')} items={[
             t('Espaces clients isolés (multi-tenant)', 'Isolated client workspaces (multi-tenant)'),
@@ -248,7 +269,7 @@ export function Landing() {
       <Section id="vocabulaire" alt>
         <Label>{t('Le vocabulaire', 'The vocabulary')}</Label>
         <SectionH>{t('Six mots à connaître. C’est tout.', 'Six words to know. That’s all.')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
           {t('Vous n’avez pas besoin d’être technique pour vous servir de Lenexux. Voici les seuls termes qui reviennent.',
              'You do not need to be technical to use Lenexux. Here are the only terms that keep coming up.')}
         </p>
@@ -278,11 +299,11 @@ export function Landing() {
       <Section id="difference">
         <Label>{t('En quoi c’est différent', 'How it differs')}</Label>
         <SectionH>{t('« J’ai déjà des outils. Pourquoi celui-ci ? »', '“I already have tools. Why this one?”')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
           {t('Lenexux ne remplace rien de ce que vous avez. Il répond à une question qu’aucun de ces outils ne se pose.',
              'Lenexux replaces nothing you already have. It answers a question none of those tools asks itself.')}
         </p>
-        <div className="mt-12 flex flex-col gap-px" style={{ background: '#1c1c22' }}>
+        <div className="mt-12 flex flex-col gap-px" style={{ background: 'var(--slb-line)' }}>
           <Versus t={t} tool={['Votre CMDB / outil ITSM', 'Your CMDB / ITSM']}
             has={['Sait quels serveurs et applications existent, et qui les exploite.', 'Knows which servers and applications exist, and who runs them.']}
             lacks={['Ne sait pas ce qu’une panne coûte, ni qu’un fournisseur ou une personne peut être le vrai point faible.',
@@ -300,8 +321,8 @@ export function Landing() {
             lacks={['N’a jamais été testé, et vieillit dès le lendemain de sa rédaction. Ici, le scénario se rejoue à la demande sur des données rafraîchies.',
                     'Has never been tested, and starts ageing the day after it is written. Here the scenario replays on demand, on refreshed data.']} />
         </div>
-        <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
-          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>
+        <div className="mt-10 border p-6 sm:p-8" style={{ borderColor: 'var(--slb-line-2)', background: 'var(--slb-surface)' }}>
+          <div className="flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--slb-cyan-text)' }}>
             <EyeOff size={14} /> {t('Ce que Lenexux ne fait pas', 'What Lenexux does not do')}
           </div>
           <ul className="mt-4 flex flex-col gap-2">
@@ -313,8 +334,8 @@ export function Landing() {
               t('Il n’invente aucun montant. Sans données sur votre activité, il vous le dit au lieu de produire un chiffre rassurant.',
                 'It invents no amounts. Without data about your business, it tells you so rather than producing a reassuring figure.'),
             ].map((x) => (
-              <li key={x} className="flex gap-2.5" style={{ fontSize: 14.5, color: '#a2a2b0', lineHeight: 1.6 }}>
-                <span style={{ color: '#6b6b78' }}>—</span> <span>{x}</span>
+              <li key={x} className="flex gap-2.5" style={{ fontSize: 14.5, color: 'var(--slb-muted)', lineHeight: 1.6 }}>
+                <span style={{ color: 'var(--slb-faint)' }}>—</span> <span>{x}</span>
               </li>
             ))}
           </ul>
@@ -325,11 +346,11 @@ export function Landing() {
       <Section id="demarrer" alt>
         <Label>{t('Démarrer', 'Getting started')}</Label>
         <SectionH>{t('Ce que ça vous demande, concrètement.', 'What it actually asks of you.')}</SectionH>
-        <p className="mt-6 max-w-3xl text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>
+        <p className="mt-6 max-w-3xl text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>
           {t('Pas de projet d’intégration de six mois, pas d’accès administrateur à vos systèmes.',
              'No six-month integration project, no administrator access to your systems.')}
         </p>
-        <div className="mt-12 grid gap-px md:grid-cols-3" style={{ background: '#1c1c22' }}>
+        <div className="mt-12 grid gap-px md:grid-cols-3" style={{ background: 'var(--slb-line)' }}>
           <Phase t={t} when={['Le premier jour', 'Day one']}
             what={['Vous créez un espace et chargez un jeu de démonstration, ou un premier export de votre inventaire, un simple CSV suffit.',
                    'You create a workspace and load a demo dataset, or a first export of your inventory, a plain CSV is enough.']}
@@ -352,7 +373,7 @@ export function Landing() {
         <div className="relative z-10 mx-auto max-w-6xl px-6 text-center">
           <Label center>{t('Chiffrez l’impact', 'Quantify the impact')}</Label>
           <div className="slb-stat-num" style={{ fontFamily: geist }}>1,70 M$</div>
-          <p className="mx-auto mt-3 max-w-xl" style={{ color: '#a2a2b0', fontSize: 15 }}>
+          <p className="mx-auto mt-3 max-w-xl" style={{ color: 'var(--slb-muted)', fontSize: 15 }}>
             {t('Impact attendu d’une compromission du fournisseur d’identité (jeu de démo CGI) : 8 actifs en dépendent sans redondance, reprise 4,9 h.',
                'Expected impact of an identity-provider compromise (CGI demo dataset): 8 assets depend on it without redundancy, 4.9 h recovery.')}
           </p>
@@ -363,7 +384,7 @@ export function Landing() {
       <Section alt>
         <Label>{t('Pour qui', 'Who it’s for')}</Label>
         <SectionH>{t('Pensé pour ceux qui portent le risque.', 'Built for those who carry the risk.')}</SectionH>
-        <div className="mt-14 grid gap-px sm:grid-cols-2 lg:grid-cols-4" style={{ background: '#1c1c22' }}>
+        <div className="mt-14 grid gap-px sm:grid-cols-2 lg:grid-cols-4" style={{ background: 'var(--slb-line)' }}>
           <Persona icon={Shield} role={t('RSSI / Sécurité', 'CISO / Security')} body={t('Chiffrez le risque cyber en dollars et priorisez par valeur exposée.', 'Quantify cyber risk in dollars and prioritize by exposed value.')} />
           <Persona icon={Server} role={t('DSI / IT', 'CIO / IT')} body={t('Cartographiez sans projet à rallonge, par simple import.', 'Map without an endless project, by simple import.')} />
           <Persona icon={AlertTriangle} role={t('Risque & continuité', 'Risk & continuity')} body={t('Passez d’un PRA théorique à testé : cascade, RTO, scénarios.', 'Go from a theoretical DRP to a tested one: cascade, RTO, scenarios.')} />
@@ -418,7 +439,7 @@ export function Landing() {
           <h2 className="slb-h1" style={{ fontFamily: geist, fontSize: 'clamp(2.2rem,5vw,4.2rem)' }}>
             {t('Voyez vos angles morts', 'See your blind spots')}<br /><span className="slb-accent">{t('dès aujourd’hui.', 'today.')}</span>
           </h2>
-          <p className="mx-auto mt-5 max-w-xl" style={{ color: '#a2a2b0', fontSize: 16 }}>
+          <p className="mx-auto mt-5 max-w-xl" style={{ color: 'var(--slb-muted)', fontSize: 16 }}>
             {t('Créez un espace gratuit, ou explorez le jeu de démo en un clic.', 'Create a free workspace, or explore the demo dataset in one click.')}
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -438,12 +459,12 @@ type T = (fr: string, en: string) => string
 /** Un temps du scénario raconté : une heure, une phrase, aucun jargon. */
 function Beat({ time, fr, en, t, last }: { time: string; fr: string; en: string; t: T; last?: boolean }) {
   return (
-    <div className="flex flex-col gap-2 p-6 sm:flex-row sm:gap-8" style={{ background: '#050506' }}>
+    <div className="flex flex-col gap-2 p-6 sm:flex-row sm:gap-8" style={{ background: 'var(--slb-bg)' }}>
       <div className="flex shrink-0 items-center gap-3 sm:w-32">
-        <span style={{ fontFamily: mono, fontSize: 13, color: last ? '#22d3ee' : '#7fe8f7' }}>{time}</span>
-        {last && <ArrowRight size={13} style={{ color: '#22d3ee' }} />}
+        <span style={{ fontFamily: mono, fontSize: 13, color: last ? 'var(--slb-cyan)' : 'var(--slb-cyan-text)' }}>{time}</span>
+        {last && <ArrowRight size={13} style={{ color: 'var(--slb-cyan)' }} />}
       </div>
-      <p className="max-w-3xl" style={{ fontSize: 16, lineHeight: 1.65, color: last ? '#f3f3f6' : '#c8c8d2' }}>{t(fr, en)}</p>
+      <p className="max-w-3xl" style={{ fontSize: 16, lineHeight: 1.65, color: last ? 'var(--slb-text)' : 'var(--slb-text-2)' }}>{t(fr, en)}</p>
     </div>
   )
 }
@@ -451,9 +472,9 @@ function Beat({ time, fr, en, t, last }: { time: string; fr: string; en: string;
 /** Un terme du glossaire, défini sans autre terme technique. */
 function Term({ t, term, def }: { t: T; term: [string, string]; def: [string, string] }) {
   return (
-    <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
-      <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16, color: '#f3f3f6' }}>{t(...term)}</h3>
-      <p className="mt-2" style={{ fontSize: 13.5, color: '#a2a2b0', lineHeight: 1.6 }}>{t(...def)}</p>
+    <div className="border p-5" style={{ borderColor: 'var(--slb-line)', background: 'var(--slb-surface)' }}>
+      <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16, color: 'var(--slb-text)' }}>{t(...term)}</h3>
+      <p className="mt-2" style={{ fontSize: 13.5, color: 'var(--slb-muted)', lineHeight: 1.6 }}>{t(...def)}</p>
     </div>
   )
 }
@@ -461,19 +482,19 @@ function Term({ t, term, def }: { t: T; term: [string, string]; def: [string, st
 /** Comparaison honnête avec un outil que l'acheteur possède déjà. */
 function Versus({ t, tool, has, lacks, last }: { t: T; tool: [string, string]; has: [string, string]; lacks: [string, string]; last?: boolean }) {
   return (
-    <div className="grid gap-5 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)] md:gap-8" style={{ background: '#050506' }}>
-      <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16, color: '#f3f3f6' }}>{t(...tool)}</h3>
+    <div className="grid gap-5 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.3fr)] md:gap-8" style={{ background: 'var(--slb-bg)' }}>
+      <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16, color: 'var(--slb-text)' }}>{t(...tool)}</h3>
       <div>
-        <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6b6b78' }}>
+        <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--slb-faint)' }}>
           {t('Ce qu’il fait bien', 'What it does well')}
         </p>
-        <p className="mt-1.5" style={{ fontSize: 13.5, color: '#a2a2b0', lineHeight: 1.55 }}>{t(...has)}</p>
+        <p className="mt-1.5" style={{ fontSize: 13.5, color: 'var(--slb-muted)', lineHeight: 1.55 }}>{t(...has)}</p>
       </div>
       <div>
-        <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: last ? '#22d3ee' : '#7fe8f7' }}>
+        <p style={{ fontFamily: mono, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: last ? 'var(--slb-cyan)' : 'var(--slb-cyan-text)' }}>
           {t('Ce qui manque, et que Lenexux apporte', 'What’s missing, and Lenexux brings')}
         </p>
-        <p className="mt-1.5" style={{ fontSize: 13.5, color: '#c8c8d2', lineHeight: 1.55 }}>{t(...lacks)}</p>
+        <p className="mt-1.5" style={{ fontSize: 13.5, color: 'var(--slb-text-2)', lineHeight: 1.55 }}>{t(...lacks)}</p>
       </div>
     </div>
   )
@@ -482,12 +503,12 @@ function Versus({ t, tool, has, lacks, last }: { t: T; tool: [string, string]; h
 /** Une étape du démarrage : quand, quoi, et qui doit être là. */
 function Phase({ t, when, what, who }: { t: T; when: [string, string]; what: [string, string]; who: [string, string] }) {
   return (
-    <div className="p-7" style={{ background: '#050506' }}>
-      <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#7fe8f7' }}>{t(...when)}</span>
-      <p className="mt-4" style={{ fontSize: 15, color: '#f3f3f6', lineHeight: 1.6 }}>{t(...what)}</p>
-      <div className="mt-4 flex gap-2 border-t pt-4" style={{ borderColor: '#1c1c22' }}>
-        <Users size={14} style={{ color: '#6b6b78', flexShrink: 0, marginTop: 2 }} />
-        <span style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>{t(...who)}</span>
+    <div className="p-7" style={{ background: 'var(--slb-bg)' }}>
+      <span style={{ fontFamily: mono, fontSize: 10.5, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--slb-cyan-text)' }}>{t(...when)}</span>
+      <p className="mt-4" style={{ fontSize: 15, color: 'var(--slb-text)', lineHeight: 1.6 }}>{t(...what)}</p>
+      <div className="mt-4 flex gap-2 border-t pt-4" style={{ borderColor: 'var(--slb-line)' }}>
+        <Users size={14} style={{ color: 'var(--slb-faint)', flexShrink: 0, marginTop: 2 }} />
+        <span style={{ fontSize: 13, color: 'var(--slb-muted)', lineHeight: 1.5 }}>{t(...who)}</span>
       </div>
     </div>
   )
@@ -568,18 +589,18 @@ function Showcase({ t }: { t: (fr: string, en: string) => string }) {
           <button key={sh.file} onClick={() => setI(k)} className="slb-shot-tab"
             aria-pressed={k === i}
             style={k === i
-              ? { borderColor: '#22d3ee', color: '#070714', background: '#22d3ee' }
-              : { borderColor: '#26262e', color: '#b9b9c6', background: 'transparent' }}>
+              ? { borderColor: 'var(--slb-cyan)', color: 'var(--slb-on-cyan)', background: 'var(--slb-cyan)' }
+              : { borderColor: 'var(--slb-line-2)', color: 'var(--slb-text-3)', background: 'transparent' }}>
             {t(sh.tab[0], sh.tab[1])}
           </button>
         ))}
       </div>
-      <figure className="mt-5 border" style={{ borderColor: '#26262e', background: '#0d0d11' }}>
+      <figure className="mt-5 border" style={{ borderColor: 'var(--slb-line-2)', background: 'var(--slb-surface)' }}>
         <img src={`/docs/${s.file}`} alt={t(s.title[0], s.title[1])} width={1440} height={900} loading="lazy"
-          className="block w-full" style={{ borderBottom: '1px solid #1c1c22' }} />
+          className="block w-full" style={{ borderBottom: '1px solid var(--slb-line)' }} />
         <figcaption className="p-5 sm:p-6">
           <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 18 }}>{t(s.title[0], s.title[1])}</h3>
-          <p className="mt-2 max-w-3xl" style={{ fontSize: 14.5, color: '#a2a2b0', lineHeight: 1.6 }}>{t(s.body[0], s.body[1])}</p>
+          <p className="mt-2 max-w-3xl" style={{ fontSize: 14.5, color: 'var(--slb-muted)', lineHeight: 1.6 }}>{t(s.body[0], s.body[1])}</p>
         </figcaption>
       </figure>
     </div>
@@ -588,7 +609,7 @@ function Showcase({ t }: { t: (fr: string, en: string) => string }) {
 
 // ── Primitives « Silber » ─────────────────────────────────────────────────────
 function Section({ children, alt, id }: { children: React.ReactNode; alt?: boolean; id?: string }) {
-  return <section id={id} className="px-6 py-20 md:py-28" style={{ background: alt ? '#08080b' : '#050506' }}><div className="mx-auto max-w-6xl">{children}</div></section>
+  return <section id={id} className="px-6 py-20 md:py-28" style={{ background: alt ? 'var(--slb-surface)' : 'var(--slb-bg)' }}><div className="mx-auto max-w-6xl">{children}</div></section>
 }
 function Label({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return <div className={`slb-label ${center ? 'mx-auto' : ''}`}>{children}</div>
@@ -604,7 +625,7 @@ function NumCard({ n, tag, title, body }: { n: string; tag: string; title: strin
         <span className="slb-numcard-n" style={{ fontFamily: geist }}>{n}</span>
       </div>
       <h3 className="mt-8 text-2xl font-medium" style={{ fontFamily: geist }}>{title}</h3>
-      <p className="mt-2" style={{ fontSize: 14, color: '#a2a2b0', lineHeight: 1.6 }}>{body}</p>
+      <p className="mt-2" style={{ fontSize: 14, color: 'var(--slb-muted)', lineHeight: 1.6 }}>{body}</p>
     </div>
   )
 }
@@ -613,15 +634,15 @@ function DeepRow({ tag, kicker, title, body, points, visual, reverse }:
   return (
     <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
       <div className={reverse ? 'md:order-2' : ''}>
-        <Label><span style={{ color: '#22d3ee' }}>{tag}</span>{kicker}</Label>
+        <Label><span style={{ color: 'var(--slb-cyan)' }}>{tag}</span>{kicker}</Label>
         <h3 className="slb-h2" style={{ fontFamily: geist }}>{title}</h3>
-        <p className="mt-4 text-lg" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>{body}</p>
+        <p className="mt-4 text-lg" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>{body}</p>
         <ul className="mt-6 flex flex-col gap-2.5">
-          {points.map((p) => <li key={p} className="flex items-center gap-2.5" style={{ fontSize: 14.5, color: '#f3f3f6' }}><CheckCircle2 size={16} style={{ color: '#22d3ee', flexShrink: 0 }} /> {p}</li>)}
+          {points.map((p) => <li key={p} className="flex items-center gap-2.5" style={{ fontSize: 14.5, color: 'var(--slb-text)' }}><CheckCircle2 size={16} style={{ color: 'var(--slb-cyan)', flexShrink: 0 }} /> {p}</li>)}
         </ul>
       </div>
       <div className={reverse ? 'md:order-1' : ''}>
-        <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>{visual}</div>
+        <div className="border p-5" style={{ borderColor: 'var(--slb-line)', background: 'var(--slb-surface)' }}>{visual}</div>
       </div>
     </div>
   )
@@ -632,52 +653,100 @@ function Chip({ children }: { children: React.ReactNode }) {
 function Persona({ icon: Icon, role, body }: { icon: typeof Shield; role: string; body: string }) {
   return (
     <div className="slb-cell">
-      <Icon size={22} style={{ color: '#22d3ee' }} />
+      <Icon size={22} style={{ color: 'var(--slb-cyan)' }} />
       <h3 className="mt-4 text-lg font-medium" style={{ fontFamily: geist }}>{role}</h3>
-      <p className="mt-1.5" style={{ fontSize: 13.5, color: '#a2a2b0', lineHeight: 1.55 }}>{body}</p>
+      <p className="mt-1.5" style={{ fontSize: 13.5, color: 'var(--slb-muted)', lineHeight: 1.55 }}>{body}</p>
     </div>
   )
 }
 function Sector({ icon: Icon, label }: { icon: typeof Briefcase; label: string }) {
   return (
-    <div className="flex items-center gap-3 border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
-      <Icon size={19} style={{ color: '#7fe8f7' }} />
+    <div className="flex items-center gap-3 border p-5" style={{ borderColor: 'var(--slb-line)', background: 'var(--slb-surface)' }}>
+      <Icon size={19} style={{ color: 'var(--slb-cyan-text)' }} />
       <span className="font-medium" style={{ fontFamily: geist, fontSize: 15 }}>{label}</span>
     </div>
   )
 }
 function Sec({ icon: Icon, title, body }: { icon: typeof Lock; title: string; body: string }) {
   return (
-    <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
-      <Icon size={18} style={{ color: '#22d3ee' }} />
+    <div className="border p-5" style={{ borderColor: 'var(--slb-line)', background: 'var(--slb-surface)' }}>
+      <Icon size={18} style={{ color: 'var(--slb-cyan)' }} />
       <h3 className="mt-3 font-medium" style={{ fontFamily: geist, fontSize: 15 }}>{title}</h3>
-      <p className="mt-1" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>{body}</p>
+      <p className="mt-1" style={{ fontSize: 13, color: 'var(--slb-muted)', lineHeight: 1.5 }}>{body}</p>
     </div>
   )
 }
+/**
+ * Le mur des connecteurs.
+ *
+ * Un visiteur ne lit pas une liste de noms : il CHERCHE le sien. Les marques sont
+ * donc montrées telles qu'il les reconnaît, et appartiennent à leurs
+ * propriétaires, citées ici pour désigner le système auquel Lenexux se branche.
+ */
+const CONNECTORS: { id: string; name: string; fr: string; en: string }[] = [
+  { id: 'entra', name: 'Microsoft Entra ID', fr: 'Personnes, postes, responsables', en: 'People, job titles, managers' },
+  { id: 'okta', name: 'Okta', fr: 'Personnes, applications, accès', en: 'People, applications, access' },
+  { id: 'google-workspace', name: 'Google Workspace', fr: 'Personnes, postes, groupes', en: 'People, job titles, groups' },
+  { id: 'azure', name: 'Microsoft Azure', fr: 'Ressources, régions', en: 'Resources, regions' },
+  { id: 'aws', name: 'Amazon Web Services', fr: 'Ressources, régions', en: 'Resources, regions' },
+  { id: 'gcp', name: 'Google Cloud', fr: 'Ressources, régions', en: 'Resources, regions' },
+  { id: 'servicenow', name: 'ServiceNow', fr: 'CMDB, dépendances déclarées', en: 'CMDB, declared dependencies' },
+  { id: 'freshservice', name: 'Freshservice', fr: 'Actifs, relations', en: 'Assets, relationships' },
+  { id: 'datadog', name: 'Datadog', fr: 'Appels observés en production', en: 'Calls observed in production' },
+  { id: 'dynatrace', name: 'Dynatrace', fr: 'Topologie découverte', en: 'Discovered topology' },
+  { id: 'kubernetes', name: 'Kubernetes', fr: 'Charges, services', en: 'Workloads, services' },
+  { id: 'atlassian', name: 'Jira et Confluence', fr: 'Équipes, procédures', en: 'Teams, procedures' },
+  { id: 'github', name: 'GitHub', fr: 'Composants, équipes', en: 'Components, teams' },
+  { id: 'gitlab', name: 'GitLab', fr: 'Composants, groupes', en: 'Components, groups' },
+  { id: 'backstage', name: 'Backstage', fr: 'Dépendances déclarées', en: 'Declared dependencies' },
+]
+
+function ConnectorWall({ t }: { t: T }) {
+  const { lang } = useLang()
+  return (
+    <div className="mt-12 grid gap-px sm:grid-cols-2 lg:grid-cols-3" style={{ background: 'var(--slb-line)' }}>
+      {CONNECTORS.map((c) => (
+        <div key={c.id} className="flex items-center gap-3 p-4" style={{ background: 'var(--slb-bg)' }}>
+          <VendorLogo id={c.id} size={34} />
+          <div className="min-w-0">
+            <div style={{ fontFamily: geist, fontSize: 14.5, color: 'var(--slb-text)' }}>{c.name}</div>
+            <div style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-muted)' }}>{lang === 'fr' ? c.fr : c.en}</div>
+          </div>
+        </div>
+      ))}
+      <div className="flex items-center p-4" style={{ background: 'var(--slb-bg)' }}>
+        <span style={{ fontSize: 13, color: 'var(--slb-faint)', lineHeight: 1.5 }}>
+          {t('Et toute autre source par fichier, API JSON ou import assisté par IA.',
+             'And any other source through a file, a JSON API or AI-assisted import.')}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function Step({ n, icon: Icon, title, body }: { n: string; icon: typeof Network; title: string; body: string }) {
   return (
     <div className="slb-cell">
       <div className="flex items-center justify-between">
-        <Icon size={20} style={{ color: '#22d3ee' }} />
-        <span style={{ fontFamily: geist, fontSize: 26, fontWeight: 300, color: '#2f2f3a' }}>{n}</span>
+        <Icon size={20} style={{ color: 'var(--slb-cyan)' }} />
+        <span style={{ fontFamily: geist, fontSize: 26, fontWeight: 300, color: 'var(--slb-line-2)' }}>{n}</span>
       </div>
       <h3 className="mt-5 text-lg font-medium" style={{ fontFamily: geist }}>{title}</h3>
-      <p className="mt-1.5" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.55 }}>{body}</p>
+      <p className="mt-1.5" style={{ fontSize: 13, color: 'var(--slb-muted)', lineHeight: 1.55 }}>{body}</p>
     </div>
   )
 }
 function CapCard({ icon: Icon, title, items }: { icon: typeof Network; title: string; items: string[] }) {
   return (
-    <div className="border p-5" style={{ borderColor: '#1c1c22', background: '#0d0d11' }}>
+    <div className="border p-5" style={{ borderColor: 'var(--slb-line)', background: 'var(--slb-surface)' }}>
       <div className="flex items-center gap-2.5">
-        <Icon size={19} style={{ color: '#22d3ee' }} />
+        <Icon size={19} style={{ color: 'var(--slb-cyan)' }} />
         <h3 className="font-medium" style={{ fontFamily: geist, fontSize: 16 }}>{title}</h3>
       </div>
       <ul className="mt-3.5 flex flex-col gap-2">
         {items.map((it) => (
-          <li key={it} className="flex gap-2" style={{ fontSize: 13, color: '#a2a2b0', lineHeight: 1.5 }}>
-            <CheckCircle2 size={14} style={{ color: '#22d3ee', flexShrink: 0, marginTop: 2 }} /> <span>{it}</span>
+          <li key={it} className="flex gap-2" style={{ fontSize: 13, color: 'var(--slb-muted)', lineHeight: 1.5 }}>
+            <CheckCircle2 size={14} style={{ color: 'var(--slb-cyan)', flexShrink: 0, marginTop: 2 }} /> <span>{it}</span>
           </li>
         ))}
       </ul>
@@ -686,12 +755,12 @@ function CapCard({ icon: Icon, title, items }: { icon: typeof Network; title: st
 }
 function Faq({ q, a }: { q: string; a: string }) {
   return (
-    <details className="slb-faq border-b" style={{ borderColor: '#1c1c22' }}>
+    <details className="slb-faq border-b" style={{ borderColor: 'var(--slb-line)' }}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5">
         <span className="font-medium" style={{ fontFamily: geist, fontSize: 17 }}>{q}</span>
-        <ChevronDown size={18} className="slb-faq-chev shrink-0" style={{ color: '#22d3ee' }} />
+        <ChevronDown size={18} className="slb-faq-chev shrink-0" style={{ color: 'var(--slb-cyan)' }} />
       </summary>
-      <p className="pb-5 pr-8" style={{ fontSize: 15, color: '#a2a2b0', lineHeight: 1.65 }}>{a}</p>
+      <p className="pb-5 pr-8" style={{ fontSize: 15, color: 'var(--slb-muted)', lineHeight: 1.65 }}>{a}</p>
     </details>
   )
 }
@@ -702,17 +771,17 @@ function RiskBars() {
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b78' }}>Score de risque</span>
-        <span style={{ fontFamily: geist, fontSize: 30, color: '#d15b54' }}>79<span style={{ fontSize: 14, color: '#6b6b78' }}>/100</span></span>
+        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--slb-faint)' }}>Score de risque</span>
+        <span style={{ fontFamily: geist, fontSize: 30, color: 'var(--slb-red)' }}>79<span style={{ fontSize: 14, color: 'var(--slb-faint)' }}>/100</span></span>
       </div>
       <div className="mt-4 flex flex-col gap-2.5">
         {factors.map(([name, v]) => (
           <div key={name} className="flex items-center gap-3">
-            <span className="w-24 shrink-0" style={{ fontSize: 12, color: '#a2a2b0' }}>{name}</span>
-            <div className="h-2 flex-1 overflow-hidden rounded-full" style={{ background: '#1b1b21' }}>
-              <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: v > 75 ? '#d15b54' : v > 50 ? '#e0a458' : '#22d3ee' }} />
+            <span className="w-24 shrink-0" style={{ fontSize: 12, color: 'var(--slb-muted)' }}>{name}</span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full" style={{ background: 'var(--slb-surface-2)' }}>
+              <div style={{ width: `${v}%`, height: '100%', borderRadius: 999, background: v > 75 ? 'var(--slb-red)' : v > 50 ? 'var(--slb-amber)' : 'var(--slb-cyan)' }} />
             </div>
-            <span className="w-7 text-right" style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>{v}</span>
+            <span className="w-7 text-right" style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-faint)' }}>{v}</span>
           </div>
         ))}
       </div>
@@ -723,18 +792,18 @@ function ImpactBars() {
   const rows = [['Revenu', 100, 100], ['EBITDA', 100, 64], ['Net', 100, 43], ['Trésor.', 100, 55]] as const
   return (
     <div>
-      <div className="mb-3 flex items-center gap-4" style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: '#3a3a44' }} />Actuel</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: '#22d3ee' }} />Simulé</span>
+      <div className="mb-3 flex items-center gap-4" style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-faint)' }}>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: 'var(--slb-line-2)' }} />Actuel</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: 'var(--slb-cyan)' }} />Simulé</span>
       </div>
       <div className="flex items-end justify-around gap-3" style={{ height: 130 }}>
         {rows.map(([label, a, b]) => (
           <div key={label} className="flex flex-1 flex-col items-center gap-2">
             <div className="flex items-end gap-1.5" style={{ height: 100 }}>
-              <div style={{ width: 14, height: `${a}%`, borderRadius: '3px 3px 0 0', background: '#2a2a33' }} />
-              <div style={{ width: 14, height: `${b}%`, borderRadius: '3px 3px 0 0', background: '#22d3ee' }} />
+              <div style={{ width: 14, height: `${a}%`, borderRadius: '3px 3px 0 0', background: 'var(--slb-line-2)' }} />
+              <div style={{ width: 14, height: `${b}%`, borderRadius: '3px 3px 0 0', background: 'var(--slb-cyan)' }} />
             </div>
-            <span style={{ fontFamily: mono, fontSize: 10, color: '#6b6b78' }}>{label}</span>
+            <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--slb-faint)' }}>{label}</span>
           </div>
         ))}
       </div>
@@ -744,31 +813,31 @@ function ImpactBars() {
 
 function KillChain() {
   const steps = [
-    ['Employé', 'Hameçonnage', '#e0a458'],
-    ['Outil externe', 'Jeton volé', '#e0a458'],
-    ['Partage cloud', 'Accès latéral', '#d15b54'],
-    ['Agent IA', 'Exfiltration', '#d15b54'],
+    ['Employé', 'Hameçonnage', 'var(--slb-amber)'],
+    ['Outil externe', 'Jeton volé', 'var(--slb-amber)'],
+    ['Partage cloud', 'Accès latéral', 'var(--slb-red)'],
+    ['Agent IA', 'Exfiltration', 'var(--slb-red)'],
   ] as const
   return (
     <div>
       <div className="mb-4 flex items-baseline justify-between">
-        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6b78' }}>Chaîne de compromission</span>
-        <span style={{ fontFamily: geist, fontSize: 22, color: '#d15b54' }}>4,75 M$</span>
+        <span style={{ fontFamily: mono, fontSize: 11, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--slb-faint)' }}>Chaîne de compromission</span>
+        <span style={{ fontFamily: geist, fontSize: 22, color: 'var(--slb-red)' }}>4,75 M$</span>
       </div>
       <div className="flex flex-col gap-2">
         {steps.map(([node, act, col], i) => (
           <div key={node}>
-            <div className="flex items-center gap-3 border px-3 py-2.5" style={{ borderColor: '#26262e', background: '#0a0a0d' }}>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ fontFamily: mono, fontSize: 11, color: '#070714', background: col }}>{i + 1}</span>
-              <span className="flex-1" style={{ fontSize: 13.5, color: '#f3f3f6' }}>{node}</span>
+            <div className="flex items-center gap-3 border px-3 py-2.5" style={{ borderColor: 'var(--slb-line-2)', background: 'var(--slb-surface)' }}>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-on-cyan)', background: col }}>{i + 1}</span>
+              <span className="flex-1" style={{ fontSize: 13.5, color: 'var(--slb-text)' }}>{node}</span>
               <span style={{ fontFamily: mono, fontSize: 11, color: col }}>{act}</span>
             </div>
-            {i < steps.length - 1 && <div className="ml-3 h-3 w-px" style={{ background: '#3a3a44' }} />}
+            {i < steps.length - 1 && <div className="ml-3 h-3 w-px" style={{ background: 'var(--slb-line-2)' }} />}
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>
-        <ShieldCheck size={13} style={{ color: '#22d3ee' }} /> Isoler le partage cloud → ~4 M$ évités
+      <div className="mt-3 flex items-center gap-2" style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-faint)' }}>
+        <ShieldCheck size={13} style={{ color: 'var(--slb-cyan)' }} /> Isoler le partage cloud → ~4 M$ évités
       </div>
     </div>
   )

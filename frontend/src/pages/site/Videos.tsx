@@ -50,7 +50,7 @@ export function Videos() {
               <div className="flex flex-wrap gap-2">
                 {TOPICS.filter((x) => x.key === 'all' || DEMO_VIDEOS.some((d) => d.topic === x.key)).map((x) => (
                   <button key={x.key} onClick={() => { setTopic(x.key); setActive(0) }} className="slb-shot-tab" aria-pressed={topic === x.key}
-                    style={{ borderColor: topic === x.key ? '#22d3ee' : '#26262e', color: topic === x.key ? '#7fe8f7' : '#a2a2b0' }}>{t(...x.label)}</button>
+                    style={{ borderColor: topic === x.key ? 'var(--slb-cyan)' : 'var(--slb-line-2)', color: topic === x.key ? 'var(--slb-cyan-text)' : 'var(--slb-muted)' }}>{t(...x.label)}</button>
                 ))}
               </div>
               {v && (
@@ -58,18 +58,18 @@ export function Videos() {
                   <div className="slb-card overflow-hidden">
                     <video key={v.src} src={v.src} poster={v.poster} controls preload="metadata" className="aspect-video w-full bg-black" />
                     <div className="p-5">
-                      <h2 style={{ fontFamily: geist, fontSize: 22, fontWeight: 600, color: '#f3f3f6' }}>{t(...v.title)}</h2>
-                      <p className="mt-2" style={{ color: '#a2a2b0', lineHeight: 1.6 }}>{t(...v.body)}</p>
+                      <h2 style={{ fontFamily: geist, fontSize: 22, fontWeight: 600, color: 'var(--slb-text)' }}>{t(...v.title)}</h2>
+                      <p className="mt-2" style={{ color: 'var(--slb-muted)', lineHeight: 1.6 }}>{t(...v.body)}</p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
                     {list.map((d, i) => (
                       <button key={d.src} onClick={() => setActive(i)} className="slb-card flex items-start gap-3 p-4 text-left"
-                        style={{ borderColor: d === v ? '#22d3ee' : undefined }}>
-                        <PlayCircle size={18} className="mt-0.5 shrink-0" style={{ color: d === v ? '#22d3ee' : '#6b6b78' }} />
+                        style={{ borderColor: d === v ? 'var(--slb-cyan)' : undefined }}>
+                        <PlayCircle size={18} className="mt-0.5 shrink-0" style={{ color: d === v ? 'var(--slb-cyan)' : 'var(--slb-faint)' }} />
                         <span className="flex flex-col gap-1">
-                          <span style={{ color: '#f3f3f6', fontWeight: 500 }}>{t(...d.title)}</span>
-                          {d.duration && <span className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 11, color: '#8a8a98' }}><Clock size={11} />{d.duration}</span>}
+                          <span style={{ color: 'var(--slb-text)', fontWeight: 500 }}>{t(...d.title)}</span>
+                          {d.duration && <span className="flex items-center gap-1" style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-muted)' }}><Clock size={11} />{d.duration}</span>}
                         </span>
                       </button>
                     ))}
@@ -80,9 +80,9 @@ export function Videos() {
           ) : (
             <>
               <div className="slb-card flex flex-col items-center gap-4 px-6 py-14 text-center">
-                <Film size={30} style={{ color: '#22d3ee' }} />
-                <h2 style={{ fontFamily: geist, fontSize: 24, fontWeight: 600, color: '#f3f3f6' }}>{t('Les vidéos arrivent', 'Videos are on their way')}</h2>
-                <p style={{ maxWidth: 560, color: '#a2a2b0', lineHeight: 1.6 }}>
+                <Film size={30} style={{ color: 'var(--slb-cyan)' }} />
+                <h2 style={{ fontFamily: geist, fontSize: 24, fontWeight: 600, color: 'var(--slb-text)' }}>{t('Les vidéos arrivent', 'Videos are on their way')}</h2>
+                <p style={{ maxWidth: 560, color: 'var(--slb-muted)', lineHeight: 1.6 }}>
                   {t('En attendant, la démo interactive vous laisse explorer le produit sur un jeu de données complet, sans créer de compte.',
                     'Meanwhile, the interactive demo lets you explore the product on a full dataset, no account needed.')}
                 </p>
@@ -93,9 +93,9 @@ export function Videos() {
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {PLANNED.map((p, i) => (
                     <div key={i} className="slb-card gap-2 p-6">
-                      <span style={{ fontFamily: mono, fontSize: 11, color: '#6b6b78' }}>{String(i + 1).padStart(2, '0')} · {t('bientôt', 'soon')}</span>
-                      <span style={{ fontFamily: geist, fontSize: 18, fontWeight: 600, color: '#f3f3f6' }}>{t(...p.title)}</span>
-                      <span style={{ color: '#a2a2b0', fontSize: 14.5, lineHeight: 1.55 }}>{t(...p.body)}</span>
+                      <span style={{ fontFamily: mono, fontSize: 11, color: 'var(--slb-faint)' }}>{String(i + 1).padStart(2, '0')} · {t('bientôt', 'soon')}</span>
+                      <span style={{ fontFamily: geist, fontSize: 18, fontWeight: 600, color: 'var(--slb-text)' }}>{t(...p.title)}</span>
+                      <span style={{ color: 'var(--slb-muted)', fontSize: 14.5, lineHeight: 1.55 }}>{t(...p.body)}</span>
                     </div>
                   ))}
                 </div>
