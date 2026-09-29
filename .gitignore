@@ -42,3 +42,7 @@ deploy/data/
 logs/
 *.log
 ai-runtime.local.json
+
+# Cache Python des scripts
+__pycache__/
+*.pyc
