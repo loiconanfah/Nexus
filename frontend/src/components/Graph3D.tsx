@@ -7,7 +7,7 @@ import {
   User, Users, Workflow, FileText, BrainCircuit, Bot, Cpu, Cloud,
 } from 'lucide-react'
 import { fibSpherePoint, makeIconSprite, makeLabelSprite, disposeObject, type IconCmp } from '../lib/holoThree'
-import { layeredLayout } from '../lib/graphLayout3d'
+import { clusteredLayout } from '../lib/graphLayout3d'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
@@ -69,16 +69,16 @@ function frameDistance(total: number, fovDeg = 52): number {
 }
 
 /**
- * Le recul necessaire pour voir la pile entiere.
+ * Le recul necessaire pour voir tout l'amas.
  *
- * La sphere n'avait qu'une dimension a cadrer ; une pile d'etages est souvent
- * plus haute que large, et un cadrage calcule sur le seul rayon coupait les
- * etages du haut et du bas.
+ * Legerement en hauteur et de trois quarts : de face, les grappes du fond se
+ * cachent derriere celles de devant, et l'on croit le graphe plus petit qu'il
+ * n'est.
  */
-function frameStack(radius: number, height: number, fovDeg = 52): { y: number; z: number } {
+function frameBall(radius: number, fovDeg = 52): { x: number; y: number; z: number } {
   const halfFov = (fovDeg * Math.PI) / 180 / 2
-  const needed = Math.max(radius, height * 0.62)
-  return { y: height * 0.34 + radius * 0.16, z: (needed / Math.tan(halfFov)) * 1.38 }
+  const distance = (radius / Math.tan(halfFov)) * 1.08
+  return { x: distance * 0.28, y: radius * 0.42, z: distance * 0.94 }
 }
 
 function bandColor(crit: number): string {
@@ -263,7 +263,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   /** Le cadrage initial n'a lieu qu'une fois : ensuite la caméra est à l'utilisateur. */
   const framedRef = useRef(false)
   /** Le cadrage calculé à la dernière construction, pour le bouton « recentrer ». */
-  const frameRef = useRef<{ y: number; z: number } | null>(null)
+  const frameRef = useRef<{ x: number; y: number; z: number } | null>(null)
   const edgeLinesRef = useRef<EdgeLink[]>([])
   const onSelectRef = useRef(onSelect); onSelectRef.current = onSelect
   const queryRef = useRef(query); queryRef.current = query
@@ -307,7 +307,11 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     const orbit = new OrbitControls(camera, renderer.domElement)
     orbit.enableDamping = true; orbit.dampingFactor = 0.08
     orbit.rotateSpeed = 0.7; orbit.zoomSpeed = 0.9
-    orbit.minDistance = 120; orbit.maxDistance = 2200
+    orbit.minDistance = 60; orbit.maxDistance = 4000
+    // Zoomer vers le curseur plutôt que vers le centre : c'est ce qui permet
+    // d'aller CHERCHER une grappe au lieu de zoomer puis de se repanoramiquer.
+    orbit.zoomToCursor = true
+    orbit.screenSpacePanning = true
     orbitRef.current = orbit
 
     const raycaster = new THREE.Raycaster()
@@ -340,7 +344,6 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
           if (label) label.visible = true
         }
         renderer.domElement.style.cursor = hoveredMesh ? 'pointer' : 'grab'
-        orbit.enableRotate = !hoveredMesh
       }
       if (mesh) {
         const id = mesh.userData.id as string
@@ -351,8 +354,18 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       } else setHover(null)
     }
     let downPos: { x: number; y: number } | null = null
-    function onPointerDown(e: PointerEvent) { downPos = { x: e.clientX, y: e.clientY } }
+    function onPointerDown(e: PointerEvent) {
+      downPos = { x: e.clientX, y: e.clientY }
+      // Survoler un nœud ne doit pas empêcher de tourner : dans une grappe
+      // dense, le curseur est presque toujours sur une bille, et la vue
+      // paraissait alors bloquée. Seul un geste COMMENCÉ sur un nœud lui est
+      // réservé, pour le déplacer.
+      updatePointer(e)
+      raycaster.setFromCamera(pointer, camera)
+      orbit.enableRotate = raycaster.intersectObjects(nodeMeshesRef.current, false).length === 0
+    }
     function onPointerUp(e: PointerEvent) {
+      orbit.enableRotate = true
       if (!downPos) return
       const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y)
       downPos = null
@@ -437,12 +450,11 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     const meshes: THREE.Mesh[] = []
     const posById = new Map<string, THREE.Mesh>()
 
-    // La pile d'étages : hauteur = place dans la chaîne, angle = famille,
-    // rayon = criticité. Voir lib/graphLayout3d.
+    // Les grappes : une par famille, le plus critique au cœur de la sienne.
+    // Voir lib/graphLayout3d.
     const total = Math.max(1, nodes.length)
-    const layout = layeredLayout(
-      nodes.map((n) => ({ id: n.id, entityType: n.entityType, criticality: n.criticality })),
-      edges.map((e) => ({ source: e.source, target: e.target })))
+    const layout = clusteredLayout(
+      nodes.map((n) => ({ id: n.id, entityType: n.entityType, criticality: n.criticality })))
 
     // Seuil d'affichage des noms : les 12 plus critiques, pas davantage.
     const sortedCrit = nodes.map((n) => n.criticality).sort((a, b) => b - a)
@@ -505,48 +517,28 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       group.add(line); lines.push({ line, a, b })
     }
 
-    // Un anneau par etage, et son nom.
+    // Le nom de chaque famille, pose au-dessus de sa grappe.
     //
-    // C'est ce qui fait passer la vue d'un nuage a un BATIMENT : sans le plancher
-    // dessine, l'oeil ne perçoit pas les niveaux et retombe sur une pelote. Le
-    // socle est nomme, parce que c'est la seule chose qu'un dirigeant doit
-    // retenir : ce qui est en bas porte tout le reste.
-    if (layout.levels > 1) {
-      const ringColor = new THREE.Color(light ? '#93a7ad' : '#33484f')
-      for (const tier of layout.tiers) {
-        const ring = new THREE.Mesh(
-          new THREE.RingGeometry(tier.radius + 22, tier.radius + 25, 72),
-          new THREE.MeshBasicMaterial({
-            color: ringColor, transparent: true, opacity: light ? 0.55 : 0.32,
-            side: THREE.DoubleSide, depthWrite: false,
-          }),
-        )
-        ring.rotation.x = -Math.PI / 2
-        ring.position.y = tier.y
-        group.add(ring)
+    // C'est ce qui distingue un amas de billes d'une carte : sans etiquette, on
+    // voit des paquets sans savoir de quoi ils sont faits, et il faut survoler
+    // chaque bille pour le deviner.
+    for (const cluster of layout.clusters) {
+      const caption = makeLabelSprite(
+        `${entityTypeLabel(cluster.key, t)} · ${cluster.count}`, 15, light)
+      caption.position.set(cluster.x, cluster.y + cluster.radius + 26, cluster.z)
+      group.add(caption)
 
-        const caption = makeLabelSprite(
-          tier.index === 0
-            ? t(`socle · ${tier.count}`, `bedrock · ${tier.count}`)
-            : t(`étage ${tier.index} · ${tier.count}`, `tier ${tier.index} · ${tier.count}`),
-          11, light)
-        caption.position.set(tier.radius + 78, tier.y, 0)
-        group.add(caption)
-      }
-    }
-
-    // Le sol, pose sous l'etage le plus bas. Sans lui, la pile flotte et l'oeil
-    // ne sait plus ce qui est « en dessous ».
-    if (layout.levels > 1) {
-      const span = Math.ceil(layout.radius * 2.4)
-      const grid = new THREE.GridHelper(span, 16,
-        new THREE.Color(light ? '#b9c6cc' : '#2a3a40'),
-        new THREE.Color(light ? '#d9e2e6' : '#1b262a'))
-      grid.position.y = layout.floorY - 70
-      const gm = grid.material as THREE.Material | THREE.Material[]
-      const materials = Array.isArray(gm) ? gm : [gm]
-      materials.forEach((m) => { m.transparent = true; m.opacity = light ? 0.5 : 0.3 })
-      group.add(grid)
+      // Un halo tres discret delimite la grappe, sans l'enfermer.
+      const shell = new THREE.Mesh(
+        new THREE.SphereGeometry(cluster.radius + 10, 24, 18),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color(light ? '#8fa3aa' : '#2f4a52'),
+          transparent: true, opacity: light ? 0.07 : 0.09,
+          side: THREE.BackSide, depthWrite: false,
+        }),
+      )
+      shell.position.set(cluster.x, cluster.y, cluster.z)
+      group.add(shell)
     }
 
     scene.add(group)
@@ -560,14 +552,12 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     // point — la vue restait donc au plus près une fois les données arrivées.
     if (cam && orb && !framedRef.current && nodes.length > 0) {
       framedRef.current = true
-      const frame = frameStack(layout.radius, layout.height)
-      // De face, les planchers se superposent en une seule masse : la vue par
-      // defaut est prise de trois quarts, comme on regarde une maquette.
-      cam.position.set(frame.z * 0.42, frame.y, frame.z * 0.9)
+      const frame = frameBall(layout.radius)
+      cam.position.set(frame.x, frame.y, frame.z)
       orb.target.set(0, 0, 0)
       orb.update()
     }
-    frameRef.current = frameStack(layout.radius, layout.height)
+    frameRef.current = frameBall(layout.radius)
     nodeMeshesRef.current = meshes
     edgeLinesRef.current = lines
 
@@ -660,8 +650,9 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
           onClick={() => {
             const c = cameraRef.current, o = orbitRef.current
             if (!c || !o) return
-            const frame = frameRef.current ?? { y: 70, z: frameDistance(Math.max(1, nodes.length)) }
-            c.position.set(frame.z * 0.42, frame.y, frame.z * 0.9)
+            const frame = frameRef.current
+              ?? { x: 0, y: 70, z: frameDistance(Math.max(1, nodes.length)) }
+            c.position.set(frame.x, frame.y, frame.z)
             o.target.set(0, 0, 0); o.update()
           }}
           title={t('Recentrer', 'Reset view')} aria-label={t('Recentrer', 'Reset view')}

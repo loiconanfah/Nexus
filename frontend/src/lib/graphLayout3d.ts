@@ -1,20 +1,26 @@
 /**
- * Disposition en ÉTAGES du graphe 3D.
+ * Disposition en GRAPPES du graphe 3D.
  *
- * Le nuage sphérique précédent était joli et ne disait rien : la position d'un
- * nœud venait de son rang dans la liste, et les arêtes traversaient la sphère de
- * part en part. On obtenait une pelote, impossible à lire en réunion.
+ * Deux dispositions ont été essayées avant celle-ci, et toutes deux échouaient,
+ * pour des raisons opposées.
  *
- * Ici, chaque coordonnée porte un sens, et tient en une phrase :
+ * Le nuage sphérique unique était joli et muet : la position d'un nœud venait de
+ * son rang dans la liste, et les arêtes traversaient la boule de part en part.
  *
- *   la HAUTEUR   = la place dans la chaîne de dépendances. Tout en bas, ce dont
- *                  tout le reste dépend ; tout en haut, ce dont rien ne dépend.
- *                  Une dépendance descend donc toujours.
- *   l'ANGLE      = la famille (application, personne, fournisseur…). Les mêmes
- *                  types occupent un secteur, ce qui fait apparaître les
- *                  quartiers de l'organisation.
- *   le RAYON     = la criticité. Le cœur du disque est le cœur du métier ; la
- *                  périphérie, l'accessoire.
+ * La pile d'étages disait quelque chose de juste mais se manipulait mal : une
+ * tour est haute et étroite, donc elle part de travers au moindre mouvement de
+ * souris, et il faut sans cesse monter ou descendre pour suivre une chaîne.
+ * Lisible sur une capture, pénible à l'usage.
+ *
+ * Les grappes gardent le sens et rendent la vue maniable :
+ *
+ *   une GRAPPE par famille  (applications, personnes, fournisseurs…), séparée des
+ *                           autres, comme le mode « par familles » du plan 2D ;
+ *   au CENTRE de sa grappe  le plus critique de la famille, à la périphérie
+ *                           l'accessoire ;
+ *   un ENSEMBLE ramassé     les grappes se répartissent sur une sphère aplatie,
+ *                           si bien que la vue reste compacte sous tous les
+ *                           angles et que l'orbite ne part jamais dans le vide.
  *
  * Aucun rendu ici : cette fonction est pure, donc vérifiable sans WebGL.
  */
@@ -25,198 +31,138 @@ export interface LayoutNode {
   criticality: number
 }
 
-export interface LayoutEdge {
-  source: string
-  target: string
-}
-
 export interface Placed {
   x: number
   y: number
   z: number
-  /** Étage, 0 pour le socle. */
-  level: number
+  /** Famille à laquelle appartient le nœud. */
+  cluster: string
 }
 
-export interface LayeredLayout {
-  positions: Map<string, Placed>
-  /** Nombre d'étages occupés. */
-  levels: number
-  /** Rayon maximal atteint, pour cadrer la caméra. */
-  radius: number
-  /** Hauteur totale, du socle au dernier étage. */
-  height: number
-  /** Ordonnée du socle, où poser la grille de sol. */
-  floorY: number
-  /** Un étage : sa hauteur, son rayon, son effectif. Sert à le dessiner. */
-  tiers: Tier[]
-}
-
-export interface Tier {
-  index: number
-  y: number
-  radius: number
+export interface Cluster {
+  key: string
   count: number
+  radius: number
+  x: number
+  y: number
+  z: number
 }
 
-const GOLDEN = Math.PI * (3 - Math.sqrt(5))
+export interface ClusteredLayout {
+  positions: Map<string, Placed>
+  clusters: Cluster[]
+  /** Rayon englobant, pour cadrer la caméra. */
+  radius: number
+}
 
 export interface LayoutOptions {
-  /** Écart vertical entre deux étages. */
-  layerGap?: number
-  /** Rayon de base d'un étage, avant prise en compte du nombre de nœuds. */
-  baseRadius?: number
-  /** Hauteur totale maximale : au-delà, les étages se resserrent. */
-  maxHeight?: number
+  /** Écart minimal entre deux grappes, en plus de leurs rayons. */
+  margin?: number
+}
+
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
+
+/** Direction régulièrement répartie sur une sphère (suite de Fibonacci). */
+function sphereDirection(index: number, total: number): [number, number, number] {
+  if (total <= 1) return [0, 0, 0]
+  const y = 1 - (index / (total - 1)) * 2
+  const r = Math.sqrt(Math.max(0, 1 - y * y))
+  const theta = GOLDEN_ANGLE * index
+  return [Math.cos(theta) * r, y, Math.sin(theta) * r]
+}
+
+/** Rayon d'une grappe : elle grossit avec son effectif, sans exploser. */
+export function clusterRadius(count: number) {
+  return 34 + Math.sqrt(Math.max(1, count)) * 26
 }
 
 /**
- * Profondeur de chaque nœud dans la chaîne.
+ * Place les nœuds par familles.
  *
- * Une arête « A dépend de B » place B SOUS A. La profondeur d'un nœud est donc
- * la plus longue chaîne qui part de lui : un socle vaut 0, et quelque chose qui
- * s'appuie sur trois niveaux vaut 3.
- *
- * Les cycles existent dans la vraie vie (deux systèmes qui s'appellent l'un
- * l'autre) : l'arête qui referme la boucle est ignorée plutôt que de faire
- * tourner le calcul sans fin.
+ * Les grappes sont d'abord posées sur une sphère, puis écartées tant qu'elles se
+ * chevauchent. Cette relaxation compte : sans elle, deux familles nombreuses
+ * finissent l'une dans l'autre et l'on retrouve la pelote que l'on cherchait
+ * précisément à éviter.
  */
-export function dependencyLevels(nodes: LayoutNode[], edges: LayoutEdge[]): Map<string, number> {
-  const known = new Set(nodes.map((n) => n.id))
-  const out = new Map<string, string[]>()
-  for (const e of edges) {
-    if (!known.has(e.source) || !known.has(e.target) || e.source === e.target) continue
-    const list = out.get(e.source)
-    if (list) list.push(e.target)
-    else out.set(e.source, [e.target])
-  }
-
-  const level = new Map<string, number>()
-  const onStack = new Set<string>()
-
-  const depth = (id: string): number => {
-    const cached = level.get(id)
-    if (cached !== undefined) return cached
-    if (onStack.has(id)) return 0 // arête refermant un cycle
-
-    onStack.add(id)
-    let best = 0
-    for (const target of out.get(id) ?? []) best = Math.max(best, depth(target) + 1)
-    onStack.delete(id)
-
-    level.set(id, best)
-    return best
-  }
-
-  for (const n of nodes) depth(n.id)
-  return level
-}
-
-/** Place les nœuds en étages, secteurs et anneaux. */
-export function layeredLayout(
-  nodes: LayoutNode[],
-  edges: LayoutEdge[],
-  options: LayoutOptions = {},
-): LayeredLayout {
-  const requestedGap = options.layerGap ?? 150
-  const baseRadius = options.baseRadius ?? 170
-  /** Hauteur totale au-delà de laquelle la pile ne tient plus dans le cadre. */
-  const maxHeight = options.maxHeight ?? 1500
+export function clusteredLayout(nodes: LayoutNode[], options: LayoutOptions = {}): ClusteredLayout {
+  const margin = options.margin ?? 46
   const positions = new Map<string, Placed>()
+  if (nodes.length === 0) return { positions, clusters: [], radius: 200 }
 
-  if (nodes.length === 0) {
-    return { positions, levels: 0, radius: baseRadius, height: 0, floorY: 0, tiers: [] }
-  }
-
-  const level = dependencyLevels(nodes, edges)
-  const byLevel = new Map<number, LayoutNode[]>()
+  // Familles, les plus nombreuses d'abord. L'ordre doit être stable d'un rendu à
+  // l'autre, sinon la carte se réorganise sous les yeux de l'utilisateur.
+  const families = new Map<string, LayoutNode[]>()
   for (const n of nodes) {
-    const l = level.get(n.id) ?? 0
-    const bucket = byLevel.get(l)
+    const bucket = families.get(n.entityType)
     if (bucket) bucket.push(n)
-    else byLevel.set(l, [n])
+    else families.set(n.entityType, [n])
   }
+  const ordered = [...families.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
 
-  // Les étages vides sont supprimés : un trou dans la pile se lirait comme une
-  // information alors qu'il n'en est pas une.
-  const used = [...byLevel.keys()].sort((a, b) => a - b)
-  const levels = used.length
+  const spread = (clusterRadius(nodes.length / ordered.length) + margin)
+    * Math.max(1.5, Math.sqrt(ordered.length))
 
-  // L'écart entre étages se déduit de la LARGEUR de la pile, pas l'inverse. Une
-  // tour deux fois plus haute que large se cadre de si loin que tout devient
-  // minuscule ; on vise donc une pile un peu plus large que haute, quitte à
-  // resserrer les étages quand la chaîne est profonde.
-  const widest = Math.max(...used.map((l) => radiusFor(byLevel.get(l)!.length, baseRadius)))
-  const target = Math.min(maxHeight, Math.max(420, widest * 2.1))
-  const layerGap = levels > 1
-    ? Math.min(requestedGap, Math.max(78, target / (levels - 1)))
-    : requestedGap
-  const centre = (levels - 1) / 2
-  let maxRadius = baseRadius
-  const tiers: Tier[] = []
-
-  used.forEach((sourceLevel, index) => {
-    const group = byLevel.get(sourceLevel)!
-    const y = (index - centre) * layerGap
-    const count = group.length
-    const rMax = radiusFor(count, baseRadius)
-    const rMin = count <= 3 ? 0 : rMax * 0.28
-    maxRadius = Math.max(maxRadius, rMax)
-    tiers.push({ index, y, radius: rMax, count })
-
-    // Un secteur angulaire par famille, proportionnel à son effectif.
-    const families = new Map<string, LayoutNode[]>()
-    for (const n of group) {
-      const bucket = families.get(n.entityType)
-      if (bucket) bucket.push(n)
-      else families.set(n.entityType, [n])
-    }
-    const ordered = [...families.entries()].sort(
-      (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
-
-    // Décalage d'or entre étages : sans lui, les nœuds se superposent à la
-    // verticale et l'on ne distingue plus les étages de trois quarts.
-    let cursor = index * GOLDEN
-    for (const [, members] of ordered) {
-      const share = (members.length / count) * Math.PI * 2
-      const from = cursor
-      cursor += share
-
-      // Le plus critique au centre, donc en tête.
-      members.sort((a, b) => b.criticality - a.criticality || a.id.localeCompare(b.id))
-      members.forEach((n, i) => {
-        const fraction = (i + 0.5) / members.length
-        const angle = from + share * fraction
-        // Un peu d'épaisseur dans l'anneau, sinon les nœuds de même criticité
-        // se chevauchent exactement.
-        const jitter = ((i % 3) - 1) * (rMax - rMin) * 0.06
-        const radius = Math.max(0, rMin + (1 - clamp(n.criticality) / 100) * (rMax - rMin) + jitter)
-        positions.set(n.id, {
-          x: Math.cos(angle) * radius,
-          y,
-          z: Math.sin(angle) * radius,
-          level: index,
-        })
-      })
+  const clusters: Cluster[] = ordered.map(([key, members], index) => {
+    const [dx, dy, dz] = sphereDirection(index, ordered.length)
+    return {
+      key,
+      count: members.length,
+      radius: clusterRadius(members.length),
+      // Un peu aplati : une galaxie se lit mieux qu'une boule parfaite, et l'on
+      // garde un haut et un bas stables pour s'orienter.
+      x: dx * spread,
+      y: dy * spread * 0.55,
+      z: dz * spread,
     }
   })
 
-  const height = (levels - 1) * layerGap
-  return {
-    positions,
-    levels,
-    radius: maxRadius,
-    height,
-    floorY: -centre * layerGap,
-    tiers,
+  relax(clusters, margin)
+
+  for (const [key, members] of ordered) {
+    const centre = clusters.find((c) => c.key === key)!
+    // Le plus critique au cœur de sa famille.
+    const sorted = [...members].sort((a, b) => b.criticality - a.criticality || a.id.localeCompare(b.id))
+    sorted.forEach((n, i) => {
+      const [dx, dy, dz] = sphereDirection(i, sorted.length)
+      // Racine cubique : les nœuds occupent le VOLUME de la grappe au lieu de
+      // s'entasser sur sa coque.
+      const depth = sorted.length <= 1 ? 0 : Math.cbrt((i + 0.35) / sorted.length)
+      const r = centre.radius * depth
+      positions.set(n.id, {
+        x: centre.x + dx * r,
+        y: centre.y + dy * r,
+        z: centre.z + dz * r,
+        cluster: key,
+      })
+    })
   }
+
+  const radius = clusters.reduce(
+    (max, c) => Math.max(max, Math.hypot(c.x, c.y, c.z) + c.radius), 200)
+
+  return { positions, clusters, radius }
 }
 
-/** Rayon d'un étage : il s'élargit avec l'effectif, sans exploser. */
-function radiusFor(count: number, baseRadius: number) {
-  return baseRadius + Math.sqrt(count) * 34
-}
+/** Écarte les grappes qui se chevauchent, en quelques passes. */
+function relax(clusters: Cluster[], margin: number) {
+  for (let pass = 0; pass < 24; pass++) {
+    let moved = false
+    for (let i = 0; i < clusters.length; i++) {
+      for (let j = i + 1; j < clusters.length; j++) {
+        const a = clusters[i], b = clusters[j]
+        const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+        const distance = Math.hypot(dx, dy, dz) || 0.001
+        const wanted = a.radius + b.radius + margin
+        if (distance >= wanted) continue
 
-function clamp(value: number) {
-  return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0
+        const push = (wanted - distance) / 2
+        const ux = dx / distance, uy = dy / distance, uz = dz / distance
+        a.x -= ux * push; a.y -= uy * push; a.z -= uz * push
+        b.x += ux * push; b.y += uy * push; b.z += uz * push
+        moved = true
+      }
+    }
+    if (!moved) break
+  }
 }
