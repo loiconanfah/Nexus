@@ -81,11 +81,18 @@ function frameBall(radius: number, fovDeg = 52): { x: number; y: number; z: numb
   return { x: distance * 0.28, y: radius * 0.42, z: distance * 0.94 }
 }
 
-function bandColor(crit: number): string {
-  if (crit >= 80) return '#d15b54'
-  if (crit >= 60) return '#c69a4e'
-  if (crit >= 40) return '#d9772e'
-  return '#5a97a3'
+/**
+ * La couleur d'un noeud selon sa criticite.
+ *
+ * Les teintes concues pour le fond noir passaient mal sur blanc : delavees,
+ * elles se ressemblaient toutes et la bille perdait son relief. Le theme clair a
+ * donc ses propres valeurs, plus denses, avec le meme sens.
+ */
+function bandColor(crit: number, light = false): string {
+  if (crit >= 80) return light ? '#b3372f' : '#d15b54'
+  if (crit >= 60) return light ? '#9a6a12' : '#c69a4e'
+  if (crit >= 40) return light ? '#b35a12' : '#d9772e'
+  return light ? '#2d6f7d' : '#5a97a3'
 }
 
 const TYPE_ICON: Record<string, IconCmp> = {
@@ -104,6 +111,32 @@ const TYPE_ICON: Record<string, IconCmp> = {
   AiAgent: Bot, AiWorkflow: Workflow, AiProvider: Cloud, Dataset: Database,
 }
 function iconFor(type: string): IconCmp { return TYPE_ICON[type] ?? Box }
+
+/** Les objets d'eclairage dont le theme change le reglage. */
+interface Themed {
+  ambient: THREE.AmbientLight
+  pt: THREE.PointLight
+  rim: THREE.PointLight
+  key: THREE.DirectionalLight
+  fill: THREE.DirectionalLight
+  starMaterial: THREE.PointsMaterial
+}
+
+/** Allume le jeu de lumieres du theme courant. */
+function applyTheme(themed: Themed, light: boolean) {
+  themed.ambient.intensity = light ? 0.62 : 0.78
+  themed.pt.intensity = light ? 0.5 : 1.3
+  themed.rim.visible = !light
+  themed.key.visible = light
+  themed.fill.visible = light
+  themed.starMaterial.color.set(light ? 0xc3ced3 : 0x3b494c)
+  themed.starMaterial.opacity = light ? 0.25 : 0.55
+}
+
+/** Assouplissement : depart vif, arrivee posee. */
+function easeOut(p: number) {
+  return 1 - Math.pow(1 - p, 3)
+}
 
 /** Une arête et ses deux extrémités, avec la dernière position connue. */
 interface EdgeLink {
@@ -251,6 +284,9 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const mountRef = useRef<HTMLDivElement>(null)
   const simRef = useRef<SimState | null>(null)
   const light = useTheme().theme !== 'dark'
+  // Lu par la scene, montee une seule fois : la bascule de theme passe par son
+  // propre effet, pas par une reconstruction.
+  const lightRef = useRef(light); lightRef.current = light
   const impactRef = useRef<Record<string, number>>({}); impactRef.current = impactById ?? {}
   const money = useMoney()
   const moneyRef = useRef(money); moneyRef.current = money
@@ -258,6 +294,11 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
   const orbitRef = useRef<OrbitControls | null>(null)
   const dragRef = useRef<DragControls | null>(null)
+  /** Instant de depart de l'apparition, null une fois qu'elle est finie. */
+  const introRef = useRef<number | null>(null)
+  const themedRef = useRef<Themed | null>(null)
+  /** Dernier geste de l'utilisateur : la rotation lente ne reprend qu'apres. */
+  const lastTouchRef = useRef(performance.now())
   const domRef = useRef<HTMLElement | null>(null)
   const nodeMeshesRef = useRef<THREE.Mesh[]>([])
   /** Le cadrage initial n'a lieu qu'une fois : ensuite la caméra est à l'utilisateur. */
@@ -288,9 +329,16 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     mount.appendChild(renderer.domElement)
     domRef.current = renderer.domElement
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.78))
+    // Sur fond noir, une lumiere centrale et un liseré cyan font l'hologramme.
+    // Sur fond blanc, la meme recette aplatit tout : il faut une vraie lumiere
+    // directionnelle pour que la bille redevienne une sphere. Les deux jeux sont
+    // montes une fois pour toutes, et le theme n'en allume qu'un : changer de
+    // theme ne doit pas obliger a reconstruire la scene.
+    const ambient = new THREE.AmbientLight(0xffffff, 0.78); scene.add(ambient)
     const pt = new THREE.PointLight(0xffffff, 1.3, 0, 1.6); pt.position.set(0, 0, 0); scene.add(pt)
     const rim = new THREE.PointLight(0x00e5ff, 0.55, 0, 2); rim.position.set(320, 220, 320); scene.add(rim)
+    const key = new THREE.DirectionalLight(0xffffff, 1.15); key.position.set(-260, 420, 320); scene.add(key)
+    const fill = new THREE.DirectionalLight(0xdfe9ec, 0.45); fill.position.set(300, -180, -240); scene.add(fill)
 
     // Champ d'étoiles (repère de profondeur).
     const starGeo = new THREE.BufferGeometry()
@@ -301,8 +349,16 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       starPos.set([v.x, v.y, v.z], i * 3)
     }
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3))
-    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x3b494c, size: 2, sizeAttenuation: true, transparent: true, opacity: 0.55 }))
+    // Le champ d'etoiles est un repere de profondeur dans le noir ; sur fond
+    // blanc, ce ne sont que des poussieres. Il s'efface donc en theme clair.
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0x3b494c, size: 2, sizeAttenuation: true, transparent: true, opacity: 0.55,
+    })
+    const stars = new THREE.Points(starGeo, starMaterial)
     scene.add(stars)
+
+    themedRef.current = { ambient, pt, rim, key, fill, starMaterial }
+    applyTheme(themedRef.current, lightRef.current)
 
     const orbit = new OrbitControls(camera, renderer.domElement)
     orbit.enableDamping = true; orbit.dampingFactor = 0.08
@@ -312,11 +368,22 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     // d'aller CHERCHER une grappe au lieu de zoomer puis de se repanoramiquer.
     orbit.zoomToCursor = true
     orbit.screenSpacePanning = true
+    // Rotation lente au repos : la scene respire, et l'on voit qu'il y a
+    // quelque chose derriere. Elle s'arrete des qu'on touche a la vue et ne
+    // reprend qu'apres un long silence, sinon elle contrarie le geste.
+    orbit.autoRotate = true
+    orbit.autoRotateSpeed = 0.28
+    orbit.addEventListener('start', () => {
+      orbit.autoRotate = false
+      lastTouchRef.current = performance.now()
+    })
+    orbit.addEventListener('end', () => { lastTouchRef.current = performance.now() })
     orbitRef.current = orbit
 
     const raycaster = new THREE.Raycaster()
     const pointer = new THREE.Vector2()
     let hoveredMesh: THREE.Mesh | null = null
+    const IDLE_BEFORE_SPIN = 7000
 
     function updatePointer(e: PointerEvent) {
       const r = renderer.domElement.getBoundingClientRect()
@@ -331,7 +398,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const mesh = hits[0]?.object as THREE.Mesh | undefined
       if (mesh !== hoveredMesh) {
         if (hoveredMesh) {
-          hoveredMesh.scale.setScalar(hoveredMesh.userData.baseScale ?? 1)
+          hoveredMesh.userData.hovered = false
           // Le nom revient à l'état où la construction l'avait laissé : seuls les
           // plus critiques restent nommés en permanence.
           const previous = hoveredMesh.userData.label as THREE.Sprite | undefined
@@ -339,7 +406,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
         }
         hoveredMesh = mesh ?? null
         if (hoveredMesh) {
-          hoveredMesh.scale.setScalar((hoveredMesh.userData.baseScale ?? 1) * 1.35)
+          hoveredMesh.userData.hovered = true
           const label = hoveredMesh.userData.label as THREE.Sprite | undefined
           if (label) label.visible = true
         }
@@ -403,13 +470,37 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       if (s && s.active) {
         renderSimFrame(s, nodeMeshesRef.current, edgeLinesRef.current)
       } else {
-        // Pulsation du nœud sélectionné.
+        // Apparition : les billes grossissent depuis rien, famille apres famille.
+        // C'est le seul moment ou l'oeil peut saisir la structure d'ensemble
+        // avant que tout soit dessine.
+        const intro = introRef.current
+        const now = performance.now()
+        if (intro !== null) {
+          let done = true
+          for (const m of nodeMeshesRef.current) {
+            const at = (m.userData.appearAt as number) ?? intro
+            const p = Math.min(1, Math.max(0, (now - at) / 420))
+            if (p < 1) done = false
+            m.userData.intro = easeOut(p)
+          }
+          if (done) introRef.current = null
+        }
+
+        // Survol : un grossissement amene en douceur se lit comme une reponse,
+        // alors qu'un saut brutal ressemble a un defaut d'affichage.
         const sel = selectedRef.current
-        if (sel) {
-          const m = nodeMeshesRef.current.find((x) => x.userData.id === sel)
-          if (m) m.scale.setScalar((m.userData.baseScale ?? 1) * (1 + Math.sin(el * 3) * 0.08))
+        for (const m of nodeMeshesRef.current) {
+          const base = (m.userData.baseScale as number) ?? 1
+          const grow = m.userData.hovered ? 1.35 : 1
+          const pulse = sel && m.userData.id === sel ? 1 + Math.sin(el * 3) * 0.08 : 1
+          const wanted = base * grow * pulse * ((m.userData.intro as number) ?? 1)
+          const current = m.scale.x
+          m.scale.setScalar(current + (wanted - current) * 0.22)
         }
       }
+
+      // Reprise de la rotation lente apres un silence.
+      if (!orbit.autoRotate && performance.now() - lastTouchRef.current > IDLE_BEFORE_SPIN) orbit.autoRotate = true
       renderer.render(scene, camera)
     }
     animate()
@@ -456,6 +547,13 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     const layout = clusteredLayout(
       nodes.map((n) => ({ id: n.id, entityType: n.entityType, criticality: n.criticality })))
 
+    // L'apparition : chaque famille entre a son tour, 90 ms plus tard que la
+    // precedente.
+    const introStart = performance.now() + 60
+    introRef.current = introStart
+    const clusterDelay = new Map<string, number>()
+    layout.clusters.forEach((c, i) => clusterDelay.set(c.key, i * 90))
+
     // Seuil d'affichage des noms : les 12 plus critiques, pas davantage.
     const sortedCrit = nodes.map((n) => n.criticality).sort((a, b) => b - a)
     const labelFloor = sortedCrit[Math.min(11, sortedCrit.length - 1)] ?? 0
@@ -465,14 +563,21 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const pos = placed
         ? new THREE.Vector3(placed.x, placed.y, placed.z)
         : fibSpherePoint(k, total).multiplyScalar(LAYOUT_RADIUS(total))
-      const col = new THREE.Color(bandColor(n.criticality))
+      const col = new THREE.Color(bandColor(n.criticality, light))
       const r = 6 + (n.criticality / 100) * 8
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(r, 24, 24),
-        new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.28, roughness: 0.55, metalness: 0.15, transparent: true }),
+        new THREE.MeshStandardMaterial({
+          color: col, emissive: col, emissiveIntensity: light ? 0.1 : 0.28,
+          roughness: light ? 0.38 : 0.55, metalness: light ? 0.05 : 0.15, transparent: true,
+        }),
       )
       mesh.position.copy(pos)
-      mesh.userData = { id: n.id, name: n.name, sub: `${entityTypeLabel(n.entityType, t)} · c${n.criticality}`, type: n.entityType, criticality: n.criticality, baseScale: 1, baseColor: col.clone() }
+      mesh.userData = {
+        id: n.id, name: n.name, sub: `${entityTypeLabel(n.entityType, t)} · c${n.criticality}`,
+        type: n.entityType, criticality: n.criticality, baseScale: 1, baseColor: col.clone(),
+        cluster: placed?.cluster ?? n.entityType,
+      }
       // Halo discret.
       const halo = new THREE.Mesh(
         new THREE.SphereGeometry(r * 1.45, 16, 16),
@@ -489,6 +594,12 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       mesh.userData.label = label
       mesh.userData.labelAlways = always
       mesh.add(label)
+      // Depart a zero : l'animation d'apparition les fait naitre, decalees par
+      // famille pour que la structure se lise au lieu de surgir d'un bloc.
+      mesh.scale.setScalar(0.001)
+      mesh.userData.intro = 0
+      mesh.userData.appearAt = introStart + (clusterDelay.get(placed?.cluster ?? n.entityType) ?? 0) + (k % 12) * 12
+
       group.add(mesh); meshes.push(mesh); posById.set(n.id, mesh)
     })
 
@@ -522,23 +633,28 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     // C'est ce qui distingue un amas de billes d'une carte : sans etiquette, on
     // voit des paquets sans savoir de quoi ils sont faits, et il faut survoler
     // chaque bille pour le deviner.
+    const shells: THREE.Mesh[] = []
     for (const cluster of layout.clusters) {
       const caption = makeLabelSprite(
         `${entityTypeLabel(cluster.key, t)} · ${cluster.count}`, 15, light)
       caption.position.set(cluster.x, cluster.y + cluster.radius + 26, cluster.z)
       group.add(caption)
 
-      // Un halo tres discret delimite la grappe, sans l'enfermer.
+      // Le halo delimite la grappe sans l'enfermer, et sert de POIGNEE : on
+      // attrape une famille entiere pour la deplacer, au lieu de trainer ses
+      // billes une par une.
       const shell = new THREE.Mesh(
         new THREE.SphereGeometry(cluster.radius + 10, 24, 18),
         new THREE.MeshBasicMaterial({
-          color: new THREE.Color(light ? '#8fa3aa' : '#2f4a52'),
-          transparent: true, opacity: light ? 0.07 : 0.09,
+          color: new THREE.Color(light ? '#7e949c' : '#2f4a52'),
+          transparent: true, opacity: light ? 0.13 : 0.09,
           side: THREE.BackSide, depthWrite: false,
         }),
       )
       shell.position.set(cluster.x, cluster.y, cluster.z)
+      shell.userData = { cluster: cluster.key, caption }
       group.add(shell)
+      shells.push(shell)
     }
 
     scene.add(group)
@@ -561,16 +677,68 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     nodeMeshesRef.current = meshes
     edgeLinesRef.current = lines
 
-    // Déplacement des nœuds (glisser).
+    // Déplacement : un nœud seul, ou une famille entière par son halo.
+    //
+    // Une SEULE instance pour les deux, et non deux superposées : le halo
+    // englobe ses billes, donc deux jeux de poignées se déclencheraient
+    // ensemble et déplacer un nœud emmènerait toute sa famille. Ici la poignée
+    // la plus proche gagne, c'est-à-dire la bille quand il y en a une.
     dragRef.current?.dispose()
     if (domRef.current && cameraRef.current) {
-      const dc = new DragControls(meshes, cameraRef.current, domRef.current)
-      dc.addEventListener('dragstart', () => { if (orbitRef.current) orbitRef.current.enableRotate = false })
-      dc.addEventListener('dragend', () => { if (orbitRef.current) orbitRef.current.enableRotate = true })
+      const byCluster = new Map<string, THREE.Mesh[]>()
+      for (const m of meshes) {
+        const key = m.userData.cluster as string | undefined
+        if (!key) continue
+        const bucket = byCluster.get(key)
+        if (bucket) bucket.push(m)
+        else byCluster.set(key, [m])
+      }
+
+      const dc = new DragControls([...meshes, ...shells], cameraRef.current, domRef.current)
+      let last: THREE.Vector3 | null = null
+
+      dc.addEventListener('dragstart', (e) => {
+        if (orbitRef.current) {
+          orbitRef.current.enableRotate = false
+          // La rotation lente doit cesser aussi : sinon la scene tourne sous la
+          // bille que l'on essaie de poser.
+          orbitRef.current.autoRotate = false
+        }
+        lastTouchRef.current = performance.now()
+        last = (e.object as THREE.Mesh).position.clone()
+      })
+
+      dc.addEventListener('drag', (e) => {
+        lastTouchRef.current = performance.now()
+        const object = e.object as THREE.Mesh
+        const key = object.userData.cluster as string | undefined
+        // Un nœud se déplace seul ; un halo emmène les siens, sans quoi la
+        // famille resterait sur place dans une bulle vide.
+        if (!key || !shells.includes(object)) { last = object.position.clone(); return }
+        if (!last) { last = object.position.clone(); return }
+
+        const delta = object.position.clone().sub(last)
+        last = object.position.clone()
+        for (const m of byCluster.get(key) ?? []) m.position.add(delta)
+        const caption = object.userData.caption as THREE.Sprite | undefined
+        if (caption) caption.position.add(delta)
+      })
+
+      dc.addEventListener('dragend', () => {
+        last = null
+        lastTouchRef.current = performance.now()
+        if (orbitRef.current) orbitRef.current.enableRotate = true
+      })
       dragRef.current = dc
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, light])
+
+  // ── Bascule clair / sombre sans reconstruire la scene ──
+  useEffect(() => {
+    if (themedRef.current) applyTheme(themedRef.current, light)
+  }, [light])
 
   // ── Déclenchement de la cascade de simulation ──
   useEffect(() => {
@@ -633,7 +801,18 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
 
   return (
     <div className="absolute inset-0 z-10">
-      <div ref={mountRef} className="h-full w-full" style={{ cursor: 'grab' }} />
+      {/*
+        Le fond. Le rendu est transparent, donc c'est ce conteneur qui donne le
+        ciel. Un aplat uni laissait la scene « posee sur une feuille » : un halo
+        radial tres doux, plus clair au centre, recree la profondeur sans rien
+        ajouter au rendu 3D.
+      */}
+      <div ref={mountRef} className="h-full w-full" style={{
+        cursor: 'grab',
+        background: light
+          ? 'radial-gradient(ellipse at 50% 42%, #ffffff 0%, #f2f5f7 46%, #e4eaee 100%)'
+          : 'radial-gradient(ellipse at 50% 42%, #0d1417 0%, #070b0d 52%, #04070880 100%)',
+      }} />
 
       {/* Infobulle au survol */}
       {hover && (
