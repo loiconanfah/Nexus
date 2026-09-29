@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js'
@@ -6,7 +6,11 @@ import {
   AppWindow, Box, Database, Laptop, MapPin, Move3d, Network, RotateCcw, Server, Truck,
   User, Users, Workflow, FileText, BrainCircuit, Bot, Cpu, Cloud,
 } from 'lucide-react'
-import { fibSpherePoint, makeIconSprite, makeLabelSprite, disposeObject, type IconCmp } from '../lib/holoThree'
+import {
+  fibSpherePoint, makeIconSprite, makeLabelSprite, makeMarkSprite, makeInitialsSprite,
+  disposeObject, type IconCmp,
+} from '../lib/holoThree'
+import { brandFor, familyColor, inkOn } from '../lib/assetLook'
 import { clusteredLayout } from '../lib/graphLayout3d'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
@@ -15,7 +19,6 @@ import { useMoney } from '../lib/money'
 import { useTheme } from '../lib/theme'
 
 const CYAN = '#00e5ff'
-const ERR = '#d15b54'
 
 /**
  * Distance de caméra qui fait tenir toute la sphère dans le cadre.
@@ -82,17 +85,18 @@ function frameBall(radius: number, fovDeg = 52): { x: number; y: number; z: numb
 }
 
 /**
- * La couleur d'un noeud selon sa criticite.
+ * La couleur du HALO, qui dit la criticite.
  *
- * Les teintes concues pour le fond noir passaient mal sur blanc : delavees,
- * elles se ressemblaient toutes et la bille perdait son relief. Le theme clair a
- * donc ses propres valeurs, plus denses, avec le meme sens.
+ * La criticite ne colore plus la bille elle-meme : quand les trois quarts du
+ * parc sont critiques, on obtenait un mur rouge ou plus rien ne se distinguait.
+ * Elle passe dans l'aureole, dont l'intensite suit le score : le risque se voit
+ * toujours, mais il n'ecrase plus l'identite de chaque element.
  */
 function bandColor(crit: number, light = false): string {
-  if (crit >= 80) return light ? '#b3372f' : '#d15b54'
-  if (crit >= 60) return light ? '#9a6a12' : '#c69a4e'
-  if (crit >= 40) return light ? '#b35a12' : '#d9772e'
-  return light ? '#2d6f7d' : '#5a97a3'
+  if (crit >= 80) return light ? '#b3372f' : '#ff5d52'
+  if (crit >= 60) return light ? '#9a6a12' : '#ffb340'
+  if (crit >= 40) return light ? '#b35a12' : '#ff9450'
+  return light ? '#2d6f7d' : '#5ad0e0'
 }
 
 const TYPE_ICON: Record<string, IconCmp> = {
@@ -284,6 +288,16 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const mountRef = useRef<HTMLDivElement>(null)
   const simRef = useRef<SimState | null>(null)
   const light = useTheme().theme !== 'dark'
+  // Les familles réellement présentes, les plus nombreuses d'abord : c'est ce
+  // que la légende doit nommer, et rien d'autre.
+  const families = useMemo(() => {
+    const count = new Map<string, number>()
+    for (const n of nodes) count.set(n.entityType, (count.get(n.entityType) ?? 0) + 1)
+    return [...count.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 7)
+      .map(([type, total]) => ({ type, total }))
+  }, [nodes])
   // Lu par la scene, montee une seule fois : la bascule de theme passe par son
   // propre effet, pas par une reconstruction.
   const lightRef = useRef(light); lightRef.current = light
@@ -499,6 +513,16 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
         }
       }
 
+      // Les elements critiques respirent : c'est le seul mouvement porteur de
+      // sens de la scene, et il attire l'oeil la ou il doit aller.
+      for (const m of nodeMeshesRef.current) {
+        const halo = m.userData.halo as THREE.Mesh | undefined
+        if (!halo?.userData.critical) continue
+        const material = halo.material as THREE.MeshBasicMaterial
+        const base = halo.userData.baseOpacity as number
+        material.opacity = base * (1 + Math.sin(el * 1.7 + (m.position.x + m.position.z) * 0.01) * 0.35)
+      }
+
       // Reprise de la rotation lente apres un silence.
       if (!orbit.autoRotate && performance.now() - lastTouchRef.current > IDLE_BEFORE_SPIN) orbit.autoRotate = true
       renderer.render(scene, camera)
@@ -563,7 +587,11 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const pos = placed
         ? new THREE.Vector3(placed.x, placed.y, placed.z)
         : fibSpherePoint(k, total).multiplyScalar(LAYOUT_RADIUS(total))
-      const col = new THREE.Color(bandColor(n.criticality, light))
+      // La bille porte l'IDENTITE : la marque si on la reconnait, sinon la
+      // couleur de sa famille. Le risque, lui, passe dans l'aureole.
+      const brand = brandFor(n.name, n.entityType)
+      const baseHex = brand ? brand.hex : familyColor(n.entityType, light)
+      const col = new THREE.Color(baseHex)
       const r = 6 + (n.criticality / 100) * 8
       const mesh = new THREE.Mesh(
         new THREE.SphereGeometry(r, 24, 24),
@@ -578,13 +606,28 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
         type: n.entityType, criticality: n.criticality, baseScale: 1, baseColor: col.clone(),
         cluster: placed?.cluster ?? n.entityType,
       }
-      // Halo discret.
+      // L'aureole porte le risque : sa couleur est la bande de criticite, son
+      // intensite suit le score. Un element critique se voit donc dans
+      // n'importe quelle famille, sans que tout devienne rouge.
+      const riskColor = new THREE.Color(bandColor(n.criticality, light))
+      const riskOpacity = 0.05 + (n.criticality / 100) * (light ? 0.22 : 0.3)
       const halo = new THREE.Mesh(
-        new THREE.SphereGeometry(r * 1.45, 16, 16),
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.06, side: THREE.BackSide }),
+        new THREE.SphereGeometry(r * (1.35 + (n.criticality / 100) * 0.3), 18, 18),
+        new THREE.MeshBasicMaterial({
+          color: riskColor, transparent: true, opacity: riskOpacity,
+          side: THREE.BackSide, depthWrite: false,
+        }),
       )
+      halo.userData = { baseOpacity: riskOpacity, critical: n.criticality >= 80 }
       mesh.add(halo)
-      mesh.add(makeIconSprite(iconFor(n.entityType), r * 1.5))
+      mesh.userData.halo = halo
+      // Le logo officiel quand la marque est connue, l'icone de famille sinon.
+      // Une encre choisie pour la bille, et non un gris passe-partout : c'est ce
+      // qui rendait les icones fades.
+      const ink = inkOn(baseHex)
+      if (brand?.path) mesh.add(makeMarkSprite(brand.path, r * 1.45, ink))
+      else if (brand?.initials) mesh.add(makeInitialsSprite(brand.initials, r * 1.5, ink))
+      else mesh.add(makeIconSprite(iconFor(n.entityType), r * 1.5, ink))
       const label = makeLabelSprite(n.name, 13, light)
       label.position.set(0, -(r + 11), 0)
       // Cent étiquettes superposées ne se lisent pas, elles font du bruit. On
@@ -847,12 +890,25 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
         <Move3d size={12} style={{ color: CYAN }} /> {t('Glisser : orbiter · Molette : zoom · Nœud : glisser · Clic : détails', 'Drag: orbit · Wheel: zoom · Node: drag · Click: details')}
       </div>
 
-      {/* Légende */}
-      <div className="pointer-events-none absolute bottom-4 left-4 z-20 flex items-center gap-3 rounded-sm border px-2.5 py-1.5 backdrop-blur"
+      {/*
+        Légende. Elle liste les familles PRÉSENTES, pas un catalogue théorique :
+        une légende qui nomme des couleurs absentes de l'écran se lit comme une
+        erreur. Le risque n'y a plus qu'une ligne, puisqu'il est passé dans
+        l'auréole.
+      */}
+      <div className="pointer-events-none absolute bottom-4 left-4 z-20 flex max-w-[60%] flex-wrap items-center gap-x-3 gap-y-1 rounded-sm border px-2.5 py-1.5 backdrop-blur"
         style={{ background: 'color-mix(in srgb, var(--nx-panel) 92%, transparent)', borderColor: 'var(--nx-border)', fontFamily: 'var(--font-mono)', fontSize: 9.5, color: 'var(--nx-text-muted)' }}>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: ERR }} />{t('Critique', 'Critical')}</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: '#c69a4e' }} />{t('Élevé', 'High')}</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: '#5a97a3' }} />{t('Normal', 'Normal')}</span>
+        {families.map((f) => (
+          <span key={f.type} className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full" style={{ background: familyColor(f.type, light) }} />
+            {entityTypeLabel(f.type, t)}
+          </span>
+        ))}
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-full"
+            style={{ background: 'transparent', boxShadow: `0 0 0 2px ${bandColor(90, light)}` }} />
+          {t('auréole = criticité', 'halo = criticality')}
+        </span>
       </div>
     </div>
   )

@@ -16,6 +16,7 @@ import { layoutClustered, layoutGraph } from '../lib/layout'
 import { useLang } from '../lib/i18n'
 import { confidenceStatusLabel, entityTypeLabel, relationTypeLabel } from '../lib/labels'
 import { SavedViews } from '../components/SavedViews'
+import { AssetGlyph } from '../components/AssetGlyph'
 import { notify } from '../lib/notify'
 import { useMoney } from '../lib/money'
 import type { GraphEntityRecord, ScopeSimulation, ViewConfig } from '../lib/types'
@@ -69,7 +70,7 @@ function EntityNode({ data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} style={{ background: 'var(--nx-border)', width: 6, height: 6 }} />
       <div className="flex items-center justify-between border-b p-2" style={{ borderColor: 'var(--nx-border)', background: selected ? 'color-mix(in srgb, var(--nx-cyan) 5%, transparent)' : 'rgba(42,42,43,0.4)' }}>
         <div className="flex items-center gap-1.5" style={{ color: selected ? CYAN : 'var(--nx-text-muted)' }}>
-          {typeIcon(rec.entityType)}
+          <AssetGlyph name={rec.name} entityType={rec.entityType} fallback={typeIcon(rec.entityType)} />
           <span style={{ fontFamily: mono, fontSize: 10, textTransform: 'uppercase' }}>{entityTypeLabel(rec.entityType, t)}</span>
         </div>
         <span className="rounded px-1" style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)', background: 'var(--nx-surface-highest)' }}>{rec.criticality}</span>

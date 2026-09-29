@@ -88,6 +88,63 @@ export function makeIconSprite(Icon: IconCmp, worldSize: number, color = '#d3dcd
   return spr
 }
 
+/**
+ * Sprite d'une MARQUE, a partir de son trace officiel.
+ *
+ * Un actif nomme « GitHub » ou « Datadog » se reconnait a sa marque bien avant
+ * qu'on ait lu son nom : c'est ce qui distingue une carte de l'organisation d'un
+ * semis de ronds identiques. Le trace est pose a plat dans la couleur demandee,
+ * sans contour, parce qu'une marque se lit a sa silhouette.
+ */
+export function makeMarkSprite(path: string, worldSize: number, color: string): THREE.Sprite {
+  const s = 128
+  const c = document.createElement('canvas')
+  c.width = c.height = s
+  const tex = new THREE.CanvasTexture(c)
+  tex.minFilter = THREE.LinearFilter
+  tex.generateMipmaps = false
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false }))
+  spr.scale.set(worldSize, worldSize, 1)
+  spr.renderOrder = 21
+
+  const markup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96">`
+    + `<path d="${path.replace(/"/g, '&quot;')}" fill="${color}"/></svg>`
+  const img = new Image()
+  img.onload = () => {
+    const g = c.getContext('2d')!
+    g.clearRect(0, 0, s, s)
+    g.drawImage(img, 18, 18, s - 36, s - 36)
+    tex.needsUpdate = true
+  }
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markup)
+  return spr
+}
+
+/**
+ * Sprite d'un monogramme, pour les marques dont le trace n'est pas libre de
+ * droits. Deux ou trois lettres dans la couleur de la marque : reconnaissable
+ * sans reproduire un logo que son proprietaire a fait retirer.
+ */
+export function makeInitialsSprite(initials: string, worldSize: number, color: string): THREE.Sprite {
+  const s = 128
+  const c = document.createElement('canvas')
+  c.width = c.height = s
+  const g = c.getContext('2d')!
+  g.font = `700 ${initials.length > 2 ? 44 : 58}px "JetBrains Mono", monospace`
+  g.fillStyle = color
+  g.textAlign = 'center'
+  g.textBaseline = 'middle'
+  g.fillText(initials, s / 2, s / 2 + 2)
+
+  const tex = new THREE.CanvasTexture(c)
+  tex.minFilter = THREE.LinearFilter
+  tex.generateMipmaps = false
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false }))
+  spr.scale.set(worldSize, worldSize, 1)
+  spr.renderOrder = 21
+  return spr
+}
+
 /** Libère géométries + matériaux + textures d'un objet et de ses enfants. */
 export function disposeObject(o: THREE.Object3D) {
   o.traverse((n) => {
