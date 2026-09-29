@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { AXIS, GRID, TOOLTIP, LINE_CURSOR } from '../lib/chartTheme'
 import {
   Building2, TrendingUp, TrendingDown, Users, MapPin, Contact, Truck, FolderKanban, ArrowRight,
   Pencil, History, X, RotateCcw, Save, AlertTriangle,
@@ -247,13 +248,13 @@ export function EnterpriseModel() {
                   <linearGradient id="gr-rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-cat-1)" stopOpacity={0.30} /><stop offset="100%" stopColor="var(--nx-cat-1)" stopOpacity={0} /></linearGradient>
                   <linearGradient id="gr-eb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--nx-cat-3)" stopOpacity={0.26} /><stop offset="100%" stopColor="var(--nx-cat-3)" stopOpacity={0} /></linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" />
-                <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={false} tickLine={false} width={44} />
-                <Tooltip contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(value, name) => { const n = String(name); return [`${Number(value).toFixed(1)} ${m.millions}`, n === 'revenue' ? t('Revenu', 'Revenue') : n === 'ebitda' ? 'EBITDA' : t('Net', 'Net')] }} />
-                <Area type="monotone" dataKey="revenue" stroke="var(--nx-cat-1)" strokeWidth={2} fill="url(#gr-rev)" />
-                <Area type="monotone" dataKey="ebitda" stroke="var(--nx-cat-3)" strokeWidth={2} fill="url(#gr-eb)" />
-                <Area type="monotone" dataKey="net" stroke="var(--nx-cat-2)" strokeWidth={1.5} fillOpacity={0} />
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="name" {...AXIS} dy={4} />
+                <YAxis {...AXIS} width={44} />
+                <Tooltip {...TOOLTIP} cursor={LINE_CURSOR} formatter={(value, name) => { const n = String(name); return [`${Number(value).toFixed(1)} ${m.millions}`, n === 'revenue' ? t('Revenu', 'Revenue') : n === 'ebitda' ? 'EBITDA' : t('Net', 'Net')] }} />
+                <Area type="monotone" dataKey="revenue" stroke="var(--nx-cat-1)" strokeWidth={2.2} fill="url(#gr-rev)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="ebitda" stroke="var(--nx-cat-3)" strokeWidth={2} fill="url(#gr-eb)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                <Area type="monotone" dataKey="net" stroke="var(--nx-cat-2)" strokeWidth={1.5} strokeDasharray="4 3" fillOpacity={0} dot={false} activeDot={{ r: 3 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

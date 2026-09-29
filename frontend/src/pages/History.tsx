@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Activity, ArrowDown, ArrowUp, Boxes, Camera, History as HistoryIcon, Loader2, Minus, Network } from 'lucide-react'
 import { api } from '../lib/api'
@@ -120,38 +120,103 @@ function Delta({ icon: Icon, label, value, prev, goodUp }: { icon: typeof Activi
   )
 }
 
+/**
+ * La courbe d'une mesure dans le temps.
+ *
+ * Elle etait tracee en coordonnees etirees (preserveAspectRatio="none") : les
+ * points devenaient des ovales et l'epaisseur du trait changeait avec la largeur
+ * de la fenetre. Surtout, rien ne distinguait le DERNIER releve, qui est
+ * pourtant la seule valeur que l'on cherche en ouvrant l'ecran.
+ *
+ * Desormais : un aplat degrade sous la courbe pour donner le volume, la derniere
+ * valeur marquee et chiffree, et le minimum comme le maximum annotes. Le survol
+ * d'un releve donne sa date et sa valeur.
+ */
 function Chart({ title, snaps, pick, color, secondPick, secondColor, max, fmt }: {
   title: string; snaps: Snapshot[]; pick: (s: Snapshot) => number; color: string
   secondPick?: (s: Snapshot) => number; secondColor?: string; max?: number; fmt: (s: string) => string
 }) {
-  const { line, dots, line2, dots2, hi } = useMemo(() => {
-    const W = 100, H = 42
-    const vals = snaps.map(pick)
-    const vals2 = secondPick ? snaps.map(secondPick) : []
-    const allMax = max ?? Math.max(1, ...vals, ...vals2)
+  const { t } = useLang()
+  const [hover, setHover] = useState<number | null>(null)
+
+  // Repere en unites reelles : le SVG n'est plus etire, donc un point reste rond
+  // et un trait garde son epaisseur quelle que soit la largeur disponible.
+  const W = 600, H = 190, PAD_X = 10, PAD_TOP = 16, PAD_BOTTOM = 14
+
+  const model = useMemo(() => {
+    const values = snaps.map(pick)
+    const second = secondPick ? snaps.map(secondPick) : []
+    const hi = max ?? Math.max(1, ...values, ...second)
     const n = snaps.length
-    const x = (i: number) => (n <= 1 ? 0 : (i / (n - 1)) * W)
-    const y = (v: number) => H - (v / allMax) * (H - 4) - 2
-    const toLine = (arr: number[]) => arr.map((v, i) => `${x(i)},${y(v)}`).join(' ')
-    const toDots = (arr: number[]) => arr.map((v, i) => ({ x: x(i), y: y(v), v }))
-    return { line: toLine(vals), dots: toDots(vals), line2: secondPick ? toLine(vals2) : '', dots2: secondPick ? toDots(vals2) : [], hi: allMax }
+    const x = (i: number) => (n <= 1 ? W / 2 : PAD_X + (i / (n - 1)) * (W - PAD_X * 2))
+    const y = (v: number) => PAD_TOP + (1 - v / hi) * (H - PAD_TOP - PAD_BOTTOM)
+    const path = (arr: number[]) => arr.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+    const area = values.length
+      ? `${path(values)} L${x(values.length - 1).toFixed(1)},${H - PAD_BOTTOM} L${x(0).toFixed(1)},${H - PAD_BOTTOM} Z`
+      : ''
+    const peak = values.indexOf(Math.max(...values))
+    const trough = values.indexOf(Math.min(...values))
+    return { values, second, hi, x, y, line: path(values), line2: second.length ? path(second) : '', area, peak, trough }
   }, [snaps, pick, secondPick, max])
+
+  const { values, hi, x, y, line, line2, area, peak, trough } = model
+  const last = values.length - 1
+  const shown = hover ?? last
+  const gradientId = `sp-${title.replace(/[^a-z0-9]/gi, '')}`
+
+  if (snaps.length === 0) return null
 
   return (
     <div className="rounded-sm border p-4" style={{ background: 'var(--nx-surface-container)', borderColor: 'var(--nx-border)' }}>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 style={{ fontFamily: mono, fontSize: 12, textTransform: 'uppercase', color: 'var(--nx-text)' }}>{title}</h3>
-        <span style={{ fontFamily: mono, fontSize: 10, color: 'var(--nx-text-muted)' }}>max {hi}</span>
+        <div className="flex items-baseline gap-2">
+          <span style={{ fontFamily: geist, fontSize: 22, fontWeight: 500, color }}>{values[shown]}</span>
+          <span style={{ fontFamily: mono, fontSize: 10.5, color: 'var(--nx-text-muted)' }}>
+            {snaps[shown] && fmt(snaps[shown].capturedAt)}
+          </span>
+        </div>
       </div>
-      <svg viewBox="0 0 100 44" preserveAspectRatio="none" className="h-40 w-full">
-        {[0.25, 0.5, 0.75].map((g) => <line key={g} x1={0} y1={44 * g} x2={100} y2={44 * g} stroke="var(--nx-border)" strokeWidth={0.2} />)}
-        {line2 && <polyline points={line2} fill="none" stroke={secondColor} strokeWidth={0.8} strokeDasharray="2 1" opacity={0.8} />}
-        <polyline points={line} fill="none" stroke={color} strokeWidth={1} />
-        {dots2.map((d, i) => <circle key={`b${i}`} cx={d.x} cy={d.y} r={0.8} fill={secondColor} />)}
-        {dots.map((d, i) => <circle key={i} cx={d.x} cy={d.y} r={1} fill={color} />)}
+
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-44 w-full" role="img"
+        onMouseLeave={() => setHover(null)}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.26} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+
+        {[0, 0.5, 1].map((g) => (
+          <line key={g} x1={PAD_X} x2={W - PAD_X} y1={y(hi * g)} y2={y(hi * g)}
+            stroke="var(--nx-border)" strokeWidth={1} strokeDasharray="2 7" />
+        ))}
+
+        {area && <path d={area} fill={`url(#${gradientId})`} />}
+        {line2 && <path d={line2} fill="none" stroke={secondColor} strokeWidth={1.4} strokeDasharray="4 3" opacity={0.85} />}
+        <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Le sommet et le creux, nommes : ce sont les deux dates dont on parle. */}
+        {values.length > 2 && peak !== trough && [peak, trough].map((i) => (
+          <circle key={`m${i}`} cx={x(i)} cy={y(values[i])} r={3} fill="var(--nx-panel)" stroke={color} strokeWidth={1.5} />
+        ))}
+
+        {/* Le dernier releve, ou celui que l'on survole. */}
+        <line x1={x(shown)} x2={x(shown)} y1={PAD_TOP - 6} y2={H - PAD_BOTTOM}
+          stroke="var(--nx-outline)" strokeWidth={1} strokeDasharray="3 3" opacity={hover === null ? 0 : 0.7} />
+        <circle cx={x(shown)} cy={y(values[shown])} r={5} fill={color} stroke="var(--nx-panel)" strokeWidth={2} />
+
+        {/* Zones de survol, une par releve. */}
+        {snaps.map((_, i) => (
+          <rect key={i} x={x(i) - (W / Math.max(1, snaps.length)) / 2} y={0}
+            width={W / Math.max(1, snaps.length)} height={H} fill="transparent"
+            onMouseEnter={() => setHover(i)} style={{ cursor: 'crosshair' }} />
+        ))}
       </svg>
-      <div className="mt-1 flex justify-between" style={{ fontFamily: mono, fontSize: 9, color: 'var(--nx-text-muted)' }}>
+
+      <div className="flex justify-between" style={{ fontFamily: mono, fontSize: 9.5, color: 'var(--nx-text-muted)' }}>
         <span>{snaps[0] && fmt(snaps[0].capturedAt)}</span>
+        <span>{t('max', 'max')} {hi}</span>
         <span>{snaps.length > 1 && fmt(snaps[snaps.length - 1].capturedAt)}</span>
       </div>
     </div>

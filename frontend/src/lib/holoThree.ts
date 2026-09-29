@@ -17,7 +17,14 @@ export function fibSpherePoint(k: number, total: number): THREE.Vector3 {
 }
 
 /** Sprite texte (nom) sur canvas — panneau translucide sobre, face caméra. */
-export function makeLabelSprite(text: string, worldHeight = 13): THREE.Sprite {
+/**
+ * Etiquette d'un noeud.
+ *
+ * La plaque sombre etait invisible sur fond sombre et pesante sur fond clair :
+ * une vingtaine d'etiquettes suffisait a couvrir le graphe de barres noires. La
+ * plaque suit donc le theme, comme le reste de l'ecran.
+ */
+export function makeLabelSprite(text: string, worldHeight = 13, light = false): THREE.Sprite {
   const label = text.length > 26 ? text.slice(0, 25) + '…' : text
   const font = 30
   const c = document.createElement('canvas')
@@ -37,12 +44,12 @@ export function makeLabelSprite(text: string, worldHeight = 13): THREE.Sprite {
   g.arcTo(inset, c.height - inset, inset, inset, rr)
   g.arcTo(inset, inset, c.width - inset, inset, rr)
   g.closePath()
-  g.fillStyle = 'rgba(17,19,22,0.68)'
+  g.fillStyle = light ? 'rgba(255,255,255,0.86)' : 'rgba(17,19,22,0.68)'
   g.fill()
   g.lineWidth = 1.5
-  g.strokeStyle = 'rgba(180,196,200,0.14)'
+  g.strokeStyle = light ? 'rgba(20,30,34,0.16)' : 'rgba(180,196,200,0.14)'
   g.stroke()
-  g.fillStyle = '#c3cdd0'
+  g.fillStyle = light ? '#1d2a2e' : '#c3cdd0'
   g.textBaseline = 'middle'
   g.fillText(label, padX, c.height / 2 + 1)
   const tex = new THREE.CanvasTexture(c)

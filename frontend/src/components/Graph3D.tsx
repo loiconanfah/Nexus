@@ -7,6 +7,7 @@ import {
   User, Users, Workflow, FileText, BrainCircuit, Bot, Cpu, Cloud,
 } from 'lucide-react'
 import { fibSpherePoint, makeIconSprite, makeLabelSprite, disposeObject, type IconCmp } from '../lib/holoThree'
+import { layeredLayout } from '../lib/graphLayout3d'
 import { useLang } from '../lib/i18n'
 import { entityTypeLabel } from '../lib/labels'
 import type { GraphEntityRecord } from '../lib/types'
@@ -26,10 +27,58 @@ const ERR = '#d15b54'
  */
 const LAYOUT_RADIUS = (total: number) => 160 + Math.sqrt(Math.max(1, total)) * 42
 
+/** Points d'une arete courbe : une droite qui traverse la pile se suit mal. */
+const EDGE_SEGMENTS = 14
+
+/**
+ * Une arete bombee vers l'exterieur.
+ *
+ * Deux noeuds du MEME etage reliees en ligne droite tracent une corde qui coupe
+ * le disque de part en part : dix aretes de ce genre et l'etage devient une
+ * pelote. Le bombement est proportionnel a l'horizontalite du lien, si bien
+ * qu'une dependance qui descend reste presque droite, donc lisible comme une
+ * chute, et qu'un lien lateral contourne le disque.
+ */
+function edgeCurve(a: THREE.Vector3, b: THREE.Vector3): THREE.Vector3[] {
+  const length = a.distanceTo(b)
+  const horizontal = length < 1 ? 0 : 1 - Math.abs(b.y - a.y) / length
+  const mid = a.clone().add(b).multiplyScalar(0.5)
+  const outward = new THREE.Vector3(mid.x, 0, mid.z)
+  if (outward.lengthSq() < 1) outward.set(1, 0, 0)
+  outward.normalize()
+
+  const bow = horizontal * length * 0.22
+  const control = mid.clone().addScaledVector(outward, bow).add(new THREE.Vector3(0, bow * 0.35, 0))
+  return new THREE.QuadraticBezierCurve3(a.clone(), control, b.clone()).getPoints(EDGE_SEGMENTS)
+}
+
+/** Reecrit en place les points d'une arete courbe. */
+function writeCurve(line: THREE.Line, a: THREE.Vector3, b: THREE.Vector3) {
+  const attribute = line.geometry.attributes.position as THREE.BufferAttribute
+  const points = edgeCurve(a, b)
+  for (let i = 0; i < points.length && i < attribute.count; i++) {
+    attribute.setXYZ(i, points[i].x, points[i].y, points[i].z)
+  }
+  attribute.needsUpdate = true
+}
+
 function frameDistance(total: number, fovDeg = 52): number {
   const r = LAYOUT_RADIUS(total)
   const halfFov = (fovDeg * Math.PI) / 180 / 2
   return (r / Math.tan(halfFov)) * 1.32
+}
+
+/**
+ * Le recul necessaire pour voir la pile entiere.
+ *
+ * La sphere n'avait qu'une dimension a cadrer ; une pile d'etages est souvent
+ * plus haute que large, et un cadrage calcule sur le seul rayon coupait les
+ * etages du haut et du bas.
+ */
+function frameStack(radius: number, height: number, fovDeg = 52): { y: number; z: number } {
+  const halfFov = (fovDeg * Math.PI) / 180 / 2
+  const needed = Math.max(radius, height * 0.62)
+  return { y: height * 0.34 + radius * 0.16, z: (needed / Math.tan(halfFov)) * 1.38 }
 }
 
 function bandColor(crit: number): string {
@@ -56,6 +105,15 @@ const TYPE_ICON: Record<string, IconCmp> = {
 }
 function iconFor(type: string): IconCmp { return TYPE_ICON[type] ?? Box }
 
+/** Une arête et ses deux extrémités, avec la dernière position connue. */
+interface EdgeLink {
+  line: THREE.Line
+  a: THREE.Mesh
+  b: THREE.Mesh
+  lastA?: THREE.Vector3
+  lastB?: THREE.Vector3
+}
+
 function setSpriteOpacity(mesh: THREE.Mesh, o: number) {
   mesh.children.forEach((ch) => { const cm = (ch as THREE.Sprite).material as THREE.SpriteMaterial | undefined; if (cm) cm.opacity = o })
 }
@@ -66,7 +124,7 @@ const WAVE_DELAY = 0.32 // secondes par saut de profondeur
 function renderSimFrame(
   s: SimState,
   meshes: THREE.Mesh[],
-  edges: { line: THREE.Line; a: THREE.Mesh; b: THREE.Mesh }[],
+  edges: EdgeLink[],
 ) {
   const tt = (performance.now() - s.startAt) / 1000
   for (const m of meshes) {
@@ -204,7 +262,9 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
   const nodeMeshesRef = useRef<THREE.Mesh[]>([])
   /** Le cadrage initial n'a lieu qu'une fois : ensuite la caméra est à l'utilisateur. */
   const framedRef = useRef(false)
-  const edgeLinesRef = useRef<{ line: THREE.Line; a: THREE.Mesh; b: THREE.Mesh }[]>([])
+  /** Le cadrage calculé à la dernière construction, pour le bouton « recentrer ». */
+  const frameRef = useRef<{ y: number; z: number } | null>(null)
+  const edgeLinesRef = useRef<EdgeLink[]>([])
   const onSelectRef = useRef(onSelect); onSelectRef.current = onSelect
   const queryRef = useRef(query); queryRef.current = query
   const selectedRef = useRef(selectedId); selectedRef.current = selectedId
@@ -266,9 +326,19 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const hits = raycaster.intersectObjects(nodeMeshesRef.current, false)
       const mesh = hits[0]?.object as THREE.Mesh | undefined
       if (mesh !== hoveredMesh) {
-        if (hoveredMesh) hoveredMesh.scale.setScalar(hoveredMesh.userData.baseScale ?? 1)
+        if (hoveredMesh) {
+          hoveredMesh.scale.setScalar(hoveredMesh.userData.baseScale ?? 1)
+          // Le nom revient à l'état où la construction l'avait laissé : seuls les
+          // plus critiques restent nommés en permanence.
+          const previous = hoveredMesh.userData.label as THREE.Sprite | undefined
+          if (previous) previous.visible = !!hoveredMesh.userData.labelAlways
+        }
         hoveredMesh = mesh ?? null
-        if (hoveredMesh) hoveredMesh.scale.setScalar((hoveredMesh.userData.baseScale ?? 1) * 1.35)
+        if (hoveredMesh) {
+          hoveredMesh.scale.setScalar((hoveredMesh.userData.baseScale ?? 1) * 1.35)
+          const label = hoveredMesh.userData.label as THREE.Sprite | undefined
+          if (label) label.visible = true
+        }
         renderer.domElement.style.cursor = hoveredMesh ? 'pointer' : 'grab'
         orbit.enableRotate = !hoveredMesh
       }
@@ -304,12 +374,16 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       const el = clock.getElapsedTime()
       orbit.update()
       stars.rotation.y = el * 0.008
-      // Mise à jour des arêtes (les nœuds peuvent être déplacés).
-      for (const { line, a, b } of edgeLinesRef.current) {
-        const pos = line.geometry.attributes.position as THREE.BufferAttribute
-        pos.setXYZ(0, a.position.x, a.position.y, a.position.z)
-        pos.setXYZ(1, b.position.x, b.position.y, b.position.z)
-        pos.needsUpdate = true
+      // Les arêtes ne sont recalculées que si une extrémité a bougé : une courbe
+      // coûte quinze points, et rien ne bouge tant que personne ne tire un nœud.
+      for (const entry of edgeLinesRef.current) {
+        const { line, a, b } = entry
+        const moved = !entry.lastA || !entry.lastB
+          || !entry.lastA.equals(a.position) || !entry.lastB.equals(b.position)
+        if (!moved) continue
+        writeCurve(line, a.position, b.position)
+        entry.lastA = a.position.clone()
+        entry.lastB = b.position.clone()
       }
       // Animation de cascade de simulation (prioritaire sur la mise en évidence).
       const s = simRef.current
@@ -363,13 +437,22 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     const meshes: THREE.Mesh[] = []
     const posById = new Map<string, THREE.Mesh>()
 
-    // Rayon de la sphère selon le nombre de nœuds.
+    // La pile d'étages : hauteur = place dans la chaîne, angle = famille,
+    // rayon = criticité. Voir lib/graphLayout3d.
     const total = Math.max(1, nodes.length)
-    const radius = LAYOUT_RADIUS(total)
+    const layout = layeredLayout(
+      nodes.map((n) => ({ id: n.id, entityType: n.entityType, criticality: n.criticality })),
+      edges.map((e) => ({ source: e.source, target: e.target })))
+
+    // Seuil d'affichage des noms : les 12 plus critiques, pas davantage.
+    const sortedCrit = nodes.map((n) => n.criticality).sort((a, b) => b - a)
+    const labelFloor = sortedCrit[Math.min(11, sortedCrit.length - 1)] ?? 0
 
     nodes.forEach((n, k) => {
-      const dir = fibSpherePoint(k, total)
-      const pos = dir.multiplyScalar(radius)
+      const placed = layout.positions.get(n.id)
+      const pos = placed
+        ? new THREE.Vector3(placed.x, placed.y, placed.z)
+        : fibSpherePoint(k, total).multiplyScalar(LAYOUT_RADIUS(total))
       const col = new THREE.Color(bandColor(n.criticality))
       const r = 6 + (n.criticality / 100) * 8
       const mesh = new THREE.Mesh(
@@ -385,14 +468,20 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       )
       mesh.add(halo)
       mesh.add(makeIconSprite(iconFor(n.entityType), r * 1.5))
-      const label = makeLabelSprite(n.name)
+      const label = makeLabelSprite(n.name, 13, light)
       label.position.set(0, -(r + 11), 0)
+      // Cent étiquettes superposées ne se lisent pas, elles font du bruit. On
+      // nomme les plus critiques, le survol nomme le reste à la demande.
+      const always = nodes.length <= 28 || n.criticality >= labelFloor
+      label.visible = always
+      mesh.userData.label = label
+      mesh.userData.labelAlways = always
       mesh.add(label)
       group.add(mesh); meshes.push(mesh); posById.set(n.id, mesh)
     })
 
     // Arêtes.
-    const lines: { line: THREE.Line; a: THREE.Mesh; b: THREE.Mesh }[] = []
+    const lines: EdgeLink[] = []
     for (const e of edges) {
       const a = posById.get(e.source), b = posById.get(e.target)
       if (!a || !b) continue
@@ -400,7 +489,7 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       // Née d'une correction déclarée : vert, franc, comme sur le plan 2D. Une
       // même couleur doit dire la même chose dans les deux vues.
       const fixed = e.sourceSystem === 'Remediation'
-      const lgeo = new THREE.BufferGeometry().setFromPoints([a.position.clone(), b.position.clone()])
+      const lgeo = new THREE.BufferGeometry().setFromPoints(edgeCurve(a.position, b.position))
       // Sur fond clair, le cyan néon et une faible opacité rendaient les liens
       // presque invisibles : teinte plus profonde et trait plus marqué.
       const weak = (e.confidence ?? 1) < 0.5
@@ -416,6 +505,50 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
       group.add(line); lines.push({ line, a, b })
     }
 
+    // Un anneau par etage, et son nom.
+    //
+    // C'est ce qui fait passer la vue d'un nuage a un BATIMENT : sans le plancher
+    // dessine, l'oeil ne perçoit pas les niveaux et retombe sur une pelote. Le
+    // socle est nomme, parce que c'est la seule chose qu'un dirigeant doit
+    // retenir : ce qui est en bas porte tout le reste.
+    if (layout.levels > 1) {
+      const ringColor = new THREE.Color(light ? '#93a7ad' : '#33484f')
+      for (const tier of layout.tiers) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(tier.radius + 22, tier.radius + 25, 72),
+          new THREE.MeshBasicMaterial({
+            color: ringColor, transparent: true, opacity: light ? 0.55 : 0.32,
+            side: THREE.DoubleSide, depthWrite: false,
+          }),
+        )
+        ring.rotation.x = -Math.PI / 2
+        ring.position.y = tier.y
+        group.add(ring)
+
+        const caption = makeLabelSprite(
+          tier.index === 0
+            ? t(`socle · ${tier.count}`, `bedrock · ${tier.count}`)
+            : t(`étage ${tier.index} · ${tier.count}`, `tier ${tier.index} · ${tier.count}`),
+          11, light)
+        caption.position.set(tier.radius + 78, tier.y, 0)
+        group.add(caption)
+      }
+    }
+
+    // Le sol, pose sous l'etage le plus bas. Sans lui, la pile flotte et l'oeil
+    // ne sait plus ce qui est « en dessous ».
+    if (layout.levels > 1) {
+      const span = Math.ceil(layout.radius * 2.4)
+      const grid = new THREE.GridHelper(span, 16,
+        new THREE.Color(light ? '#b9c6cc' : '#2a3a40'),
+        new THREE.Color(light ? '#d9e2e6' : '#1b262a'))
+      grid.position.y = layout.floorY - 70
+      const gm = grid.material as THREE.Material | THREE.Material[]
+      const materials = Array.isArray(gm) ? gm : [gm]
+      materials.forEach((m) => { m.transparent = true; m.opacity = light ? 0.5 : 0.3 })
+      group.add(grid)
+    }
+
     scene.add(group)
 
     // Cadrer sur l'ensemble dès l'affichage : c'est la vue d'ensemble qu'on
@@ -427,10 +560,14 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
     // point — la vue restait donc au plus près une fois les données arrivées.
     if (cam && orb && !framedRef.current && nodes.length > 0) {
       framedRef.current = true
-      cam.position.set(0, LAYOUT_RADIUS(total) * 0.18, frameDistance(total))
+      const frame = frameStack(layout.radius, layout.height)
+      // De face, les planchers se superposent en une seule masse : la vue par
+      // defaut est prise de trois quarts, comme on regarde une maquette.
+      cam.position.set(frame.z * 0.42, frame.y, frame.z * 0.9)
       orb.target.set(0, 0, 0)
       orb.update()
     }
+    frameRef.current = frameStack(layout.radius, layout.height)
     nodeMeshesRef.current = meshes
     edgeLinesRef.current = lines
 
@@ -523,8 +660,8 @@ export function Graph3D({ nodes, edges, query, selectedId, onSelect, sim, impact
           onClick={() => {
             const c = cameraRef.current, o = orbitRef.current
             if (!c || !o) return
-            const total = Math.max(1, nodes.length)
-            c.position.set(0, LAYOUT_RADIUS(total) * 0.18, frameDistance(total))
+            const frame = frameRef.current ?? { y: 70, z: frameDistance(Math.max(1, nodes.length)) }
+            c.position.set(frame.z * 0.42, frame.y, frame.z * 0.9)
             o.target.set(0, 0, 0); o.update()
           }}
           title={t('Recentrer', 'Reset view')} aria-label={t('Recentrer', 'Reset view')}

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { AXIS, GRID, TOOLTIP } from '../lib/chartTheme'
 import {
   Sparkles, RotateCcw, TrendingUp, TrendingDown, Minus, Gauge, ArrowRight, SlidersHorizontal, Box, Trash2,
   Loader2, Plus, Share2, Maximize2, Minimize2, X, Check, Pencil, Save, Lightbulb, AlertTriangle, CircleCheck,
@@ -404,10 +405,10 @@ function ComparePanel({ base, sim, money, nf, t, compact }: { base: Metrics; sim
       <div style={{ height: 160 }} className="mb-3">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chart} margin={{ top: 4, right: 4, left: -18, bottom: 0 }} barGap={2}>
-            <CartesianGrid strokeDasharray="2 6" stroke="var(--nx-border)" vertical={false} />
-            <XAxis dataKey="name" tick={{ fill: 'var(--nx-text-muted)', fontSize: 11, fontFamily: mono }} axisLine={{ stroke: 'var(--nx-border)' }} tickLine={false} />
-            <YAxis tick={{ fill: 'var(--nx-text-muted)', fontSize: 10, fontFamily: mono }} axisLine={false} tickLine={false} width={40} />
-            <Tooltip cursor={{ fill: 'rgba(0,0,0,0.04)' }} contentStyle={{ background: 'var(--nx-surface)', border: '1px solid var(--nx-border)', borderRadius: 6, fontFamily: mono, fontSize: 12 }} labelStyle={{ color: 'var(--nx-text)' }} formatter={(v, n) => [`${Number(v).toFixed(1)} ${m.millions}`, String(n) === 'actuel' ? t('Actuel', 'Current') : t('Simulé', 'Simulated')]} />
+            <CartesianGrid {...GRID} />
+            <XAxis dataKey="name" {...AXIS} dy={4} />
+            <YAxis {...AXIS} width={40} />
+            <Tooltip {...TOOLTIP} formatter={(v, n) => [`${Number(v).toFixed(1)} ${m.millions}`, String(n) === 'actuel' ? t('Actuel', 'Current') : t('Simulé', 'Simulated')]} />
             <Bar dataKey="actuel" fill="var(--nx-outline)" radius={[2, 2, 0, 0]} />
             <Bar dataKey="simule" radius={[2, 2, 0, 0]}>
               {chart.map((c, i) => <Cell key={i} fill={c.simule >= c.actuel ? 'var(--nx-success)' : 'var(--nx-danger)'} />)}
