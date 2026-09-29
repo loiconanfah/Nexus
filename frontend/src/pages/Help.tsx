@@ -125,7 +125,7 @@ const DOCS: readonly Doc[] = [
       { kind: 'ul', items: [
         ['Onboarding — importez vos données (fichier, IA, presets).', 'Onboarding — import your data (file, AI, presets).'],
         ['Intelligence documentaire — analysez un document et extrayez-en des dépendances.', 'Document Intelligence — analyze a document and extract dependencies from it.'],
-        ['Place de marché des intégrations — le catalogue des connecteurs.', 'Integration Marketplace — the connector catalogue.'],
+        ['Connecteurs — brancher vos systèmes et programmer leur relecture.', 'Connectors — connect your systems and schedule their re-reading.'],
         ['Assistant IA — posez vos questions en langage naturel, ancrées sur vos données.', 'AI Analyst — ask questions in natural language, grounded on your data.'],
         ['Rapports — le rapport exécutif imprimable.', 'Reports — the printable executive report.'],
       ] },
@@ -185,14 +185,19 @@ const DOCS: readonly Doc[] = [
     title: ['Connecteurs & import de données', 'Connectors & data import'],
     blocks: [
       { kind: 'p', text: [
-        'Lenexux accepte les données par import — vous gardez le contrôle de ce que vous partagez, sans donner d’accès privilégié à vos systèmes. Le catalogue distingue quatre niveaux.',
-        'Lenexux accepts data by import — you keep control of what you share, without granting privileged access to your systems. The catalogue has four tiers.',
+        'Dix éditeurs sont interrogés directement par leur API, puis relus automatiquement : c’est ce qui garde une cartographie vivante, puisque la confiance d’une dépendance décote avec le temps.',
+        'Ten vendors are queried directly through their API, then re-read automatically: that is what keeps a map alive, since a dependency’s confidence decays over time.',
       ] },
       { kind: 'ul', items: [
-        ['Actif — fonctionne immédiatement : CSV/Excel, JSON (fichier ou URL), Import assisté par IA, Serveur MCP.', 'Active — works immediately: CSV/Excel, JSON (file or URL), AI-assisted import, MCP server.'],
-        ['Assisté — vous exportez depuis la plateforme source (M365, ServiceNow, AWS…) puis importez ; Lenexux guide le mapping.', 'Assisted — you export from the source platform (M365, ServiceNow, AWS…) then import; Lenexux guides the mapping.'],
-        ['Prêt pour clé — modèles IA qui s’activent dès qu’une clé est fournie.', 'Key-ready — AI models that activate as soon as a key is provided.'],
-        ['Roadmap — annoncés, pas encore construits.', 'Roadmap — announced, not built yet.'],
+        ['Identité et personnes — Microsoft Entra ID, Okta, Google Workspace : les personnes AVEC leur poste, leur service et leur responsable.', 'Identity and people — Microsoft Entra ID, Okta, Google Workspace: people WITH their job title, department and manager.'],
+        ['Nuages — Microsoft Azure, AWS : ressources, régions, et la concentration sur un même fournisseur.', 'Clouds — Microsoft Azure, AWS: resources, regions, and concentration on a single provider.'],
+        ['Référentiel — ServiceNow, Freshservice : éléments de configuration et dépendances déclarées.', 'Configuration — ServiceNow, Freshservice: configuration items and declared dependencies.'],
+        ['Topologie observée — Datadog, Dynatrace : les appels réellement constatés en production, sans aucune déclaration.', 'Observed topology — Datadog, Dynatrace: calls actually observed in production, with no declaration at all.'],
+        ['Plateforme interne — Kubernetes : lu par la sonde Collector, jamais depuis le cloud.', 'Internal platform — Kubernetes: read by the Collector probe, never from the cloud.'],
+      ] },
+      { kind: 'p', text: [
+        'Chaque branchement s’essaie avant d’être programmé, ses accès sont chiffrés, et une lecture partielle (permission manquante) est signalée plutôt que passée sous silence. Pour tout le reste : CSV/Excel, une API REST/JSON en direct, ou l’import assisté par IA.',
+        'Each connection is tried before it is scheduled, its credentials are encrypted, and a partial read (missing permission) is reported rather than hidden. For everything else: CSV/Excel, a live REST/JSON API, or AI-assisted import.',
       ] },
       { kind: 'h', text: ['Import assisté par IA', 'AI-assisted import'] },
       { kind: 'p', text: [

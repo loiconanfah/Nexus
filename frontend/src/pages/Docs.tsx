@@ -304,13 +304,21 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
           </Sec>
 
           <Sec id="connecteurs" title="Connecteurs">
+            <P>Dix éditeurs sont <b>interrogés par leur API</b>, puis relus automatiquement :
+              Microsoft Entra ID, Okta, Google Workspace (personnes, postes, responsables, groupes),
+              Microsoft Azure et AWS (ressources, régions, concentration sur un nuage),
+              ServiceNow et Freshservice (éléments de configuration et dépendances déclarées),
+              Datadog et Dynatrace (topologie réellement observée en production),
+              Kubernetes (charges internes, via la sonde).</P>
             <Bullets items={[
-              'CSV / Excel : tout tableur d’actifs ou de dépendances.',
-              'REST / API JSON (live) : pointez une API renvoyant un tableau JSON, pull en direct, détection des colonnes, ingestion via le pipeline. Garde anti-SSRF (refuse les adresses internes) et redirections désactivées.',
-              'Import assisté par IA : collez des données brutes, l’IA déduit le mapping vers l’ontologie.',
-              'Webhook / MCP : réception d’événements, exposition de Lenexux comme serveur MCP (roadmap pour les connecteurs natifs par éditeur).',
+              'Rafraîchissement automatique : chaque branchement porte sa périodicité et son échéance, conservées en base. Indispensable, puisque la confiance d’une dépendance décote avec le temps.',
+              'Accès chiffrés (AES-GCM) avec une clé détenue par l’opérateur. Sans cette clé, l’enregistrement est refusé plutôt que dégradé en clair.',
+              'Lecture partielle signalée : une permission manquante sur une table n’annule pas l’import, mais l’écran le dit, sinon une carte amputée passerait pour complète.',
+              'CSV / Excel : tout tableur d’actifs ou de dépendances, par l’écran d’import.',
+              'REST / API JSON (live) : pointez une API renvoyant un tableau JSON, pull en direct, détection des colonnes, ingestion via le pipeline.',
+              'Import assisté par IA : collez des données brutes, l’IA déduit le mapping vers l’ontologie.',
             ]} />
-            <P>Connecteurs <b>lecture seule</b> par défaut. La <b>résolution d’entités</b> rapproche automatiquement une même ressource décrite différemment par plusieurs sources (ex. « SQL01 » ≈ « database-server-001 »).</P>
+            <P>Connecteurs <b>lecture seule</b> par défaut, garde anti-SSRF (refus des adresses internes) et redirections désactivées : une source qui vit dans votre réseau passe par la <b>sonde Collector</b>, jamais par le cloud. La <b>résolution d’entités</b> rapproche automatiquement une même ressource décrite différemment par plusieurs sources (ex. « SQL01 » ≈ « database-server-001 »).</P>
             <Figure src="integrations.png" caption="Catalogue de connecteurs." />
           </Sec>
 
@@ -384,7 +392,7 @@ Service Mobile Voix,BusinessService,HSS,System,DEPENDS_ON,0.9`}</Code>
             <Qa q="Mes données servent-elles à entraîner des modèles ?" a="Non. Les données client ne servent jamais à entraîner de modèles d’IA." />
             <Qa q="L’IA est-elle obligatoire ?" a="Non. Sans clé IA, l’application reste pleinement fonctionnelle avec ses réponses déterministes." />
             <Qa q="Les espaces clients sont-ils isolés ?" a="Oui. Chaque tenant a ses données ; toutes les requêtes filtrent par tenant et le header-tenant est interdit en production." />
-            <Qa q="Puis-je connecter mes systèmes existants ?" a="Oui : CSV/Excel, API REST/JSON en direct, ou import assisté par IA. Des connecteurs natifs (ex. CMDB) peuvent être ajoutés à la demande." />
+            <Qa q="Puis-je connecter mes systèmes existants ?" a="Oui. Dix éditeurs sont interrogés par leur API et relus automatiquement (Entra ID, Okta, Google Workspace, Azure, AWS, ServiceNow, Freshservice, Datadog, Dynatrace, Kubernetes). Toute autre source passe par CSV/Excel, une API REST/JSON en direct ou l’import assisté par IA." />
             <Qa q="Lenexux remplace-t-il mon ERP/ITSM ?" a="Non. C’est une couche au-dessus qui relie les silos pour répondre aux questions d’impact transversales." />
           <Qa q="Peut-on modéliser nos dépendances à l’IA ?" a="Oui. Modèles, agents, workflows, fournisseurs et jeux de données IA sont des entités de première classe ; l’impact d’une défaillance IA (ex. « OpenAI tombe ») se chiffre par le même moteur." />
           <Qa q="En quoi la simulation de cyberattaque diffère de la simulation de panne ?" a="La panne se propage des dépendances vers leurs dépendants ; l’attaque propage une compromission latéralement le long des accès et des données, avec kill-chain, impact et contre-mesures par nœud." />

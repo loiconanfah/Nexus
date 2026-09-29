@@ -66,7 +66,12 @@ Render demande alors les valeurs des secrets marqués `sync: false`.
   (`NEXUS_LLM_MONTHLY_CALL_CAP`, 2000 appels) se contourne en ouvrant plusieurs comptes, puisque
   l'inscription est libre. Un espace qui a posé sa propre clé paie ses appels : il n'est plafonné
   par aucun des deux.
-- `NEXUS_JWT_KEY` est **généré automatiquement** par Render (ne pas y toucher).
+- `NEXUS_JWT_KEY` et `NEXUS_SECRET_KEY` sont **générés automatiquement** par Render (ne pas y
+  toucher). `NEXUS_SECRET_KEY` chiffre les accès que les clients saisissent pour brancher leurs
+  systèmes (Entra ID, ServiceNow, Datadog…). Sans elle, l'API **refuse d'enregistrer** un
+  branchement plutôt que de conserver un secret en clair, et le rafraîchissement automatique est
+  donc impossible ; l'import ponctuel continue de fonctionner. La changer rend illisibles les accès
+  déjà enregistrés, qu'il faudra ressaisir.
 - `NEXUS_ADMIN_EMAIL` vaut `admin@cgi.demo` par défaut (modifiable).
 - Inscription libre : `NEXUS_ALLOW_REGISTRATION=true`. Sans SMTP, les comptes sont actifs dès
   leur création, **sans vérification du courriel**. Dès que `NEXUS_SMTP_HOST` est renseigné,

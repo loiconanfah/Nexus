@@ -125,6 +125,18 @@ services:
       - key: NEXUS_LLM_SHARED_CHAR_CAP
         sync: false          # ex. 200000000 caractères/mois pour tout le monde
 
+      # ── Chiffrement des accès aux systèmes des clients ────────────────────
+      # Les connecteurs (Entra, ServiceNow, Datadog…) conservent un secret pour
+      # relire la source sans personne : c'est la contrepartie d'une carte
+      # vivante. Ces secrets ouvrent l'annuaire ou la CMDB d'une entreprise, ils
+      # sont donc chiffrés en AES-GCM avec cette clé.
+      # SANS elle, l'API REFUSE d'enregistrer un branchement (jamais de secret en
+      # clair) ; l'import ponctuel reste possible. Générée une fois par Render :
+      # la CHANGER rend illisibles les accès déjà enregistrés, qu'il faudra
+      # ressaisir.
+      - key: NEXUS_SECRET_KEY
+        generateValue: true
+
   # -------------------------------------------------------------------
   # Web — SPA Vite servie en statique, /api relayé vers l'API (proxy serveur)
   # -------------------------------------------------------------------
